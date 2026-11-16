@@ -257,7 +257,7 @@ async function steamInfo(g) {
   try {
     const r = (await J(`https://store.steampowered.com/api/appdetails?appids=${g.appid}&l=portuguese`))[g.appid] || {};
     const d = r.data || {};
-    if (d.genres && !(g.genres || []).length) g.genres = d.genres.map(x => x.description);
+    if (d.genres && !(g.genres || []).length) g.genres = d.genres.map(x => x.description).filter(x => !(data.gHidden || []).includes(x));
     if (d.metacritic) { g.meta = d.metacritic.score; g.meta_url = d.metacritic.url; }
     if (!g.rel_manual && !g.released && d.release_date) { const t = parseRel(d.release_date.date); if (t) g.released = t; }
     if (g.released) delete g.rel_why;
@@ -412,12 +412,13 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
       for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
+      if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }
       if (x.status === 'Zerado' && !x.finished) x.finished = now(); else if (x.status !== 'Zerado') x.finished = null;
       save(); return { ok: true, id: x.id };
@@ -488,6 +489,12 @@ ipcMain.handle('api', async (_e, p, b) => {
       const n = (b.name || '').trim(); data.platforms = data.platforms || [];
       if (n && !data.platforms.some(p => p.toLowerCase() === n.toLowerCase())) data.platforms.push(n);
       data.plHidden = (data.plHidden || []).filter(p => p.toLowerCase() !== n.toLowerCase());
+      save(); return { ok: true };
+    }
+    case 'genre_del': {
+      const n = (b.name || '').trim(); if (!n) return { ok: false };
+      data.gHidden = [...new Set([...(data.gHidden || []), n])];
+      for (const g of data.games) if ((g.genres || []).includes(n)) g.genres = g.genres.filter(x => x !== n);
       save(); return { ok: true };
     }
     case 'platform_del': {
