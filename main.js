@@ -234,15 +234,14 @@ async function scoreFor(g) {
 async function lookup(t) {
   const out = {}; let found = null;
   try { found = await mcInfo(t); if (!found) out.mcErr = 'Não achei esse jogo no Metacritic (confira o nome).'; } catch (e) { out.mcErr = e.message; }
-  if (found) Object.assign(out, { meta: found.score, url: found.url, released: found.released, genres: found.genres, title: found.title, platFound: PLAB[found.platSlug] || '' });
-  if ((out.meta == null || !out.released || !(out.genres || []).length) && isPC(t.platform)) {
+  if (found) Object.assign(out, { meta: found.score, url: found.url, released: found.released, title: found.title, platFound: PLAB[found.platSlug] || '' });
+  if ((out.meta == null || !out.released) && isPC(t.platform)) {
     try {
       const id = await steamSearchId(t.name, !found);
       if (id) {
         const d = (await steamDetails(id)).data || {};
         if (out.meta == null && d.metacritic) { out.meta = d.metacritic.score; out.url = d.metacritic.url; }
         if (!out.released && d.release_date) out.released = parseRel(d.release_date.date);
-        if (!(out.genres || []).length && d.genres) out.genres = d.genres.map(x => x.description);
         out.title = d.name;
       }
     } catch {}
@@ -257,7 +256,6 @@ async function steamInfo(g) {
   try {
     const r = (await J(`https://store.steampowered.com/api/appdetails?appids=${g.appid}&l=portuguese`))[g.appid] || {};
     const d = r.data || {};
-    if (d.genres && !(g.genres || []).length) g.genres = d.genres.map(x => x.description).filter(x => !(data.gHidden || []).includes(x));
     if (d.metacritic) { g.meta = d.metacritic.score; g.meta_url = d.metacritic.url; }
     if (!g.rel_manual && !g.released && d.release_date) { const t = parseRel(d.release_date.date); if (t) g.released = t; }
     if (g.released) delete g.rel_why;
@@ -393,12 +391,13 @@ const sgBase = {};
 // Uma pagina de capas 600x900 do SteamGridDB (50 por pagina)
 async function sgPage(g, page) {
   const key = g.id + '|' + g.name + '|' + (g.appid || '');
-  const get = b => sgRaw(`${b}?dimensions=600x900&page=${page}`);
+  // capas verticais: 600x900 e tambem 342x482 / 660x930 (o site mostra todas); humor e epilepsia incluidos, NSFW fica de fora
+  const get = b => sgRaw(`${b}?dimensions=600x900,342x482,660x930&humor=any&epilepsy=any&nsfw=false&page=${page}`);
   let base = sgBase[key], j = null;
   if (base === undefined) {
     base = null;
     if (g.appid) { try { const x = await get('/grids/steam/' + g.appid); if ((x.data || []).length) { base = '/grids/steam/' + g.appid; j = x; } } catch {} }
-    if (!base) { const s = await sg('/search/autocomplete/' + encodeURIComponent(g.name)); if (s.length) { base = '/grids/game/' + s[0].id; j = await get(base); } }
+    if (!base) { const s = await sg('/search/autocomplete/' + encodeURIComponent(g.name)); if (s.length) { const hit = s.find(x => nzn(x.name || '') === nzn(g.name)) || s[0]; base = '/grids/game/' + hit.id; j = await get(base); } }
     sgBase[key] = base;
   }
   if (!base) return { items: [], page, total: 0, pages: 0, more: false };
@@ -535,7 +534,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'lookup': {
       try {
         const o = await lookup({ name: b.name, platform: b.platform });
-        return (o.meta != null || o.released || (o.genres || []).length || o.cover) ? o : { error: 'Não encontrei dados para esse nome.' };
+        return (o.meta != null || o.released || o.cover) ? o : { error: 'Não encontrei dados para esse nome.' };
       } catch (e) { return { error: 'Falha ao buscar: ' + e.message }; }
     }
     case 'list_add': {

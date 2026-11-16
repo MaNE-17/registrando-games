@@ -653,7 +653,7 @@ async function lookupGame(){
  if(r.error){m.textContent=r.error;return}
  const got=[];
  if(r.meta!=null&&$('#f_meta').value===''){$('#f_meta').value=r.meta;murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';got.push('nota')}
- if((r.genres||[]).length&&!$('#f_genres').value.trim()){$('#f_genres').value=r.genres.join(', ');got.push('gêneros')}
+ 
  if(r.released&&!$('#f_rel').value){$('#f_rel').value=dstr(r.released);got.push('data')}
  if(r.cover&&!(cur&&curG().cover)){try{const f=await api('fetch_img',{url:r.cover});if(f.data){pendCover=await toCover(f.data);got.push('capa')}}catch{}}
  paintD();
@@ -710,7 +710,7 @@ movable(D,$('#d_h'));movable(SGD,document.querySelector('#sgd .sgh'));movable(AD
 $('#d_x').onclick=()=>D.close();
 $('#sg_go').onclick=()=>{SGS.gen++;sgLoad(0)};
 $('#sg_q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#sg_go').click()}};
-const GDEF=['Ação','Aventura','RPG','Action RPG','JRPG','Soulslike','Musou','Hack and slash','Mundo aberto','Plataforma','Metroidvania','Tiro','Luta','Terror','Furtividade','Corrida','Esporte','Estratégia','Puzzle','Roguelike','Simulação','Indie','Narrativo'];
+const GDEF=['Ação','Action RPG','Aventura','Corrida','Hack and slash','Indie','JRPG','Luta','Metroidvania','Mundo aberto','Plataforma','RPG','Soulslike','Terror','Tiro'];
 const gsel=()=>$('#f_genres').value.split(',').map(x=>x.trim()).filter(Boolean);
 function genreUi(){const sel=gsel(),all=[...new Set([...sel,...genList()])].sort((a,b)=>a.localeCompare(b));
  $('#f_gchips').innerHTML=all.map(x=>`<span class="gw"><button type="button" class="gchip${sel.includes(x)?' on':''}" data-g="${esc(x)}">${esc(x)}</button><button type="button" class="gx" data-gx="${esc(x)}" title="Remover este gênero" aria-label="Remover o gênero ${esc(x)}">${XS}</button></span>`).join('')+'<button type="button" class="p gadd" id="g_add" title="Adicionar outro gênero" aria-label="Adicionar outro gênero"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>'}
