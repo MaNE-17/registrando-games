@@ -1,9 +1,12 @@
 name: Publicar versão
 
-# Ao enviar uma tag como v1.2.2, o GitHub compila o instalador e cria a Release.
+# Sempre que o código é enviado para a main com uma versão nova no package.json,
+# o GitHub compila o instalador e cria a Release (e a tag) automaticamente.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths: ['package.json']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,12 +19,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm ci
-      - run: npx electron-builder --win --publish never
-      - name: Criar Release e anexar o instalador
+      - name: Ler versão
+        id: v
+        shell: bash
+        run: echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Verificar se a Release já existe
+        id: ex
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
-          gh release upload "$GITHUB_REF_NAME" dist/*Setup*.exe --clobber
+          if gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1; then echo "existe=1" >> "$GITHUB_OUTPUT"; else echo "existe=0" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.ex.outputs.existe == '0'
+        run: npm ci
+      - if: steps.ex.outputs.existe == '0'
+        run: npx electron-builder --win --publish never
+      - if: steps.ex.outputs.existe == '0'
+        name: Criar Release e anexar o instalador
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.v.outputs.tag }}" dist/*Setup*.exe --target "$GITHUB_SHA" --title "${{ steps.v.outputs.tag }}" --generate-notes
