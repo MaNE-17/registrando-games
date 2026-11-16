@@ -28,6 +28,43 @@ app.setAppUserModelId('com.local.registrandogames');
 
 let win, tray, quitting = false, msg = '', busy = false, tick = 0;
 let data = { games: [], config: {}, lists: [] };
+
+// ---------- Atualizacao pelo GitHub (Releases) ----------
+const GH_REPO_PADRAO = 'MaNE-17/registrando-games';
+const ghRepo = () => (data.config.ghRepo || GH_REPO_PADRAO).replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/+$/, '');
+const ghHead = (accept) => ({ 'Accept': accept || 'application/vnd.github+json', 'User-Agent': 'RegistrandoGames', ...(data.config.gh ? { Authorization: 'Bearer ' + data.config.gh } : {}) });
+const verNum = v => String(v || '').replace(/^v/i, '').split('.').map(n => parseInt(n, 10) || 0);
+const verGt = (a, b) => { const x = verNum(a), y = verNum(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+let updInfo = null;
+async function updCheck() {
+  const r = await fetch(`https://api.github.com/repos/${ghRepo()}/releases/latest`, { headers: ghHead() });
+  if (r.status === 404) return { ok: false, msg: data.config.gh ? 'Nenhuma versão publicada ainda (ou o token não tem acesso ao repositório).' : 'Repositório privado: cole o token do GitHub abaixo.' };
+  if (r.status === 401 || r.status === 403) return { ok: false, msg: 'O GitHub recusou o token. Confira se ele está certo e não expirou.' };
+  if (!r.ok) return { ok: false, msg: 'Erro ao consultar o GitHub (HTTP ' + r.status + ').' };
+  const j = await r.json();
+  const asset = (j.assets || []).find(a => /\.exe$/i.test(a.name));
+  const tag = j.tag_name || '';
+  updInfo = { tag, asset, notes: j.body || '' };
+  if (!verGt(tag, app.getVersion())) return { ok: true, novo: false, msg: 'Você já está na versão mais recente (' + app.getVersion() + ').' };
+  if (!asset) return { ok: false, msg: 'A versão ' + tag + ' não tem instalador (.exe) anexado.' };
+  return { ok: true, novo: true, tag, notes: updInfo.notes, size: asset.size, msg: 'Nova versão disponível: ' + tag };
+}
+async function updInstall() {
+  if (!updInfo || !updInfo.asset) { const c = await updCheck(); if (!c.novo) return c; }
+  const a = updInfo.asset;
+  const r = await fetch(`https://api.github.com/repos/${ghRepo()}/releases/assets/${a.id}`, { headers: ghHead('application/octet-stream'), redirect: 'follow' });
+  if (!r.ok) return { ok: false, msg: 'Falha ao baixar a atualização (HTTP ' + r.status + ').' };
+  const dir = path.join(app.getPath('temp'), 'RegistrandoGamesUpdate'); fs.mkdirSync(dir, { recursive: true });
+  const exe = path.join(dir, a.name.replace(/[^\w.\- ]/g, '_'));
+  fs.writeFileSync(exe, Buffer.from(await r.arrayBuffer()));
+  if (fs.statSync(exe).size !== a.size) return { ok: false, msg: 'Download incompleto. Tente de novo.' };
+  // espera o app fechar, instala em silencio e abre de novo
+  const bat = path.join(dir, 'atualizar.cmd');
+  fs.writeFileSync(bat, `@echo off\r\ntimeout /t 2 /nobreak >nul\r\n"${exe}" /S\r\ntimeout /t 2 /nobreak >nul\r\nstart "" "${process.execPath}"\r\n`);
+  cp.spawn('cmd.exe', ['/c', bat], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  setTimeout(() => { quitting = true; app.quit(); }, 400);
+  return { ok: true, msg: 'Instalando... o programa vai fechar e abrir sozinho.' };
+}
 const running = new Set();
 const U = p => path.join(app.getPath('userData'), p);
 const COVERS = () => U('covers');
@@ -372,7 +409,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn }, dataDir: app.getPath('userData'), platforms: data.platforms || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -383,9 +420,11 @@ ipcMain.handle('api', async (_e, p, b) => {
       save(); return { ok: true, id: x.id };
     }
     case 'delete': if (g) rmCover(g); data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
-    case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn }; save(); return { ok: true };
+    case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
+    case 'upd_check': try { return await updCheck(); } catch (e) { return { ok: false, msg: 'Sem conexão com o GitHub: ' + e.message }; }
+    case 'upd_install': try { return await updInstall(); } catch (e) { return { ok: false, msg: 'Erro: ' + e.message }; }
     case 'open_data': shell.openPath(app.getPath('userData')); return { ok: true };
     case 'pick': {
       const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Executável ou script', extensions: ['exe', 'bat', 'cmd'] }, { name: 'Todos', extensions: ['*'] }] });
