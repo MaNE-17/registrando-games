@@ -245,10 +245,7 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 <label for="c_sg">Chave de API do SteamGridDB</label><input id="c_sg" type="password" autocomplete="off">
 <p class="mu"><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank">Obter minha chave</a>. Precisa de uma conta gratuita no site.</p>
 <p class="mu" id="sg_msg"></p><div class="acts"><button onclick="testSg()">Testar chave</button></div></div>
-<div class="tp" id="tp_upd" hidden><p>Versão instalada: <b id="u_ver"></b>. O programa procura versões novas nas <i>Releases</i> do seu repositório no GitHub.</p>
-<label for="c_gh">Token do GitHub (somente leitura)</label><input id="c_gh" type="password" autocomplete="off">
-<p class="mu">Necessário porque o repositório é privado. Crie em GitHub → Settings → Developer settings → Fine-grained tokens, com acesso só a este repositório e permissão <b>Contents: Read-only</b>.</p>
-<label for="c_ghr">Repositório</label><input id="c_ghr" placeholder="MaNE-17/registrando-games">
+<div class="tp" id="tp_upd" hidden><p>Versão instalada: <b id="u_ver"></b>. Clique abaixo para procurar uma versão nova.</p>
 <p class="mu" id="u_msg"></p><div id="u_notes" class="mu" style="white-space:pre-wrap;max-height:120px;overflow:auto"></div>
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></div>
 <p id="c_msg" class="mu"></p><p class="mu" id="c_dir" style="word-break:break-all"></p><div class="acts"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><span style="flex:1"></span><button onclick="C.close()">Fechar</button><button onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
@@ -443,10 +440,10 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return alert(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#c_gh').value=c.gh||'';$('#c_ghr').value=c.ghRepo||'';$('#u_ver').textContent=S.version;$('#c_dir').textContent=S.dataDir?'Seus dados ficam em: '+S.dataDir:'';C.showModal()}
-const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked,gh:$('#c_gh').value.trim(),ghRepo:$('#c_ghr').value.trim()});
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;$('#c_dir').textContent=S.dataDir?'Seus dados ficam em: '+S.dataDir:'';C.showModal()}
+const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
-async function updCheck(){await saveCfg();$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
+async function updCheck(){$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
 async function updGo(){$('#u_go').disabled=true;$('#u_msg').textContent='Baixando a atualização...';const r=await api('upd_install');$('#u_msg').textContent=r.msg;$('#u_go').disabled=false}
 async function testSg(){await saveCfg();$('#sg_msg').textContent='Testando...';$('#sg_msg').textContent=(await api('sgdb_test')).msg}
 $('#tabs').onclick=e=>{const t=e.target.closest('[data-t]');if(!t)return;document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('on',x===t);x.setAttribute('aria-selected',x===t)});document.querySelectorAll('.tp').forEach(p=>p.hidden=p.id!=='tp_'+t.dataset.t)};
