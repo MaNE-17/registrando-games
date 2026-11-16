@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: windows-latest
@@ -40,4 +44,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ steps.v.outputs.tag }}" dist/*Setup*.exe --target "$GITHUB_SHA" --title "${{ steps.v.outputs.tag }}" --generate-notes
+          gh release view "${{ steps.v.outputs.tag }}" >/dev/null 2>&1 || gh release create "${{ steps.v.outputs.tag }}" --target "$GITHUB_SHA" --title "${{ steps.v.outputs.tag }}" --generate-notes
+          gh release upload "${{ steps.v.outputs.tag }}" dist/*Setup*.exe --clobber
