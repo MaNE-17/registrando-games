@@ -388,9 +388,9 @@ async function launchersImport() {
   if (lchBusy) return { counts: {}, msg: 'Já estou procurando...' };
   lchBusy = true;
   try {
-    const found = await LCH.scanAll(), counts = {}, inst = new Set(), ign = new Set(data.lIgnored || []);
+    const want = data.sidePlats || LCH.SIDE_DEF, found = await LCH.scanAll(want), counts = {}, inst = new Set(), ign = new Set(data.lIgnored || []);
     const nzk = s => nzn(s);
-    for (const n of LCH.NAMES) {
+    for (const n of LCH.NAMES.filter(x => want.includes(x))) {
       let novos = 0;
       for (const f of found[n] || []) {
         inst.add(f.key);
@@ -441,7 +441,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -456,6 +456,9 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
+    case 'side_set': {
+      const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
+    }
     case 'launch_scan': try { return await launchersImport(); } catch (e) { return { counts: {}, msg: 'Erro ao procurar: ' + e.message }; }
     case 'upd_check': try { return await updCheck(); } catch (e) { return { ok: false, msg: 'Sem conexão com o GitHub: ' + e.message }; }
     case 'upd_install': try { return await updInstall(); } catch (e) { return { ok: false, msg: 'Erro: ' + e.message }; }

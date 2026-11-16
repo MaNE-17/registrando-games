@@ -2,7 +2,10 @@
 // Tudo e lido do proprio computador: nenhuma conta, chave ou login.
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 
-const NAMES = ['Epic Games', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass'];
+const NAMES = ['Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass', 'Rockstar Games'];
+// Todos os launchers de PC que podem ir para a barra lateral (os que nao tem deteccao so servem de filtro)
+const CATALOG = ['Steam', 'Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass', 'Rockstar Games', 'itch.io', 'Amazon Games', 'Riot Games', 'Humble Bundle'];
+const SIDE_DEF = ['Steam', 'Epic Games', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass'];
 const SKIP_EXE = /unins|setup|crash|report|redist|vcredist|dxsetup|dotnet|launcherhelper|gamelaunchhelper|easyanticheat|eac|battleye|cefsub|updater|support|prereq|install/i;
 
 // Executavel mais provavel do jogo: o maior .exe da pasta (ou de uma subpasta rasa), ignorando instaladores e ajudantes
@@ -134,11 +137,32 @@ async function gamepass() {
   return out;
 }
 
-async function scanAll() {
+async function gog() {
+  const out = [], txt = process.env.RG_GOG_TEXT !== undefined ? process.env.RG_GOG_TEXT : await reg(['HKLM\\SOFTWARE\\WOW6432Node\\GOG.com\\Games', '/s']);
+  for (const b of regBlocks(txt)) {
+    const id = b.key.split('\\').pop(), name = b.v['gamename'], dir = (b.v['path'] || '').replace(/\//g, SEP).replace(/[\\/]+$/, '');
+    if (!/^\d+$/.test(id) || !name || !dir || !isDir(dir)) continue;
+    let exe = (b.v['exe'] || '').replace(/\//g, SEP); if (!exe || !fs.existsSync(exe)) exe = guessExe(dir);
+    out.push({ launcher: 'GOG', key: 'gog:' + id, name: clean(name), exe, uri: '' });
+  }
+  return out;
+}
+async function rockstar() {
+  const out = [], txt = process.env.RG_ROCK_TEXT !== undefined ? process.env.RG_ROCK_TEXT : await reg(['HKLM\\SOFTWARE\\WOW6432Node\\Rockstar Games', '/s']);
+  for (const b of regBlocks(txt)) {
+    const name = b.key.split('\\').pop(), dir = (b.v['installfolder'] || '').replace(/\//g, SEP).replace(/[\\/]+$/, '');
+    if (/^(rockstar games|launcher|social club|rockstar games launcher)$/i.test(name) || !dir || !isDir(dir)) continue;
+    out.push({ launcher: 'Rockstar Games', key: 'rockstar:' + name, name: clean(name), exe: guessExe(dir), uri: '' });
+  }
+  return out;
+}
+
+async function scanAll(only) {
   const res = {};
-  for (const [n, f] of [['Epic Games', async () => epic()], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass]]) {
+  for (const [n, f] of [['Epic Games', async () => epic()], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass], ['Rockstar Games', rockstar]]) {
+    if (only && !only.includes(n)) continue;
     try { res[n] = await f(); } catch (e) { res[n] = []; res[n + '_err'] = e.message; }
   }
   return res;
 }
-module.exports = { NAMES, scanAll, guessExe, regBlocks };
+module.exports = { NAMES, CATALOG, SIDE_DEF, scanAll, guessExe, regBlocks };
