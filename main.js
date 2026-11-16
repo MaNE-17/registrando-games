@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
+const LCH = require('./launchers');
 
 // ---------- Pastas ----------
 // Tudo fica em uma pasta so:  ...\Registrando Games\Programa (app)  e  ...\Registrando Games\Dados (jogos, capas, preferencias)
@@ -381,6 +382,35 @@ function scanSteam() {
   });
 }
 
+// Outros launchers: importa os jogos instalados (sem duplicar) e guarda quais estao instalados agora
+let launcherInst = new Set(), lchBusy = false;
+async function launchersImport() {
+  if (lchBusy) return { counts: {}, msg: 'Já estou procurando...' };
+  lchBusy = true;
+  try {
+    const found = await LCH.scanAll(), counts = {}, inst = new Set(), ign = new Set(data.lIgnored || []);
+    const nzk = s => nzn(s);
+    for (const n of LCH.NAMES) {
+      let novos = 0;
+      for (const f of found[n] || []) {
+        inst.add(f.key);
+        let g = data.games.find(x => x.lkey === f.key) || data.games.find(x => !x.lkey && !x.appid && x.platform === n && nzk(x.name) === nzk(f.name));
+        if (!g) {
+          if (ign.has(f.key)) continue;
+          g = { id: rid(), name: f.name, platform: n, genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+          data.games.push(g); novos++;
+        }
+        g.lkey = f.key; if (f.uri) g.uri = f.uri;
+        if (f.exe && (!g.exe || !fs.existsSync(g.exe))) g.exe = f.exe;
+      }
+      counts[n] = { total: (found[n] || []).length, novos };
+    }
+    launcherInst = inst; save();
+    const novos = Object.values(counts).reduce((a, c) => a + c.novos, 0), total = Object.values(counts).reduce((a, c) => a + c.total, 0);
+    return { counts, msg: total ? `Encontrei ${total} jogo(s) instalado(s) nos launchers; ${novos} novo(s) na biblioteca.` : 'Não encontrei jogos instalados nesses launchers.' };
+  } finally { lchBusy = false; }
+}
+
 const sgRaw = async p => {
   const r = await fetch('https://www.steamgriddb.com/api/v2' + p, { headers: { Authorization: 'Bearer ' + data.config.sgdb } });
   if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -410,7 +440,7 @@ const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'i
 ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
-    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
+    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
       config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
@@ -422,10 +452,11 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (x.status === 'Zerado' && !x.finished) x.finished = now(); else if (x.status !== 'Zerado') x.finished = null;
       save(); return { ok: true, id: x.id };
     }
-    case 'delete': if (g) rmCover(g); data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
+    case 'delete': if (g) { rmCover(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
+    case 'launch_scan': try { return await launchersImport(); } catch (e) { return { counts: {}, msg: 'Erro ao procurar: ' + e.message }; }
     case 'upd_check': try { return await updCheck(); } catch (e) { return { ok: false, msg: 'Sem conexão com o GitHub: ' + e.message }; }
     case 'upd_install': try { return await updInstall(); } catch (e) { return { ok: false, msg: 'Erro: ' + e.message }; }
     case 'open_data': shell.openPath(app.getPath('userData')); return { ok: true };
@@ -435,7 +466,10 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'play': {
       if (!g) return {};
-      if (g.exe && fs.existsSync(g.exe)) { const e = await shell.openPath(g.exe); if (e) return { error: e }; }
+      if (g.uri && g.lkey && (launcherInst.has(g.lkey) || !g.exe || !fs.existsSync(g.exe))) {
+        if (/^shell:/i.test(g.uri)) cp.spawn('explorer.exe', [g.uri], { detached: true, stdio: 'ignore' }).unref(); else await shell.openExternal(g.uri);
+      }
+      else if (g.exe && fs.existsSync(g.exe)) { const e = await shell.openPath(g.exe); if (e) return { error: e }; }
       else if (g.appid) await shell.openExternal('steam://rungameid/' + g.appid);
       else return { error: 'Vincule o executável (.exe) do jogo para poder jogar por aqui.' };
       if (g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando';
@@ -563,6 +597,7 @@ app.whenReady().then(() => {
   tray.on('click', show);
   setInterval(track, 5000);
   scanSteam(); setInterval(scanSteam, 60000);
+  launchersImport().catch(() => {}); setInterval(() => launchersImport().catch(() => {}), 120000);
   fillInfo();
 });
 app.on('before-quit', () => { quitting = true; try { save(); } catch {} });
