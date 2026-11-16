@@ -201,6 +201,7 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 #ask .acts2{padding:12px 18px}
 #c .dh{margin:-4px 0 12px}
 #d .full>input,#d .full>textarea{width:100%}#d .thead{height:15px;align-items:center;margin-bottom:5px}#d .thead .cap{margin:0}#d .ttot{line-height:1}
+.sh{margin:16px 6px 6px;padding:14px 8px 0;border-top:1px solid var(--ln);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--mu);user-select:none}.nosb .sh{margin:12px 10px 8px;padding:0;border-top:1px solid var(--ln)}
 .tabs .tab{white-space:nowrap;padding:8px 11px}#c{width:min(620px,94vw)}
 .tpw{display:grid}.tpw>.tp{grid-area:1/1}#c .tp[hidden]{display:block!important;visibility:hidden}
 </style>
@@ -362,7 +363,7 @@ function side(){
  for(const[n,k]of Object.entries(BRAND))rows[k]=it(n,vis.filter(g=>g.platform===n).length,F.platform===n&&!INST&&!FAV,'plat',n,k);
  let sb=[];try{sb=JSON.parse(localStorage.getItem('sbo'))||[]}catch{}
  const keys=Object.keys(rows),ord=[...new Set(sb)].filter(k=>keys.includes(k));keys.forEach(k=>{if(!ord.includes(k))ord.push(k)});
- const out=ord.map(k=>rows[k]).join('');$('#ver').textContent='v'+(S.version||'');if(out!==side._h){side._h=out;$('#side').innerHTML=out}}
+ const PK=Object.values(BRAND),out=ord.filter(k=>!PK.includes(k)).map(k=>rows[k]).join('')+'<div class="sh" role="separator"><span class="tx">Launchers</span></div>'+ord.filter(k=>PK.includes(k)).map(k=>rows[k]).join('');$('#ver').textContent='v'+(S.version||'');if(out!==side._h){side._h=out;$('#side').innerHTML=out}}
 function togFav(){FAV=!FAV;if(FAV){INST=false;try{localStorage.setItem('inst','0')}catch{}}if(F.smart==='lists')F.smart='all';render()}
 $('#side').onclick=e=>{const t=e.target.closest('[data-k]');if(!t)return;const k=t.dataset.k,v=t.dataset.v;
  if(k==='inst'){togInst();return}
@@ -597,7 +598,7 @@ function hdrApply(){let s=[];try{s=JSON.parse(localStorage.getItem('hdr3'))||[]}
  ord.forEach(k=>{const el=HD.querySelector(`:scope>[data-h="${k}"]`);if(el)HD.appendChild(el)})}
 function hdrSave(){try{localStorage.setItem('hdr3',JSON.stringify([...new Set([...HD.children].map(c=>c.dataset.h).filter(Boolean))]))}catch{}}
 sortable(HD,'[data-h]',hdrSave);
-sortable($('#side'),'.it',its=>{try{localStorage.setItem('sbo',JSON.stringify([...new Set(its.map(i=>i.dataset.o))]))}catch{}},{axis:'y'});
+sortable($('#side'),'.it',its=>{try{localStorage.setItem('sbo',JSON.stringify([...new Set(its.map(i=>i.dataset.o))]))}catch{}side._h=null;side()},{axis:'y'});
 HD.addEventListener('keydown',e=>{if(!e.altKey||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;const it=e.target.closest('[data-h]');if(!it)return;e.preventDefault();
  const left=e.key==='ArrowLeft',s=left?it.previousElementSibling:it.nextElementSibling;if(s&&s.dataset.h){left?HD.insertBefore(it,s):HD.insertBefore(s,it);e.target.focus();hdrSave()}});
 $('#ord_reset').onclick=()=>{try{localStorage.removeItem('hdr3');localStorage.removeItem('sbo')}catch{}hdrApply();side._h=null;side()};
