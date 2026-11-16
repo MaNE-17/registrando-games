@@ -478,7 +478,7 @@ async function addPlat(){const n=$('#pl_nm').value.trim();if(!n)return;await api
 $('#pl_add').onclick=()=>{$('#pl_new').hidden=!$('#pl_new').hidden;if(!$('#pl_new').hidden)$('#pl_nm').focus()};
 $('#pl_ok').onclick=addPlat;$('#pl_nm').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPlat()}};
 
-const IN=(()=>{try{return JSON.parse(localStorage.getItem('info'))||{nm:true,st:true,ti:true}}catch{return{nm:true,st:true,ti:true}}})();
+const IN=(()=>{try{return JSON.parse(localStorage.getItem('info'))||{nm:true,st:true,ti:true,fv:true}}catch{return{nm:true,st:true,ti:true,fv:true}}})();if(IN.fv===undefined)IN.fv=true;
 function paintIn(){for(const[k,c]of[['nm','nonm'],['st','nost'],['ti','noti'],['fv','nofv']]){document.body.classList.toggle(c,!!IN[k]);$('#in_'+k).checked=!IN[k]}}
 ['nm','st','ti','fv'].forEach(k=>$('#in_'+k).onchange=()=>{IN[k]=!$('#in_'+k).checked;try{localStorage.setItem('info',JSON.stringify(IN))}catch{}paintIn()});
 paintIn();
