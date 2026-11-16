@@ -38,7 +38,7 @@ const verGt = (a, b) => { const x = verNum(a), y = verNum(b); for (let i = 0; i 
 let updInfo = null;
 async function updCheck() {
   const r = await fetch(`https://api.github.com/repos/${ghRepo()}/releases/latest`, { headers: ghHead() });
-  if (r.status === 404) return { ok: false, msg: data.config.gh ? 'Nenhuma versão publicada ainda (ou o token não tem acesso ao repositório).' : 'Repositório privado: cole o token do GitHub abaixo.' };
+  if (r.status === 404) return { ok: false, msg: data.config.gh ? 'Nenhuma versão publicada ainda (ou o token não tem acesso ao repositório).' : 'Nenhuma versão publicada ainda.' };
   if (r.status === 401 || r.status === 403) return { ok: false, msg: 'O GitHub recusou o token. Confira se ele está certo e não expirou.' };
   if (!r.ok) return { ok: false, msg: 'Erro ao consultar o GitHub (HTTP ' + r.status + ').' };
   const j = await r.json();
