@@ -272,12 +272,15 @@ async function steamInfo(g) {
 async function batchRelease(list) {
   for (let i = 0; i < list.length; i += 100) {
     const chunk = list.slice(i, i + 100);
-    const input = { ids: chunk.map(g => ({ appid: g.appid })), context: { language: 'portuguese', country_code: 'BR', steam_realm: 1 }, data_request: { include_release: true } };
+    const input = { ids: chunk.map(g => ({ appid: g.appid })), context: { language: 'portuguese', country_code: 'BR', steam_realm: 1 }, data_request: { include_release: true, include_assets: true } };
     try {
       const r = await J('https://api.steampowered.com/IStoreBrowseService/GetItems/v1/?input_json=' + encodeURIComponent(JSON.stringify(input)));
       for (const it of (r.response || {}).store_items || []) {
         const g = chunk.find(x => x.appid === it.appid), rel = it.release || {}, t = rel.original_release_date || rel.steam_release_date;
         if (g && t && !g.rel_manual) { g.released = normDay(t); delete g.rel_why; }
+        // Capa vertical pelo endereco oficial da loja (jogos novos usam um caminho com codigo)
+        const as = it.assets || {}, fmt = as.asset_url_format, file = as.library_capsule || as.library_capsule_2x || as.header;
+        if (g) { if (fmt && file) g.capsule = 'https://shared.akamai.steamstatic.com/store_item_assets/' + fmt.replace('${FILENAME}', file); g.cap1 = true; }
       }
       save();
     } catch {}
@@ -289,7 +292,7 @@ const needInfo = x => x.appid && !x.info4 && !tried.has(x.id);
 async function fillInfo() {
   if (busy) return; busy = true; tried = new Set(); fails = 0; let rate = 0;
   try {
-    await batchRelease(data.games.filter(x => x.appid && !x.info4));
+    await batchRelease(data.games.filter(x => x.appid && (!x.info4 || !x.cap1)));
     for (;;) {
       const g = data.games.find(needInfo); if (!g) break;
       tried.add(g.id);
@@ -304,8 +307,8 @@ async function fillInfo() {
     }
     if (rate > 4) fails = -1;
   } finally { busy = false; }
-  const miss = data.games.filter(x => x.appid && !x.released).length;
-  msg = (msg || '').split(' ‣ ')[0] + ' ‣ ' + (fails < 0 ? 'A Steam limitou as consultas; tente de novo em alguns minutos. ' : fails ? `${fails} jogo(s) sem resposta; tente de novo. ` : '') + (miss ? `Jogos da Steam ainda sem data de lançamento: ${miss} (o motivo aparece na tela de cada jogo).` : 'Todos os jogos da Steam têm data de lançamento.');
+  const warn = fails < 0 ? 'A Steam limitou as consultas; tente de novo em alguns minutos.' : fails ? `${fails} jogo(s) sem resposta; tente de novo.` : '';
+  msg = (msg || '').split(' ‣ ')[0] + (warn ? ' ‣ ' + warn : '');
 }
 
 // Jogos da Familia Steam (API nao oficial; exige o token temporario da loja)
@@ -409,7 +412,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -484,6 +487,13 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'platform_add': {
       const n = (b.name || '').trim(); data.platforms = data.platforms || [];
       if (n && !data.platforms.some(p => p.toLowerCase() === n.toLowerCase())) data.platforms.push(n);
+      data.plHidden = (data.plHidden || []).filter(p => p.toLowerCase() !== n.toLowerCase());
+      save(); return { ok: true };
+    }
+    case 'platform_del': {
+      const n = (b.name || '').trim(); if (!n) return { ok: false };
+      data.platforms = (data.platforms || []).filter(p => p !== n);
+      data.plHidden = [...new Set([...(data.plHidden || []), n])];
       save(); return { ok: true };
     }
     case 'sgdb_test': {

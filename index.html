@@ -177,6 +177,31 @@ details.more{border:1px solid var(--ln);border-radius:10px;padding:10px 14px}det
 details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .acts2{display:flex;gap:10px;align-items:center;padding:14px 20px;border-top:1px solid var(--ln)}.acts2 .sp{flex:1}
 @media(max-width:760px){.dg2{grid-template-columns:1fr}.brand .wm{display:none}}
+
+/* ---- 1.2.5: tela de jogo, configuracoes, capas ---- */
+.xb{display:grid;place-items:center;font-size:0}
+.cv.noimg::before{font-size:17px;padding:14px;text-align:center;line-height:1.3;overflow-wrap:anywhere}
+.lg .cv.noimg::before{font-size:13px;padding:8px}#d_cv.noimg::before{content:none}
+.favb{right:8px;top:44px}
+#d .r{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 22px}
+#d .nm .t{margin-bottom:0}#look_msg:empty,#rel_why:empty,#d_fam[hidden]{display:none}#look_msg,#rel_why{margin-top:5px;font-size:12px}
+.lchips{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin-top:22px}
+.prow{display:flex;gap:10px}.pdd{flex:1;min-width:0}
+.pdb{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;height:38px;padding:0 12px}.pdb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdb .chv{flex:none;color:var(--mu)}
+.sq{width:38px;height:38px;padding:0;display:grid;place-items:center;flex:none;border-radius:8px}
+.pdl{position:absolute;z-index:20;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:6px;max-height:280px;overflow:auto;box-shadow:0 10px 28px #0006}
+.pdi{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 8px 7px 12px;border-radius:7px;cursor:pointer}.pdi:hover,.pdi:focus-visible{background:color-mix(in srgb,var(--ac) 14%,var(--sf));color:var(--ac);outline:none}
+.pdi.on{color:var(--ac);font-weight:600}
+.pdx{width:24px;height:24px;padding:0;border:0!important;background:none!important;color:var(--mu);display:grid;place-items:center;border-radius:6px;flex:none}.pdx svg{width:13px;height:13px}.pdx:hover{color:#e5484d!important;background:color-mix(in srgb,#e5484d 14%,transparent)!important}
+.mrow input{max-width:92px}.cap.nota{margin-top:18px}
+.gchips{max-height:none;overflow:visible;margin-bottom:0;align-items:center}.gadd{width:32px;height:32px;padding:0;display:grid;place-items:center;border-radius:8px}
+#d select,#d input:not([type=checkbox]):not([type=hidden]){height:38px}#d .tin input{height:36px}#d textarea{min-height:96px}
+#ask{width:min(380px,92vw);padding:0}#ask[open]{display:flex;flex-direction:column}#ask .dh{margin:0;padding:14px 18px;border-bottom:1px solid var(--ln)}
+.askb{padding:16px 18px 6px}.askb input{width:100%;height:38px}.askb p{margin:8px 0 0;font-size:12px}.askb p:empty{display:none}
+#ask .acts2{padding:12px 18px}
+#c .dh{margin:-4px 0 12px}
+#d .full>input,#d .full>textarea{width:100%}#d .thead{height:15px;align-items:center;margin-bottom:5px}#d .thead .cap{margin:0}#d .ttot{line-height:1}
+.tpw{display:grid}.tpw>.tp{grid-area:1/1}#c .tp[hidden]{display:block!important;visibility:hidden}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -199,37 +224,37 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 <dialog id="ld"><div class="sgh"><input id="ld_name" class="t" placeholder="Nome da lista" aria-label="Nome da lista"><span class="mu" id="ld_n"></span><span class="sp"></span><button id="ld_add">+ Adicionar jogos</button><label class="ck"><input type="checkbox" id="ld_rank">Mostrar ranking</label><button id="ld_del">Excluir lista</button><button class="p" id="ld_new" hidden>Criar lista</button><button onclick="LD.close()">Fechar</button></div><p class="mu" style="margin:10px 18px 0">Segure e arraste as capas para montar seu ranking (ou use Alt + ← →). O 1º, 2º e 3º lugares ganham ouro, prata e bronze.</p><div class="lg" id="ld_g"></div></dialog>
 <dialog id="ad"><div class="sgh"><b>Adicionar jogos à lista</b><input id="ad_q" placeholder="Buscar jogo" aria-label="Buscar jogo para adicionar"><span class="mu" id="ad_n"></span><span class="sp"></span><button onclick="AD.close()">Cancelar</button><button class="p" id="ad_ok" disabled>Adicionar</button></div><div class="lg" id="ad_g"></div></dialog>
 <dialog id="d">
-<div class="dh" id="d_h"><b id="d_title">Adicionar jogo</b><button type="button" id="d_x" class="xb" aria-label="Fechar" title="Fechar">×</button></div>
+<div class="dh" id="d_h"><b id="d_title">Adicionar jogo</b><button type="button" id="d_x" class="xb" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="dg2">
 <div class="l"><div class="cv big" id="d_cv"></div>
 <div class="cvb" id="d_cvb"><button type="button" id="d_sgbtn" onclick="sgdb()">Buscar capa no SteamGridDB</button>
 <div class="two"><button type="button" onclick="pickCover()">Escolher arquivo</button><button type="button" onclick="clearCover()">Remover</button></div>
 <div class="row"><input id="d_url" placeholder="Link da imagem" aria-label="Link da imagem"><button type="button" onclick="useUrl()">Usar</button></div>
-<div class="mu tip">Dica: copie uma imagem e cole aqui com <kbd>Ctrl</kbd> + <kbd>V</kbd>, ou arraste um arquivo para a capa.</div></div></div>
+<div class="mu tip">Dica: copie uma imagem e cole aqui com <kbd>Ctrl</kbd> + <kbd>V</kbd>, ou arraste um arquivo para a capa.</div></div>
+<div class="lchips"><button type="button" class="chip" id="f_fav">♡ Favoritar</button><button type="button" class="chip" id="f_hid">Ocultar este jogo</button></div></div>
 <div class="r">
 <div class="full"><label class="cap" for="f_name">Título *</label><div class="nm"><input id="f_name" class="t" placeholder="Digite o nome e clique na lupa para buscar os dados" aria-label="Nome do jogo"><button type="button" id="f_look" class="lk" title="Buscar dados do jogo (nota do Metacritic, gêneros, data e capa)" aria-label="Buscar dados do jogo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div><div class="mu" id="look_msg"></div><div class="mu" id="d_fam" hidden>Jogo compartilhado pela Família Steam</div></div>
-<div class="fld"><div class="lrow"><label class="cap" for="f_platform">Plataforma</label><button type="button" class="mini" id="pl_add" title="Criar nova plataforma" aria-label="Criar nova plataforma">+</button></div><select id="f_platform"></select><div class="row" id="pl_new" hidden style="margin-top:6px"><input id="pl_nm" placeholder="Ex.: PlayStation 4"><button type="button" class="p" id="pl_ok">Adicionar</button></div></div>
+<div class="full"><label class="cap" for="f_sn">Nome para ordenação</label><input id="f_sn"></div>
+<div class="fld"><label class="cap" for="f_pbtn">Plataforma</label><div class="prow"><div class="pdd"><button type="button" class="pdb" id="f_pbtn" aria-haspopup="listbox"><span id="f_pv"></span><svg class="chv" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div><button type="button" class="p sq" id="pl_add" title="Criar nova plataforma" aria-label="Criar nova plataforma"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div><input type="hidden" id="f_platform"></div>
+<div class="fld"><label class="cap" for="f_rel">Data de lançamento</label><div class="row"><input type="date" id="f_rel"><button type="button" onclick="relGet()">Buscar no Metacritic</button></div><div class="mu" id="rel_why"></div></div>
 <div class="fld"><label class="cap" for="f_status">Status</label><select id="f_status"></select></div>
 <div class="fld"><label class="cap" for="f_fin">Zerado em</label><input type="date" id="f_fin"></div>
-<div class="fld"><label class="cap" for="f_rel">Data de lançamento</label><div class="row"><input type="date" id="f_rel"><button type="button" onclick="relGet()">Buscar no Metacritic</button></div><div class="mu" id="rel_why"></div></div>
-<div class="fld"><label class="cap">Nota</label><div class="stars" id="f_stars"></div></div>
-<div class="fld"><label class="cap">Metacritic</label><div class="row"><input id="f_meta" type="number" min="0" max="100" style="max-width:90px"><button type="button" onclick="metaGet()">Buscar nota</button><span id="meta_a"></span></div></div>
 <div class="fld"><div class="thead"><label class="cap">Tempo de jogo</label><b id="tt" class="ttot"></b></div><div class="tbox"><div class="trow"><span class="tl">Steam</span><span class="tv" id="t_s"></span></div><div class="trow"><span class="tl">Trackeado</span><div class="tin"><input id="tk_h" type="number" min="0" aria-label="Horas trackeadas"><i>h</i><input id="tk_m" type="number" min="0" max="59" aria-label="Minutos trackeados"><i>min</i></div></div><div class="trow"><span class="tl">Manual</span><div class="tin"><input id="mn_h" type="number" min="0" aria-label="Horas manuais"><i>h</i><input id="mn_m" type="number" min="0" max="59" aria-label="Minutos manuais"><i>min</i></div></div></div></div>
-<div class="fld"><label class="cap">Favorito e visibilidade</label><div class="chips"><button type="button" class="chip" id="f_fav">♡ Favoritar</button><button type="button" class="chip" id="f_hid">Ocultar este jogo</button></div></div>
-<div class="full"><label class="cap">Gêneros <span class="mu nc">(clique para marcar)</span></label><div class="gchips" id="f_gchips"></div><input id="f_gnew" class="gnew" placeholder="+ outro gênero" aria-label="Adicionar outro gênero"><input type="hidden" id="f_genres"></div>
+<div class="fld"><label class="cap" for="f_meta">Metacritic</label><div class="row mrow"><input id="f_meta" type="number" min="0" max="100"><button type="button" onclick="metaGet()">Buscar nota</button><span id="meta_a"></span></div>
+<label class="cap nota">Nota</label><div class="stars" id="f_stars"></div></div>
+<div class="full"><label class="cap">Gêneros <span class="mu nc">(clique para marcar)</span></label><div class="gchips" id="f_gchips"></div><input type="hidden" id="f_genres"></div>
 <div class="full"><label class="cap" for="f_review">Comentário / review</label><textarea id="f_review" rows="4" placeholder="O que achou? Momentos marcantes, se jogaria de novo..."></textarea></div>
-<details class="full more" id="d_more"><summary>Mais opções (executável, ordenação, listas)</summary><div class="r2">
-<div class="fld"><label class="cap" for="f_exe">Executável ou script (.exe, .bat)</label><div class="row"><input id="f_exe"><button type="button" onclick="pick()">Procurar</button></div></div>
-<div class="fld"><label class="cap" for="f_proc">Processo para contar horas <span class="mu nc">· para jogos abertos por .bat</span></label><input id="f_proc"></div>
-<div class="fld"><label class="cap" for="f_sn">Nome para ordenação <span class="mu nc">· muda só a posição</span></label><input id="f_sn"></div>
-<div class="fld"><label class="cap">Listas</label><div class="chips" id="f_lists"></div><span class="mu" id="nolist">Salve o jogo para escolher listas.</span></div>
-</div></details>
+<input type="hidden" id="f_exe"><input type="hidden" id="f_proc">
 </div></div>
-<div class="acts2"><button id="del" onclick="delG()">Excluir</button><button onclick="playFrom()">▶ Jogar</button><span class="sp"></span><button onclick="D.close()">Cancelar</button><button class="p" onclick="saveG()">Salvar</button></div>
+<div class="acts2"><button id="del" onclick="delG()">Excluir</button><button class="p" id="f_exeb" onclick="pickExe()">Adicionar .exe</button><button onclick="playFrom()">▶ Jogar</button><span class="sp"></span><button onclick="D.close()">Cancelar</button><button class="p" onclick="saveG()">Salvar</button></div>
+<div class="pdl" id="f_pl" role="listbox" hidden></div>
 </dialog>
+<dialog id="ask"><div class="dh" id="ask_h"><b id="ask_t"></b><button type="button" class="xb" id="ask_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="askb"><label class="cap" for="ask_i" id="ask_l"></label><input id="ask_i" autocomplete="off"><p class="mu" id="ask_hint"></p></div>
+<div class="acts2"><span class="sp"></span><button type="button" id="ask_no">Cancelar</button><button type="button" class="p" id="ask_ok">Confirmar</button></div></dialog>
 
-<dialog id="c"><div class="tabs" id="tabs" role="tablist"><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></div>
-<div class="tp" id="tp_steam"><p>Importa sua biblioteca da Steam com as horas jogadas. Seu perfil precisa estar com os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p>
+<dialog id="c"><div class="dh" id="c_h"><b>Configurações</b><button type="button" class="xb" onclick="C.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="tabs" id="tabs" role="tablist"><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></div>
+<div class="tpw"><div class="tp" id="tp_steam"><p>Importa sua biblioteca da Steam com as horas jogadas. Seu perfil precisa estar com os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p>
 <label for="c_key">Chave da API da Steam</label><input id="c_key" type="password" autocomplete="off">
 <p class="mu"><a href="https://steamcommunity.com/dev/apikey" target="_blank">Obter minha chave da API</a>. No campo "Domain Name" pode escrever <i>localhost</i>.</p>
 <label for="c_id">SteamID64</label><input id="c_id" placeholder="7656119...">
@@ -248,7 +273,7 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 <div class="tp" id="tp_upd" hidden><p>Versão instalada: <b id="u_ver"></b>. Clique abaixo para procurar uma versão nova.</p>
 <p class="mu" id="u_msg"></p><div id="u_notes" class="mu" style="white-space:pre-wrap;max-height:120px;overflow:auto"></div>
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></div>
-<p id="c_msg" class="mu"></p><p class="mu" id="c_dir" style="word-break:break-all"></p><div class="acts"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><span style="flex:1"></span><button onclick="C.close()">Fechar</button><button onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
+</div><p id="c_msg" class="mu"></p><div class="acts"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><span style="flex:1"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
 
 <dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span id="sg_i" class="mu"></span><span class="sp"></span>
 <label class="ck"><input type="checkbox" id="sg_all">Mostrar todas</label>
@@ -292,8 +317,8 @@ const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(
 const mcl=m=>m>=75?'g':m>=50?'y':'r';
 const sk=g=>g.sortname||g.name,NC=(a,b)=>sk(a).localeCompare(sk(b),undefined,{numeric:true,sensitivity:'base'});
 const SORT={name:NC,hours:(a,b)=>secs(b)-secs(a),played:(a,b)=>(b.last_played||0)-(a.last_played||0),rating:(a,b)=>(b.rating||0)-(a.rating||0),meta:(a,b)=>(b.meta||0)-(a.meta||0),added:(a,b)=>b.added-a.added,fin:(a,b)=>(b.finished||0)-(a.finished||0),namez:(a,b)=>NC(b,a),rel:(a,b)=>(b.released||0)-(a.released||0),relo:(a,b)=>(a.released||9e12)-(b.released||9e12)};
-const coverSrc=g=>g.cover?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.cover):g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`:'';
-function imgErr(i){const k=i.dataset.k;if(i.src.includes('library_600x900')&&i.dataset.a){FB[k]=`https://cdn.akamai.steamstatic.com/steam/apps/${i.dataset.a}/header.jpg`;i.src=FB[k]}else{FB[k]='none';i.parentNode.classList.add('noimg');i.remove()}}
+const coverSrc=g=>g.cover?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.cover):g.capsule?g.capsule:g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`:'';
+function imgErr(i){const k=i.dataset.k;if(i.dataset.a&&!i.src.includes('/header.jpg')){FB[k]=`https://cdn.akamai.steamstatic.com/steam/apps/${i.dataset.a}/header.jpg`;i.src=FB[k]}else{FB[k]='none';i.parentNode.classList.add('noimg');i.remove()}}
 async function load(){S=await api('state');render();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=S.pending?`Atualizando dados… ${S.pending}`:''}
 function filt(g){
  if(F.smart==='hidden'?!g.hidden:g.hidden)return 0;
@@ -310,8 +335,11 @@ function filt(g){
 const dstr=ts=>new Date(ts*1000).toLocaleDateString('sv-SE');
 const PLD=['Steam','PC','PlayStation','Xbox','Switch','Emulador'];
 const plList=()=>[...new Set([...(S.platforms||[]),...S.games.filter(g=>!g.hidden).map(g=>g.platform).filter(Boolean)])].sort((a,b)=>a.localeCompare(b));
-function fillPl(sel){const all=[...new Set([...PLD,...(S.platforms||[]),...S.games.map(g=>g.platform).filter(Boolean)])];if(sel&&!all.includes(sel))all.push(sel);
- $('#f_platform').innerHTML=all.map(p=>`<option${p===sel?' selected':''}>${esc(p)}</option>`).join('')}
+function fillPl(sel){$('#f_platform').value=sel||'';$('#f_pv').textContent=sel||'Escolher';$('#f_pl').hidden=true}
+function plAll(){const hd=new Set(S.plHidden||[]),s=$('#f_platform').value;const all=[...new Set([...PLD,...(S.platforms||[]),...S.games.map(g=>g.platform).filter(Boolean)])].filter(p=>!hd.has(p)).sort((a,b)=>a.localeCompare(b));if(s&&!all.includes(s))all.unshift(s);return all}
+const XS='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function plUi(){const s=$('#f_platform').value;$('#f_pl').innerHTML=plAll().map(p=>`<div class="pdi${p===s?' on':''}" role="option" tabindex="0" data-p="${esc(p)}"><span>${esc(p)}</span><button type="button" class="pdx" data-px="${esc(p)}" title="Remover esta plataforma da lista" aria-label="Remover ${esc(p)}">${XS}</button></div>`).join('')||'<div class="mu" style="padding:8px">Nenhuma plataforma. Use o +.</div>'}
+function plOpen(){const l=$('#f_pl'),b=$('#f_pbtn').getBoundingClientRect(),d=D.getBoundingClientRect();plUi();l.style.left=(b.left-d.left)+'px';l.style.top=(b.bottom-d.top+4)+'px';l.style.width=b.width+'px';l.hidden=false;const on=l.querySelector('.on');on&&on.scrollIntoView({block:'nearest'})}
 const IC=p=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--ac);flex:none">${p}</svg>`;
 const ICO={all:IC('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
  inst:IC('<path d="M22 12H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M6 16h.01"/><path d="M10 16h.01"/>'),
@@ -333,7 +361,7 @@ $('#side').onclick=e=>{const t=e.target.closest('[data-k]');if(!t)return;const k
 $('#side').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('[data-k]'))e.target.click()};
 function nlKey(e){if(e.key==='Escape'){F.nl=0;render()}if(e.key==='Enter'){const n=e.target.value.trim();F.nl=0;if(n)api('list_save',{name:n}).then(load);else render()}}
 function card(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base,run=S.running.includes(g.id),sc=SEL?(SEL.has(g.id)?' sel':' dim'):'';
- return `<div class="card${sc}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc((g.name||'?')[0])}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${g.meta?`<span class="mc ${mcl(g.meta)}" title="Metacritic">${g.meta}</span>`:''}${sc===' sel'?'<span class="chk">✓</span>':''}${run?'<span class="run">● Rodando</span>':''}<button class="play" data-play="${g.id}" title="Jogar" aria-label="Jogar">▶</button><button class="favb${g.fav?' on':''}" data-fav="${g.id}" title="${g.fav?'Remover dos favoritos':'Favoritar'}" aria-label="Favoritar jogo"><svg width="16" height="16" viewBox="0 0 24 24" fill="${g.fav?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button><button class="hid" data-hide="${g.id}" title="${g.hidden?'Reexibir':'Ocultar'}" aria-label="${g.hidden?'Reexibir':'Ocultar'} jogo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button></div><div class="n">${esc(g.name)}</div><div class="m"><span class="st"><i class="dot" style="background:${COL[g.status]}"></i>${g.status}</span><span class="ti">${fmt(secs(g))}</span></div></div>`}
+ return `<div class="card${sc}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${g.meta?`<span class="mc ${mcl(g.meta)}" title="Metacritic">${g.meta}</span>`:''}${sc===' sel'?'<span class="chk">✓</span>':''}${run?'<span class="run">● Rodando</span>':''}<button class="play" data-play="${g.id}" title="Jogar" aria-label="Jogar">▶</button><button class="favb${g.fav?' on':''}" data-fav="${g.id}" title="${g.fav?'Remover dos favoritos':'Favoritar'}" aria-label="Favoritar jogo"><svg width="16" height="16" viewBox="0 0 24 24" fill="${g.fav?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button><button class="hid" data-hide="${g.id}" title="${g.hidden?'Reexibir':'Ocultar'}" aria-label="${g.hidden?'Reexibir':'Ocultar'} jogo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button></div><div class="n">${esc(g.name)}</div><div class="m"><span class="st"><i class="dot" style="background:${COL[g.status]}"></i>${g.status}</span><span class="ti">${fmt(secs(g))}</span></div></div>`}
 const CC=new Map();
 function render(){
  const sig=JSON.stringify([F.smart,F.status,F.platform,F.genre,F.list,$('#q').value,INST,YR,FAV]);if(sig!==SELSIG){SEL=null;SELSIG=sig}
@@ -373,11 +401,11 @@ function paintD(){
  $('#d_cv').innerHTML=pendCover?`<img src="${pendCover}" alt="">`:src?`<img src="${esc(src)}" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:'';
  $('#f_status').innerHTML=ST.map(s=>`<option${s===status?' selected':''}>${s}</option>`).join('');
  $('#f_stars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="sb" data-r="${n}" aria-label="${n} estrelas"><i class="bg">★</i><i class="fg" style="width:${Math.max(0,Math.min(1,rating-(n-1)))*100}%"><b>★</b></i></button>`).join('')+`<span class="mu" id="rtxt" style="margin-left:8px">${rating?String(rating).replace('.',','):'Sem nota'}</span>`;
- $('#d_sgbtn').hidden=$('#f_lists').hidden=!cur;$('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#nolist').hidden=!!cur;$('#del').hidden=!cur;
- $('#f_lists').innerHTML=S.lists.length?S.lists.map(l=>`<button type="button" class="chip${l.ids.includes(cur)?' on':''}" data-l="${l.id}">${esc(l.name)}</button>`).join(''):'<span class="mu">Crie uma lista pelo botão Listas.</span>';genreUi();dropHint()}
+ $('#d_sgbtn').hidden=!cur;$('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
+ exeUi();genreUi();dropHint()}
 function openG(id,pre){
- const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';$('#d_more').open=!!(g.exe||g.proc||g.sortname);
- $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;$('#look_msg').textContent='';fillPl(g.platform||F.platform||'PC');$('#pl_new').hidden=true;$('#d_fam').hidden=!g.family;
+ const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
+ $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;$('#look_msg').textContent='';fillPl(g.platform||F.platform||'PC');$('#d_fam').hidden=!g.family;
  $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_meta').value=g.meta??'';
  $('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';
  $('#t_s').textContent=fmt((g.steam_min||0)*60);setHM('tk',g.tracked_s||0);setHM('mn',g.manual_s||0);
@@ -397,7 +425,9 @@ async function saveG(){
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const r=await api('save',b);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});pendCover=null;D.close();load()}
 async function delG(){if(confirm('Excluir este jogo?')){await api('delete',{id:cur});D.close();load()}}
-async function pick(){const r=await api('pick');if(r.path){$('#f_exe').value=r.path;if(!$('#f_name').value)$('#f_name').value=r.path.split(/[\\/]/).pop().replace(/\.exe$/i,'')}}
+function exeUi(){const v=$('#f_exe').value;$('#f_exeb').textContent=v?'Alterar .exe':'Adicionar .exe';$('#f_exeb').title=v?'Atual: '+v+($('#f_proc').value?' · processo: '+$('#f_proc').value:''):'Escolha o .exe (ou .bat) do jogo para abrir e contar o tempo de jogo'}
+async function pickExe(){const r=await api('pick');if(!r.path)return;$('#f_exe').value=r.path;if(!$('#f_name').value)$('#f_name').value=r.path.split(/[\\/]/).pop().replace(/\.(exe|bat|cmd)$/i,'');
+ if(/\.(bat|cmd)$/i.test(r.path)){const p=await ask('Processo do jogo','Nome do .exe que o script abre','Ex.: Jogo.exe',$('#f_proc').value,'Opcional. Sem isso, o tempo de jogo de um .bat não é contado.');if(p!==null)$('#f_proc').value=p}else $('#f_proc').value='';exeUi()}
 async function addExe(){const r=await api('pick');if(r.path)openG(null,{name:r.path.split(/[\\/]/).pop().replace(/\.exe$/i,''),exe:r.path,platform:'PC'})}
 function toCover(src){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=600;c.height=900;const r=2/3;let w=i.width,h=i.height,sx=0,sy=0;
  if(w/h>r){const nw=h*r;sx=(w-nw)/2;w=nw}else{const nh=w/r;sy=(h-nh)/2;h=nh}c.getContext('2d').drawImage(i,sx,sy,w,h,0,0,600,900);ok(c.toDataURL('image/jpeg',.92))};i.onerror=no;i.src=src})}
@@ -442,7 +472,7 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return alert(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;$('#c_dir').textContent=S.dataDir?'Seus dados ficam em: '+S.dataDir:'';C.showModal()}
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function updCheck(){$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
@@ -474,9 +504,17 @@ let BOLD=false;try{BOLD=localStorage.getItem('bold')==='1'}catch{}
 function paintBold(){document.body.classList.toggle('bold',BOLD);$('#bold').checked=BOLD}
 $('#bold').onchange=()=>{BOLD=$('#bold').checked;try{localStorage.setItem('bold',BOLD?'1':'0')}catch{}paintBold()};paintBold();
 $('#f_stars').onkeydown=e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;e.preventDefault();rating=Math.max(0,Math.min(5,rating+(e.key==='ArrowRight'?.5:-.5)));paintD();const s=document.querySelectorAll('#f_stars .sb')[Math.max(0,Math.ceil(rating)-1)];s&&s.focus()};
-async function addPlat(){const n=$('#pl_nm').value.trim();if(!n)return;await api('platform_add',{name:n});await load();fillPl(n);$('#pl_nm').value='';$('#pl_new').hidden=true}
-$('#pl_add').onclick=()=>{$('#pl_new').hidden=!$('#pl_new').hidden;if(!$('#pl_new').hidden)$('#pl_nm').focus()};
-$('#pl_ok').onclick=addPlat;$('#pl_nm').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();addPlat()}};
+$('#f_pbtn').onclick=e=>{e.stopPropagation();$('#f_pl').hidden?plOpen():$('#f_pl').hidden=true};
+$('#f_pl').onclick=async e=>{e.stopPropagation();const x=e.target.closest('[data-px]');if(x){await api('platform_del',{name:x.dataset.px});await load();plUi();return}const i=e.target.closest('[data-p]');if(i){fillPl(i.dataset.p);$('#f_pbtn').focus()}};
+$('#f_pl').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.p!==undefined){e.preventDefault();e.target.click()}else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();$('#f_pl').hidden=true;$('#f_pbtn').focus()}};
+D.addEventListener('click',e=>{if(!e.target.closest('#f_pl')&&!e.target.closest('#f_pbtn'))$('#f_pl').hidden=true});
+document.querySelector('#d .dg2').addEventListener('scroll',()=>{$('#f_pl').hidden=true});
+$('#pl_add').onclick=async()=>{const n=await ask('Nova plataforma','Nome da plataforma','Ex.: PlayStation 4');if(!n)return;await api('platform_add',{name:n});await load();fillPl(n)};
+// Janela pequena para digitar um nome (plataforma, genero, processo)
+function ask(t,l,ph,v='',hint=''){return new Promise(res=>{const A=$('#ask');let done=false;const fin=x=>{if(done)return;done=true;if(A.open)A.close();res(x)};
+ $('#ask_t').textContent=t;$('#ask_l').textContent=l;$('#ask_i').placeholder=ph||'';$('#ask_i').value=v;$('#ask_hint').textContent=hint;
+ $('#ask_ok').onclick=()=>fin($('#ask_i').value.trim()||null);$('#ask_no').onclick=$('#ask_x').onclick=()=>fin(null);A.onclose=()=>fin(null);
+ $('#ask_i').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#ask_ok').click()}};A.showModal();$('#ask_i').focus();$('#ask_i').select()})}
 
 const IN=(()=>{try{return JSON.parse(localStorage.getItem('info'))||{nm:true,st:true,ti:true,fv:true}}catch{return{nm:true,st:true,ti:true,fv:true}}})();if(IN.fv===undefined)IN.fv=true;
 function paintIn(){for(const[k,c]of[['nm','nonm'],['st','nost'],['ti','noti'],['fv','nofv']]){document.body.classList.toggle(c,!!IN[k]);$('#in_'+k).checked=!IN[k]}}
@@ -558,7 +596,7 @@ function openList(id){const l=S.lists.find(x=>x.id===id);if(!l)return;LDL={id,na
 function openListDraft(ids){LDL={id:null,name:'',ranked:true,ids:[...(ids||[])]};ldOpen()}
 function ldOpen(){$('#ld_name').value=LDL.name;$('#ld_rank').checked=LDL.ranked;listUi();LD.showModal();if(!LDL.id)$('#ld_name').focus()}
 function liHtml(g,i){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
- return `<div class="li" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc((g.name||'?')[0])}">${src?`<img src="${esc(src)}" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="" draggable="false">`:''}<span class="rk${i<3?' r'+(i+1):''}">${i+1}</span><button class="lx" data-rm="${g.id}" title="Remover da lista" aria-label="Remover da lista">×</button></div><div class="n">${esc(g.name)}</div></div>`}
+ return `<div class="li" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="" draggable="false">`:''}<span class="rk${i<3?' r'+(i+1):''}">${i+1}</span><button class="lx" data-rm="${g.id}" title="Remover da lista" aria-label="Remover da lista">×</button></div><div class="n">${esc(g.name)}</div></div>`}
 function listUi(){
  if(LDL.id){const l=S.lists.find(x=>x.id===LDL.id);if(!l){LD.close();return}LDL.ids=[...l.ids];LDL.ranked=l.ranked!==false}
  const gs=LDL.ids.map(id=>S.games.find(g=>g.id===id)).filter(Boolean);
@@ -591,7 +629,7 @@ function openPicker(){ADS=new Set();$('#ad_q').value='';adUi();AD.showModal();$(
 function adUi(){const q=nz($('#ad_q').value).split(/\s+/).filter(Boolean),have=new Set(LDL.ids);
  const l=S.games.filter(g=>!g.hidden&&q.every(t=>(nz(g.name)+' '+nz(g.sortname)).includes(t))).sort(NC);
  $('#ad_g').innerHTML=l.map(g=>{const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base,on=ADS.has(g.id),inl=have.has(g.id);
-  return `<div class="ai${on?' sel':''}${inl?' dim':''}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc((g.name||'?')[0])}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${on?'<span class="chk">✓</span>':''}${inl?'<span class="run">Na lista</span>':''}</div><div class="n">${esc(g.name)}</div></div>`}).join('')||'<div class="empty">Nenhum jogo encontrado.</div>';
+  return `<div class="ai${on?' sel':''}${inl?' dim':''}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${on?'<span class="chk">✓</span>':''}${inl?'<span class="run">Na lista</span>':''}</div><div class="n">${esc(g.name)}</div></div>`}).join('')||'<div class="empty">Nenhum jogo encontrado.</div>';
  adCount()}
 function adCount(){$('#ad_n').textContent=ADS.size?`${ADS.size} selecionado(s)`:'';$('#ad_ok').disabled=!ADS.size}
 $('#ad_q').oninput=adUi;
@@ -674,9 +712,9 @@ $('#sg_q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#sg_go').clic
 const GDEF=['Ação','Aventura','RPG','Action RPG','JRPG','Soulslike','Musou','Hack and slash','Mundo aberto','Plataforma','Metroidvania','Tiro','Luta','Terror','Furtividade','Corrida','Esporte','Estratégia','Puzzle','Roguelike','Simulação','Indie','Narrativo'];
 const gsel=()=>$('#f_genres').value.split(',').map(x=>x.trim()).filter(Boolean);
 function genreUi(){const sel=gsel(),all=[...new Set([...sel,...GDEF,...S.games.flatMap(g=>g.genres||[])])];
- $('#f_gchips').innerHTML=all.map(x=>`<button type="button" class="gchip${sel.includes(x)?' on':''}" data-g="${esc(x)}">${esc(x)}</button>`).join('')}
-$('#f_gchips').onclick=e=>{const b=e.target.closest('[data-g]');if(!b)return;const g=b.dataset.g,s=gsel();$('#f_genres').value=(s.includes(g)?s.filter(x=>x!==g):[...s,g]).join(', ');genreUi()};
-$('#f_gnew').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();const v=e.target.value.trim();if(v){const s=gsel();if(!s.includes(v))$('#f_genres').value=[...s,v].join(', ');e.target.value='';genreUi()}}};
+ $('#f_gchips').innerHTML=all.map(x=>`<button type="button" class="gchip${sel.includes(x)?' on':''}" data-g="${esc(x)}">${esc(x)}</button>`).join('')+'<button type="button" class="p gadd" id="g_add" title="Adicionar outro gênero" aria-label="Adicionar outro gênero"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>'}
+$('#f_gchips').onclick=async e=>{if(e.target.closest('#g_add')){const v=await ask('Novo gênero','Nome do gênero','Ex.: Ritmo');if(v){const s=gsel();if(!s.includes(v))$('#f_genres').value=[...s,v].join(', ');genreUi()}return}const b=e.target.closest('[data-g]');if(!b)return;const g=b.dataset.g,s=gsel();$('#f_genres').value=(s.includes(g)?s.filter(x=>x!==g):[...s,g]).join(', ');genreUi()};
+
 function dropHint(){const e=$('#d_cv');if(!pendCover&&!e.querySelector('img'))e.innerHTML='<div class="drop"><div>Arraste uma imagem aqui<br>ou cole com <kbd>Ctrl</kbd> + <kbd>V</kbd></div></div>'}
 $('#f_status').onchange=e=>{status=e.target.value;if(status==='Zerado'&&!$('#f_fin').value)$('#f_fin').value=new Date().toLocaleDateString('sv-SE');paintD()};
 async function applyCover(d){try{if(cur)await setCover(d);else{pendCover=await toCover(d);paintD()}}catch{alert('Não consegui usar essa imagem.')}}
