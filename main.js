@@ -638,7 +638,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'emu_save': {
       data.emus = data.emus || [];
       let c = emuOf(b.id), old = null;
-      if (!c) { c = { id: rid(), name: 'Novo emulador', platform: PS2, exe: '', roms: '', flags: [], exts: ['.iso', '.chd'] }; data.emus.push(c); }
+      if (!c) { c = { id: rid(), name: 'Novo emulador', platform: PS2, exe: '', roms: '', flags: [], exts: [] }; data.emus.push(c); }
       else old = [...(c.flags || [])];
       const q = v => String(v || '').replace(/^"+|"+$/g, '').trim();
       if ('name' in b) c.name = String(b.name || '').trim() || c.name;
