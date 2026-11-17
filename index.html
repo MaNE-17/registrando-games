@@ -752,13 +752,12 @@ function emuRender(){const L=$('#emu_list');
 <div class="g2"><div><label>Nome</label><input data-f="name" value="${esc(e.name)}" spellcheck="false"></div><div><label>Plataforma</label><select data-f="platform">${CONSOLES.map(c=>`<option value="${esc(c.n)}"${c.n===e.platform?' selected':''}>${esc(dispP(c.n))}</option>`).join('')}</select></div></div>
 <label>Executável</label><div class="row"><input data-f="exe" value="${esc(e.exe)}" placeholder="Ex.: ...\\Emulador\\emulador.exe" spellcheck="false"><button type="button" data-pick="exe">Procurar...</button></div>
 <label>Pasta das ROMs</label><div class="row"><input data-f="roms" value="${esc(e.roms)}" placeholder="Ex.: ...\\Roms\\Console" spellcheck="false"><button type="button" data-pick="roms">Procurar...</button></div>
-<div class="g2 chg"><div><label>Comandos de inicialização</label><div class="chips">${chips('flags')}</div></div><div><label>Formatos de ROM</label><div class="chips">${chips('exts')}</div></div></div>
-<p class="mu hn">Cada jogo abre com <code>"ROM" comandos</code>. Mudar os comandos atualiza os jogos importados.</p>
+<div class="g2 chg"><div><label>Comandos de inicialização</label><input data-f="flags" value="${esc((e.flags||[]).join(' '))}" placeholder="Ex.: -batch -fullscreen" spellcheck="false"></div><div><label>Formatos de ROM</label><div class="chips">${chips('exts')}</div></div></div>
 <div class="acts"><button type="button" class="p" data-imp>Importar jogos</button><button type="button" class="dng" data-del>Remover emulador</button></div></div>`:'')+'</div>'}).join('')}
 const emuPut=(e,f)=>api('emu_save',{id:e.id,...f});
 $('#emu_new').onclick=async()=>{const n=await ask('Novo emulador','Nome do emulador','Ex.: PCSX2','');if(!n)return;const r=await api('emu_save',{name:n});await load();emuSync();EMU_OPEN=r.id;emuRender()};
 $('#emu_list').addEventListener('change',async ev=>{const t=ev.target.closest('[data-f]');if(!t)return;const card=t.closest('.ec2'),e=EMUS.find(x=>x.id===card.dataset.id);if(!e)return;
- e[t.dataset.f]=t.value.trim()||(t.dataset.f==='name'?e.name:'');await emuPut(e,{[t.dataset.f]:t.value});await load();emuSync();emuRender()});
+ const f=t.dataset.f;if(f==='flags'){e.flags=t.value.match(/"[^"]*"|\S+/g)||[]}else e[f]=t.value.trim()||(f==='name'?e.name:'');await emuPut(e,{[f]:f==='flags'?e.flags:t.value});await load();emuSync();emuRender()});
 $('#emu_list').addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.matches('[data-tg]'))ev.target.click()});
 $('#emu_list').addEventListener('click',async ev=>{const card=ev.target.closest('.ec2');if(!card)return;const e=EMUS.find(x=>x.id===card.dataset.id);if(!e)return;const b=ev.target.closest('button,[data-tg]');if(!b)return;
  if(b.matches('[data-tg]')){EMU_OPEN=EMU_OPEN===e.id?null:e.id;emuRender();const o=$('#emu_list .ec2.open');if(o)o.scrollIntoView({block:'nearest'});return}
