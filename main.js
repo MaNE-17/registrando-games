@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
 const LCH = require('./launchers');
 process.env.RG_DIAG = ''; app.whenReady().then(() => { process.env.RG_DIAG = path.join(app.getPath('userData'), 'epic-diagnostico.txt'); });
@@ -52,7 +52,7 @@ async function updCheck() {
   if (!asset) return { ok: false, msg: 'A versão ' + tag + ' não tem instalador (.exe) anexado.' };
   return { ok: true, novo: true, tag, notes: updInfo.notes, size: asset.size, msg: 'Nova versão disponível: ' + tag };
 }
-let UPD = { phase: '', got: 0, total: 0 }, UPDNEW = null, updToldTag = '';
+let UPD = { phase: '', got: 0, total: 0 }, UPDNEW = null;
 // aviso de versao nova: confere ao abrir e a cada 6 horas (se a opcao estiver ligada)
 async function updWatch() {
   try {
@@ -60,10 +60,6 @@ async function updWatch() {
     const c = await updCheck();
     if (c && c.ok && c.novo) {
       UPDNEW = { tag: c.tag, notes: c.notes || '' };
-      if (updToldTag !== c.tag) {
-        updToldTag = c.tag;
-        try { if (Notification.isSupported()) { const n = new Notification({ title: 'Registrando Games', body: 'Nova versão disponível: ' + c.tag + '. Abra o app para atualizar.' }); n.on('click', () => { try { if (win) { win.show(); if (win.isMinimized()) win.restore(); win.focus(); } } catch {} }); n.show(); } } catch {}
-      }
     } else if (c && c.ok) UPDNEW = null;
   } catch {}
 }
