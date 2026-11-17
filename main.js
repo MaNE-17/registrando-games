@@ -78,6 +78,7 @@ const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
   for (const g of data.games) if (!g.info4 && g.info3 && g.released) g.info4 = true; }
 function save() { const f = U('backlog_data.json'); fs.writeFileSync(f + '.tmp', JSON.stringify(data, null, 1)); fs.renameSync(f + '.tmp', f); }
+const rmLogo = g => { if (g.logo) try { fs.unlinkSync(path.join(COVERS(), g.logo)); } catch {} g.logo = ''; };
 const rmWall = g => { if (g.wall) try { fs.unlinkSync(path.join(COVERS(), g.wall)); } catch {} g.wall = ''; };
 const rmCover = g => { if (g.cover) try { fs.unlinkSync(path.join(COVERS(), g.cover)); } catch {} g.cover = ''; };
 
@@ -426,15 +427,16 @@ const sgRaw = async p => {
 const sg = async p => (await sgRaw(p)).data || [];
 const sgBase = {};
 // Uma pagina de capas 600x900 do SteamGridDB (50 por pagina)
-async function sgPage(g, page) {
-  const key = g.id + '|' + g.name + '|' + (g.appid || '');
+async function sgPage(g, page, kind) {
+  const L = kind === 'logo', pre = L ? '/logos' : '/grids';
+  const key = g.id + '|' + g.name + '|' + (g.appid || '') + '|' + (L ? 'L' : 'G');
   // capas verticais: 600x900 e tambem 342x482 / 660x930 (o site mostra todas); humor e epilepsia incluidos, NSFW fica de fora
-  const get = b => sgRaw(`${b}?dimensions=600x900,342x482,660x930&humor=any&epilepsy=any&nsfw=false&page=${page}`);
+  const get = b => sgRaw(`${b}?${L ? '' : 'dimensions=600x900,342x482,660x930&'}humor=any&epilepsy=any&nsfw=false&page=${page}`);
   let base = sgBase[key], j = null;
   if (base === undefined) {
     base = null;
-    if (g.appid) { try { const x = await get('/grids/steam/' + g.appid); if ((x.data || []).length) { base = '/grids/steam/' + g.appid; j = x; } } catch {} }
-    if (!base) { const s = await sg('/search/autocomplete/' + encodeURIComponent(g.name)); if (s.length) { const hit = s.find(x => nzn(x.name || '') === nzn(g.name)) || s[0]; base = '/grids/game/' + hit.id; j = await get(base); } }
+    if (g.appid) { try { const x = await get(pre + '/steam/' + g.appid); if ((x.data || []).length) { base = pre + '/steam/' + g.appid; j = x; } } catch {} }
+    if (!base) { const s = await sg('/search/autocomplete/' + encodeURIComponent(g.name)); if (s.length) { const hit = s.find(x => nzn(x.name || '') === nzn(g.name)) || s[0]; base = pre + '/game/' + hit.id; j = await get(base); } }
     sgBase[key] = base;
   }
   if (!base) return { items: [], page, total: 0, pages: 0, more: false };
@@ -446,7 +448,7 @@ const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'i
 
 
 // Wallpaper escolhido na janela do Google Imagens
-async function wallSave(g, src) {
+async function wallSave(g, src, kind = 'wall') {
   let buf, ext = '.jpg';
   if (src.startsWith('data:image')) { buf = Buffer.from(src.split(',')[1] || '', 'base64'); if (/^data:image\/png/.test(src)) ext = '.png'; }
   else {
@@ -460,9 +462,11 @@ async function wallSave(g, src) {
       buf = Buffer.from(await r.arrayBuffer()); ext = ct.includes('png') ? '.png' : ct.includes('webp') ? '.webp' : '.jpg';
     } catch { return { error: 'Não consegui baixar essa imagem. Tente outra.' }; }
   }
-  if (!buf || buf.length < 5000 || buf.length > 60e6) return { error: 'Imagem inválida ou grande demais.' };
-  fs.mkdirSync(COVERS(), { recursive: true }); rmWall(g);
-  g.wall = `${g.id}-wp-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.wall), buf); save(); return { ok: true };
+  if (!buf || buf.length < (kind === 'logo' ? 800 : 5000) || buf.length > 60e6) return { error: 'Imagem inválida ou grande demais.' };
+  fs.mkdirSync(COVERS(), { recursive: true });
+  if (kind === 'logo') { rmLogo(g); g.logo = `${g.id}-lg-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.logo), buf); }
+  else { rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.wall), buf); }
+  save(); return { ok: true };
 }
 ipcMain.on('wall-pick', async (e, p) => {
   const g = data.games.find(x => x.id === wpGame); if (!g || !p || typeof p.src !== 'string') return;
@@ -480,14 +484,14 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'logoSize']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }
       if (x.status === 'Zerado' && !x.finished) x.finished = now(); else if (x.status !== 'Zerado') x.finished = null;
       save(); return { ok: true, id: x.id };
     }
-    case 'delete': if (g) { rmCover(g); rmWall(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
+    case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
@@ -561,6 +565,8 @@ ipcMain.handle('api', async (_e, p, b) => {
       wpWin.loadURL('https://www.google.com/search?tbm=isch&hl=pt-BR&q=' + encodeURIComponent(q));
       wpWin.show(); wpWin.focus(); return { ok: true };
     }
+    case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
+    case 'logo_clear': if (g) { rmLogo(g); save(); } return { ok: true };
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
     case 'cover_clear': if (g) { rmCover(g); save(); } return { ok: true };
     case 'sgdb': {
@@ -570,7 +576,7 @@ ipcMain.handle('api', async (_e, p, b) => {
         let t = g; const q = (b.q || '').trim();
         if (q && nzn(q) !== nzn(g.name)) { t = { ...g, name: q, appid: null }; if (!b.page) { g.sgname = q; save(); } }
         else if (!b.page && g.sgname) { delete g.sgname; save(); }
-        return await sgPage(t, b.page || 0);
+        return await sgPage(t, b.page || 0, b.kind);
       }
       catch (e) { return { error: e.message.includes('401') ? 'Chave do SteamGridDB inválida. Confira em Configurações.' : 'SteamGridDB: ' + e.message }; }
     }

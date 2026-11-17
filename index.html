@@ -253,6 +253,10 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 .wi em{position:absolute;right:8px;bottom:8px;font-style:normal;font-size:11px;font-weight:600;background:#000a;color:#fff;padding:2px 7px;border-radius:99px}
 .mcv.g{color:#52c889}.mcv.y{color:#f5b301}.mcv.r{color:#e5484d}
 #d_wpbtn{width:100%}
+
+.rpt h2.hl{margin:0;line-height:0}.rlogo{display:block;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 4px 18px #000a)}
+.lsz{display:inline-flex;align-items:center;gap:8px;margin-left:auto;color:var(--mu);font-size:13px;background:color-mix(in srgb,var(--sf) 70%,transparent);border:1px solid var(--ln);border-radius:10px;padding:8px 12px}.lsz input{width:130px;accent-color:var(--ac)}.lsz b{color:var(--tx);min-width:38px;text-align:right}
+.sgb.logos{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.sgb.logos img{aspect-ratio:16/9;object-fit:contain;padding:12px;background:repeating-conic-gradient(#2a3040 0 25%,#222836 0 50%) 50%/20px 20px}
 .tpw{display:grid}.tpw>.tp{grid-area:1/1}#c .tp[hidden]{display:block!important;visibility:hidden}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
@@ -280,6 +284,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <div class="dg2">
 <div class="l"><div class="cv big" id="d_cv"></div>
 <div class="cvb" id="d_cvb"><button type="button" id="d_sgbtn" onclick="sgdb()">Buscar capa no SteamGridDB</button>
+<button type="button" id="d_lgbtn" onclick="sgdb('logo')">Buscar logo no SteamGridDB</button>
 <button type="button" id="d_wpbtn" onclick="wallDlg()">Buscar wallpaper</button>
 <div class="two"><button type="button" onclick="pickCover()">Escolher arquivo</button><button type="button" onclick="clearCover()">Remover</button></div>
 <div class="row"><input id="d_url" placeholder="Link da imagem" aria-label="Link da imagem"><button type="button" onclick="useUrl()">Usar</button></div>
@@ -342,7 +347,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <dialog id="wpd"><div class="sgh"><b>Wallpaper · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go" class="p">Buscar no Google</button><span class="sp"></span><button id="wp_rm">Remover wallpaper</button><button onclick="WPD.close()">Fechar</button></div>
 <div class="wpres" id="wp_res"></div>
 <ol class="wpinfo"><li>Escolha a resolução acima. O Google Imagens abre numa janela já filtrada nesse tamanho exato.</li><li>Clique na imagem que você gostou para abri-la e espere carregar.</li><li>Aperte <b>Usar como wallpaper</b> na barra verde que fica embaixo da janela do Google.</li></ol><p class="mu wpm" id="wp_m"></p></dialog>
-<dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span id="sg_i" class="mu"></span><span class="sp"></span>
+<dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span id="sg_i" class="mu"></span><span class="sp"></span><button id="sg_rmlogo" hidden>Remover logo</button>
 <label class="ck"><input type="checkbox" id="sg_all">Mostrar todas</label>
 <button id="sg_prev">‹ Anterior</button><span id="sg_p" class="mu"></span><button id="sg_next">Próxima ›</button>
 <button onclick="SGD.close()">Fechar</button></div><div class="sgb" id="sg_g"></div></dialog>
@@ -488,13 +493,17 @@ function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base
 function rpHtml(g){if(!g)return'<div class="rpe">Nenhum jogo nesse filtro.</div>';
  const ws=wallSrc(g),cv=coverSrc(g),run=S.running.includes(g.id),ins=(S.inst||[]).includes(g.id);
  const row=(k,v)=>v?`<div class="ri"><span>${k}</span><b>${v}</b></div>`:'';
- const t=secs(g);
+ const t=secs(g),lg=logoSrc(g),ls=g.logoSize||100;
  return `<div class="wp">${ws?`<img class="wpi" src="${esc(ws)}" alt="" onerror="rpFb(this)" data-cv="${esc(cv)}">`:cv?`<img class="wpi blur" src="${esc(cv)}" alt="">`:''}<div class="wpg"></div></div>
- <div class="rpc"><div class="rpt"><h2>${esc(g.name)}</h2><div class="rps">${esc(canonP(g.platform)||'')}${g.released?(g.platform?' · ':'')+new Date(g.released*1000).getFullYear():''}${ins?' · Instalado':''}</div></div>
+ <div class="rpc"><div class="rpt">${lg?`<h2 class="hl"><img class="rlogo" id="rlogo" src="${esc(lg)}" alt="${esc(g.name)}" style="${logoStyle(ls)}" onerror="this.parentElement.innerHTML=this.alt"></h2>`:`<h2>${esc(g.name)}</h2>`}<div class="rps">${esc(canonP(g.platform)||'')}${g.released?(g.platform?' · ':'')+new Date(g.released*1000).getFullYear():''}${ins?' · Instalado':''}</div></div>
  <div class="rpg">${row('Lançamento',g.released?dpt(g.released):'')}${row('Nota',g.rating?starsH(g.rating)+` <small>${g.rating.toString().replace('.',',')}</small>`:'')}${row('Metacritic',g.meta?`<span class="mcv ${mcl(g.meta)}">${g.meta}</span>`:'')}${row('Status',esc(g.status||'Backlog'))}${row('Zerado em',g.status==='Zerado'&&g.finished?dpt(g.finished):'')}${row('Tempo de jogo',t?fmt(t):'')}${row('Último jogo',g.last_played?dpt(g.last_played):'')}</div>
  ${(g.genres||[]).length?`<div class="rpq">${g.genres.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div>`:''}
  ${g.review?`<p class="rpr">${esc(g.review)}</p>`:''}
- <div class="rpb"><button class="p" data-rp="play">${run?'Em execução':'▶ Jogar'}</button><button data-rp="edit">Editar</button><button data-rp="fav">${g.fav?'♥ Favorito':'♡ Favoritar'}</button></div></div>`}
+ <div class="rpb"><button class="p" data-rp="play">${run?'Em execução':'▶ Jogar'}</button><button data-rp="edit">Editar</button><button data-rp="fav">${g.fav?'♥ Favorito':'♡ Favoritar'}</button>${lg?`<label class="lsz" title="Tamanho da logo">Logo <input type="range" id="lsz" min="40" max="220" step="5" value="${ls}" aria-label="Tamanho da logo"><b id="lszv">${ls}%</b></label>`:''}</div></div>`}
+const logoSrc=g=>g.logo?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.logo):'';
+const logoStyle=s=>`max-height:${Math.round(220*s/100)}px;max-width:min(${Math.round(560*s/100)}px,92%)`;
+let LSZT=null;
+document.addEventListener('input',e=>{if(e.target.id!=='lsz')return;const v=+e.target.value,im=$('#rlogo'),g=S.games.find(x=>x.id===LSEL);if(!g)return;$('#lszv').textContent=v+'%';if(im)im.style.cssText=logoStyle(v);g.logoSize=v;clearTimeout(LSZT);LSZT=setTimeout(()=>api('save',{id:g.id,logoSize:v}),400)});
 function rpFb(i){const c=i.dataset.cv;i.onerror=null;if(c){i.src=c;i.classList.add('blur')}else i.remove()}
 function renderLv(l,grid){
  if(!l.length){grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;return}
@@ -546,7 +555,7 @@ function paintD(){
  $('#d_cv').innerHTML=pendCover?`<img src="${pendCover}" alt="">`:src?`<img src="${esc(src)}" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:'';
  $('#f_status').innerHTML=ST.map(s=>`<option${s===status?' selected':''}>${s}</option>`).join('');
  $('#f_stars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="sb" data-r="${n}" aria-label="${n} estrelas"><i class="bg">★</i><i class="fg" style="width:${Math.max(0,Math.min(1,rating-(n-1)))*100}%"><b>★</b></i></button>`).join('')+`<span class="mu" id="rtxt" style="margin-left:8px">${rating?String(rating).replace('.',','):'Sem nota'}</span>`;
- $('#d_sgbtn').hidden=!cur;$('#d_wpbtn').hidden=!cur;$('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
+ $('#d_sgbtn').hidden=!cur;$('#d_wpbtn').hidden=!cur;$('#d_lgbtn').hidden=!cur;$('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
  exeUi();genreUi();dropHint()}
 function openG(id,pre){
  const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
@@ -588,26 +597,26 @@ function toCover(src){return new Promise((ok,no)=>{const i=new Image();i.onload=
  if(w/h>r){const nw=h*r;sx=(w-nw)/2;w=nw}else{const nh=w/r;sy=(h-nh)/2;h=nh}c.getContext('2d').drawImage(i,sx,sy,w,h,0,0,600,900);ok(c.toDataURL('image/jpeg',.92))};i.onerror=no;i.src=src})}
 async function setCover(d){pendCover=null;try{await api('cover_data',{id:cur,data:await toCover(d)});await load();paintD()}catch{note('Não consegui usar essa imagem.')}}
 const SGD=$('#sgd');let SGS={gen:0};
-async function sgdb(){
- const g=curG();SGS={id:cur,page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
- $('#sg_t').textContent='Capas';$('#sg_q').value=g.sgname||g.name||'';$('#sg_g').innerHTML='';$('#sg_i').textContent='Buscando...';
+async function sgdb(kind){
+ const g=curG();SGS={id:cur,kind:kind==='logo'?'logo':'cover',page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
+ $('#sg_t').textContent=SGS.kind==='logo'?'Logos':'Capas';$('#sg_g').classList.toggle('logos',SGS.kind==='logo');$('#sg_rmlogo').hidden=!(SGS.kind==='logo'&&g.logo);$('#sg_q').value=g.sgname||g.name||'';$('#sg_g').innerHTML='';$('#sg_i').textContent='Buscando...';
  SGD.showModal();sgLoad(0)}
 async function sgLoad(page){
  if(page===0){const gg=S.games.find(x=>x.id===SGS.id),q=$('#sg_q').value.trim();if(gg){if(q&&nz(q)!==nz(gg.name))gg.sgname=q;else delete gg.sgname}}
  const gen=SGS.gen,all=$('#sg_all').checked;
  SGS.page=page;SGS.n=0;SGS.loading=1;$('#sg_g').innerHTML='';$('#sg_g').scrollTop=0;sgUi();
  for(let p=page;;p++){
-  const r=await api('sgdb',{id:SGS.id,page:p,q:$('#sg_q').value.trim()});
+  const r=await api('sgdb',{id:SGS.id,page:p,q:$('#sg_q').value.trim(),kind:SGS.kind});
   if(gen!==SGS.gen)return;
   if(r.error){SGS.loading=0;$('#sg_i').textContent=r.error;return}
-  $('#sg_g').insertAdjacentHTML('beforeend',(r.items||[]).map(x=>`<img src="${esc(x.thumb)}" data-u="${esc(x.url)}" loading="lazy" alt="Capa" tabindex="0">`).join(''));
+  $('#sg_g').insertAdjacentHTML('beforeend',(r.items||[]).map(x=>`<img src="${esc(x.thumb)}" data-u="${esc(x.url)}" loading="lazy" alt="${SGS.kind==='logo'?'Logo':'Capa'}" tabindex="0">`).join(''));
   SGS.n+=(r.items||[]).length;SGS.pages=r.pages;SGS.total=r.total;SGS.more=r.more;sgUi();
   if(!all||!r.more)break}
  SGS.loading=0;sgUi();
- if(!SGS.n)$('#sg_i').textContent='Nenhuma capa encontrada para esse jogo.'}
+ if(!SGS.n)$('#sg_i').textContent=SGS.kind==='logo'?'Nenhum logo encontrado para esse jogo.':'Nenhuma capa encontrada para esse jogo.'}
 function sgUi(){
  const all=$('#sg_all').checked,t=SGS.total;
- if(SGS.n||t===0)$('#sg_i').textContent=t!=null?(all&&SGS.loading?`${SGS.n} de ${t} capas · carregando...`:`${t} capas`):`${SGS.n} capas`;
+ if(SGS.n||t===0)$('#sg_i').textContent=t!=null?(all&&SGS.loading?`${SGS.n} de ${t} capas · carregando...`:`${t} ${SGS.kind==='logo'?'logos':'capas'}`):`${SGS.n} ${SGS.kind==='logo'?'logos':'capas'}`;
  $('#sg_prev').hidden=$('#sg_next').hidden=$('#sg_p').hidden=all;
  $('#sg_prev').disabled=SGS.page===0||!!SGS.loading;
  $('#sg_next').disabled=!SGS.more||!!SGS.loading;
@@ -617,6 +626,7 @@ $('#sg_prev').onclick=()=>{SGS.gen++;sgLoad(SGS.page-1)};
 $('#sg_next').onclick=()=>{SGS.gen++;sgLoad(SGS.page+1)};
 SGD.addEventListener('close',()=>{SGS.gen++});
 $('#sg_g').onclick=async e=>{const i=e.target.closest('img[data-u]');if(!i)return;
+ if(SGS.kind==='logo'){$('#sg_i').textContent='Aplicando logo...';const r=await api('logo_set',{id:SGS.id,url:i.dataset.u});if(r.error){$('#sg_i').textContent=r.error;return}SGS.gen++;SGD.close();await load();return}
  $('#sg_i').textContent='Aplicando capa...';
  const r=await api('fetch_img',{url:i.dataset.u});
  if(r.error){$('#sg_i').textContent=r.error;return}
@@ -888,6 +898,7 @@ viewUi();
 movable(D,$('#d_h'));movable(SGD,document.querySelector('#sgd .sgh'));movable(AD,document.querySelector('#ad .sgh'));
 $('#d_x').onclick=()=>D.close();
 $('#sg_go').onclick=()=>{SGS.gen++;sgLoad(0)};
+$('#sg_rmlogo').onclick=async()=>{await api('logo_clear',{id:SGS.id});SGS.gen++;SGD.close();await load()};
 $('#sg_q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#sg_go').click()}};
 const GDEF=['Ação','Action RPG','Aventura','Corrida','Hack and slash','Indie','JRPG','Luta','Metroidvania','Mundo aberto','Plataforma','RPG','Soulslike','Terror','Tiro'];
 const gsel=()=>$('#f_genres').value.split(',').map(x=>x.trim()).filter(Boolean);
