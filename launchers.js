@@ -2,9 +2,9 @@
 // Tudo e lido do proprio computador: nenhuma conta, chave ou login.
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 
-const NAMES = ['Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass', 'Rockstar Games'];
+const NAMES = ['Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass'];
 // Todos os launchers de PC que podem ir para a barra lateral (os que nao tem deteccao so servem de filtro)
-const CATALOG = ['Steam', 'Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass', 'Rockstar Games', 'itch.io', 'Amazon Games', 'Riot Games', 'Humble Bundle'];
+const CATALOG = ['Steam', 'Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass', 'itch.io', 'Amazon Games', 'Riot Games', 'Humble Bundle'];
 const SIDE_DEF = ['Steam', 'Epic Games', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass'];
 const SKIP_EXE = /unins|setup|crash|report|redist|vcredist|dxsetup|dotnet|launcherhelper|gamelaunchhelper|easyanticheat|eac|battleye|cefsub|updater|support|prereq|install/i;
 
@@ -147,19 +147,10 @@ async function gog() {
   }
   return out;
 }
-async function rockstar() {
-  const out = [], txt = process.env.RG_ROCK_TEXT !== undefined ? process.env.RG_ROCK_TEXT : await reg(['HKLM\\SOFTWARE\\WOW6432Node\\Rockstar Games', '/s']);
-  for (const b of regBlocks(txt)) {
-    const name = b.key.split('\\').pop(), dir = (b.v['installfolder'] || '').replace(/\//g, SEP).replace(/[\\/]+$/, '');
-    if (/^(rockstar games|launcher|social club|rockstar games launcher)$/i.test(name) || !dir || !isDir(dir)) continue;
-    out.push({ launcher: 'Rockstar Games', key: 'rockstar:' + name, name: clean(name), exe: guessExe(dir), uri: '' });
-  }
-  return out;
-}
 
 async function scanAll(only) {
   const res = {};
-  for (const [n, f] of [['Epic Games', async () => epic()], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass], ['Rockstar Games', rockstar]]) {
+  for (const [n, f] of [['Epic Games', async () => epic()], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass]]) {
     if (only && !only.includes(n)) continue;
     try { res[n] = await f(); } catch (e) { res[n] = []; res[n + '_err'] = e.message; }
   }
