@@ -343,7 +343,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 .t5h{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f5c542}.t5sub{font-size:12.5px;color:var(--mu);margin-bottom:6px}
 .t5r{display:flex;justify-content:center;gap:var(--gx,18px);flex-wrap:nowrap;width:100%;padding-top:34px}
 .t5s{position:relative;flex:0 0 min(var(--w,150px),calc((100% - 4*var(--gx,18px))/5));min-width:0}.t5s .card:hover{transform:none}
-.t5s img{-webkit-user-drag:none;user-select:none}.t5s[draggable=true]{cursor:grab}.t5s.drag{opacity:.35}
+.t5s img{-webkit-user-drag:none;user-select:none}.t5s[data-t5]{cursor:grab}.t5s.drag{opacity:.35}
 .t5s.over::before{content:"";position:absolute;left:-11px;top:0;bottom:0;width:4px;border-radius:3px;background:var(--ac)}
 .t5s.gold .cv,.t5s.gold .card:hover .cv{outline:3px solid #f5c542;outline-offset:0;box-shadow:0 0 22px #f5c54299}
 .t5s .crown{position:absolute;left:50%;top:-31px;transform:translateX(-50%);filter:drop-shadow(0 2px 4px #0008);pointer-events:none}
@@ -400,7 +400,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="acts2"><button class="p" id="f_exeb" onclick="pickExe()">Adicionar .exe</button><button onclick="playFrom()">▶ Jogar</button><span class="sp"></span><button id="del" onclick="delG()">Excluir</button><button onclick="D.close()">Cancelar</button><button class="p" onclick="saveG()">Salvar</button></div>
 <div class="pdl" id="f_pl" role="listbox" hidden></div>
 </dialog>
-<dialog id="t5d"><div class="sgh"><b>Escolher jogo para o Top 5</b><input id="t5_q" placeholder="Buscar jogo" aria-label="Buscar jogo"><span class="sp"></span><button type="button" onclick="T5D.close()">Cancelar</button></div><div class="lg" id="t5_g"></div></dialog>
+<dialog id="t5d"><div class="sgh"><b>Escolher jogo para o Top 5</b><input id="t5_q" placeholder="Buscar jogo" aria-label="Buscar jogo"><span class="sp"></span><button type="button" id="t5_new" title="Cadastrar um jogo que ainda não está na sua biblioteca">+ Novo jogo</button><button type="button" onclick="T5D.close()">Cancelar</button></div><div class="lg" id="t5_g"></div></dialog>
 <dialog id="pd"><div class="dh" id="pd_h"><b id="pd_t">Adicionar launcher</b><button type="button" class="xb" id="pd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="pdbody"><p class="mu" id="pd_p" style="margin:0 0 12px"></p><div class="pgrid" id="pd_l"></div></div>
 <div class="acts2"><span class="mu" id="pd_n"></span><span class="sp"></span></div></dialog>
@@ -448,8 +448,8 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 
 <dialog id="xd"><div class="sgh" id="xd_h"><b>Executável do jogo</b><span class="sp"></span><button type="button" class="xb" id="xd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="xdb"><label class="cap" for="xd_t">Destino</label><div class="row"><input id="xd_t" placeholder="Caminho do .exe ou .bat" spellcheck="false"><button type="button" id="xd_tb">Procurar...</button></div>
-<label class="cap" for="xd_c">Iniciar em</label><div class="row"><input id="xd_c" placeholder="Pasta de trabalho (preenchida sozinha)" spellcheck="false"><button type="button" id="xd_cb">Procurar...</button></div>
-<label class="cap" for="xd_a">Opções de inicialização</label><div class="row"><input id="xd_a" placeholder="Opcional. Ex.: -fullscreen ou o caminho da ROM" spellcheck="false"><button type="button" id="xd_rom" hidden>Escolher ROM...</button></div>
+<label class="cap" for="xd_c">Iniciar em</label><div class="row"><input id="xd_c" spellcheck="false"><button type="button" id="xd_cb">Procurar...</button></div>
+<label class="cap" for="xd_a">Opções de inicialização</label><div class="row"><input id="xd_a" spellcheck="false"><button type="button" id="xd_rom" hidden>Escolher ROM...</button></div>
 <div id="xd_pw" hidden><label class="cap" for="xd_p">Processo do jogo</label><div class="row"><input id="xd_p" placeholder="Ex.: Jogo.exe (opcional)" spellcheck="false"></div><div class="mu">Para um .bat/.cmd, é o .exe que ele abre. Sem isso o tempo de jogo não é contado.</div></div>
 <div class="acts2"><button type="button" id="xd_rm">Remover</button><span class="sp"></span><button type="button" id="xd_cancel">Cancelar</button><button type="button" class="p" id="xd_ok">OK</button></div></div></dialog>
 <dialog id="wpd"><div class="sgh"><b>Wallpaper · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go" class="p">Buscar no Google</button><span class="sp"></span><button id="wp_rm">Remover wallpaper</button><button type="button" class="xb" onclick="WPD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -745,7 +745,7 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);const lk=!!(b.exe||(prev&&(prev.appid||prev.lkey)));if(lk)await sideEnsure(pn,true);else if(prev&&linkedG(prev)&&canonP(prev.platform)===pn)await sidePrune(pn,prev.id);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur;NEWFORLIST=false;D.close();if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
+ const r=await api('save',b);const lk=!!(b.exe||(prev&&(prev.appid||prev.lkey)));if(lk)await sideEnsure(pn,true);else if(prev&&linkedG(prev)&&canonP(prev.platform)===pn)await sidePrune(pn,prev.id);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur,n5=NEWFORT5&&!cur;NEWFORLIST=false;NEWFORT5=false;D.close();if(n5)await api('top5_set',{ids:[...top5(),r.id].slice(0,5)});if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
  await sidePrune(p,cur);
@@ -1079,18 +1079,18 @@ $('#ad_g').onclick=e=>{const it=e.target.closest('.ai');if(!it||it.classList.con
 $('#ad_ok').onclick=async()=>{const ids=[...ADS];AD.close();
  if(LDL.id){await api('list_add',{id:LDL.id,ids});await load()}else{LDL.ids.push(...ids.filter(i=>!LDL.ids.includes(i)));listUi()}};
 $('#ld_add').onclick=openPicker;
-let NEWFORLIST=false;$('#ad_new').onclick=()=>{AD.close();NEWFORLIST=true;openG()};D.addEventListener('close',()=>setTimeout(()=>{NEWFORLIST=false},50));
+let NEWFORLIST=false,NEWFORT5=false;$('#ad_new').onclick=()=>{AD.close();NEWFORLIST=true;openG()};D.addEventListener('close',()=>setTimeout(()=>{NEWFORLIST=false;NEWFORT5=false},50));
 
 // ---- Top 5 jogos da vida ----
 const t5on=()=>FAV&&VIEW!=='list'&&F.smart!=='lists'&&!BYL()&&!$('#q').value.trim();
 const top5=()=>{const ok=new Set(S.games.map(g=>g.id));return (S.top5||[]).filter(id=>ok.has(id)).slice(0,5)};
 const CROWN='<svg class="crown" viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M2.5 18.5h19L23 6.5l-5.2 4.3L12 3 6.2 10.8 1 6.5z" fill="#f5c542" stroke="#b8860b" stroke-width="1.2" stroke-linejoin="round"/><rect x="2.5" y="19.6" width="19" height="2.6" rx="1.2" fill="#f5c542" stroke="#b8860b" stroke-width="1.2"/></svg>';
 function t5Els(ids,nOther){
- const mk=(key,h)=>{const o=CC.get(key);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;CC.set(key,{el,h});return el};
+ const mk=(key,h)=>{const o=CC.get(key);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;const rw=el.querySelector('.t5r');if(rw)sortable(rw,'.t5s[data-t5]',its=>t5Save(its.map(i=>i.dataset.t5)),{axis:'x'});CC.set(key,{el,h});return el};
  const slots=[0,1,2,3,4].map(i=>{const g=S.games.find(x=>x.id===ids[i]);
   if(!g)return `<button type="button" class="t5s t5e" data-t5add="${i}" aria-label="Escolher jogo para a posição ${i+1}"><span>+</span>Escolher jogo</button>`;
-  return `<div class="t5s${i===0?' gold':''}" draggable="true" data-t5="${g.id}" data-pos="${i}">${i===0?CROWN:''}${card(g)}<span class="t5n">${i+1}</span><button type="button" class="t5x" data-t5x="${g.id}" title="Tirar do top 5" aria-label="Tirar do top 5">×</button></div>`}).join('');
- const out=[mk('h:t5',`<div class="t5"><div class="t5h">Top 5 jogos da vida</div><div class="t5sub">Arraste as capas para mudar a ordem</div><div class="t5r">${slots}</div></div>`)];
+  return `<div class="t5s${i===0?' gold':''}" data-t5="${g.id}" data-pos="${i}">${i===0?CROWN:''}${card(g)}<span class="t5n">${i+1}</span><button type="button" class="t5x" data-t5x="${g.id}" title="Tirar do top 5" aria-label="Tirar do top 5">×</button></div>`}).join('');
+ const out=[mk('h:t5',`<div class="t5"><div class="t5h">Top 5 jogos da vida</div><div class="t5sub">Clique, segure e arraste as capas para mudar a ordem</div><div class="t5r">${slots}</div></div>`)];
  if(nOther)out.push(mk('h:t5o','<div class="t5o">Outros favoritos</div>'));return out}
 async function t5Save(ids){S.top5=ids;render();await api('top5_set',{ids});await load()}
 const T5D=$('#t5d');let T5POS=0;
@@ -1098,17 +1098,10 @@ function t5Ui(){const q=nz($('#t5_q').value).split(/\s+/).filter(Boolean),have=n
  const l=S.games.filter(g=>!g.hidden&&q.every(t=>(nz(g.name)+' '+nz(g.sortname)).includes(t))).sort(NC);
  $('#t5_g').innerHTML=l.map(g=>{const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base,inl=have.has(g.id);
   return `<div class="ai${inl?' dim':''}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${inl?'<span class="run">No top 5</span>':''}</div><div class="n">${esc(g.name)}</div></div>`}).join('')||'<div class="empty">Nenhum jogo encontrado.</div>'}
-$('#t5_q').oninput=t5Ui;
+$('#t5_q').oninput=t5Ui;$('#t5_new').onclick=()=>{T5D.close();NEWFORT5=true;openG()};
 $('#t5_g').onclick=e=>{const it=e.target.closest('.ai');if(!it||it.classList.contains('dim'))return;T5D.close();t5Save([...top5(),it.dataset.id].slice(0,5))};
-let T5DRAG=null;
-const t5Slot=e=>e.target.closest&&e.target.closest('.t5s');
 $('#grid').addEventListener('click',e=>{const x=e.target.closest('[data-t5x]');if(x){e.stopPropagation();t5Save(top5().filter(id=>id!==x.dataset.t5x));return}
  const a=e.target.closest('[data-t5add]');if(a){e.stopPropagation();T5POS=+a.dataset.t5add;$('#t5_q').value='';t5Ui();T5D.showModal();$('#t5_q').focus()}},true);
-$('#grid').addEventListener('dragstart',e=>{const s=t5Slot(e);if(!s||!s.dataset.t5)return;T5DRAG=s.dataset.t5;s.classList.add('drag');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',T5DRAG)}catch{}});
-$('#grid').addEventListener('dragover',e=>{if(!T5DRAG)return;const s=t5Slot(e);if(!s)return;e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.t5s.over').forEach(n=>n!==s&&n.classList.remove('over'));s.classList.add('over')});
-$('#grid').addEventListener('dragend',()=>{T5DRAG=null;document.querySelectorAll('.t5s.over,.t5s.drag').forEach(n=>n.classList.remove('over','drag'))});
-$('#grid').addEventListener('drop',e=>{if(!T5DRAG)return;const s=t5Slot(e);if(!s)return;e.preventDefault();
- const ids=top5().filter(id=>id!==T5DRAG),pos=Math.min(+s.dataset.pos,ids.length);ids.splice(pos,0,T5DRAG);T5DRAG=null;t5Save(ids)});
 function renderGroups(grid){
  grid.innerHTML=S.lists.map(l=>{const gs=l.ids.map(id=>S.games.find(g=>g.id===id)).filter(Boolean).slice(0,4);
   const cells=gs.map((g,i)=>{const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
