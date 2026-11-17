@@ -596,6 +596,20 @@ ipcMain.handle('api', async (_e, p, b) => {
       const f = r.filePaths[0];
       return { data: `data:${MIME[path.extname(f).slice(1).toLowerCase()] || 'image/png'};base64,${fs.readFileSync(f).toString('base64')}` };
     }
+    case 'img_b64': {
+      try {
+        const u = String(b.url || ''); let buf, ct = 'image/jpeg';
+        if (/^file:/i.test(u)) { const p = require('url').fileURLToPath(u); if (path.dirname(p).toLowerCase() !== COVERS().toLowerCase()) return { error: 'x' }; buf = fs.readFileSync(p); ct = /\.png$/i.test(p) ? 'image/png' : /\.webp$/i.test(p) ? 'image/webp' : 'image/jpeg'; }
+        else { const r = await fetch(u); if (!r.ok) throw 0; ct = r.headers.get('content-type') || ct; buf = Buffer.from(await r.arrayBuffer()); }
+        return { data: `data:${ct};base64,${buf.toString('base64')}` };
+      } catch { return { error: 'img' }; }
+    }
+    case 'save_img': {
+      const ext = b.ext === 'jpg' ? 'jpg' : 'png', nm = String(b.name || 'lista').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || 'lista';
+      const r = await dialog.showSaveDialog(win, { defaultPath: path.join(app.getPath('pictures'), nm + '.' + ext), filters: [{ name: ext === 'jpg' ? 'JPEG' : 'PNG', extensions: [ext] }] });
+      if (r.canceled || !r.filePath) return { canceled: true };
+      fs.writeFileSync(r.filePath, Buffer.from(String(b.data).split(',')[1] || '', 'base64')); shell.showItemInFolder(r.filePath); return { ok: true, path: r.filePath };
+    }
     case 'fetch_img': {
       try { const r = await fetch(b.url); if (!r.ok) throw 0; return { data: `data:${r.headers.get('content-type') || 'image/jpeg'};base64,${Buffer.from(await r.arrayBuffer()).toString('base64')}` }; }
       catch { return { error: 'Falha ao baixar a imagem.' }; }

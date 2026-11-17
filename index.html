@@ -229,6 +229,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 
 /* ---- 1.4.0: modo lista ---- */
 #grid.lvw{display:flex;padding:0;gap:0;overflow:hidden;height:100%}
+.expo{display:inline-flex;gap:6px}
 .lgh{display:flex;align-items:center;gap:8px;padding:10px 4px 4px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}.lgh b{font-weight:700}.lgh em{font-style:normal;font-size:11px;background:color-mix(in srgb,var(--tx) 10%,transparent);padding:1px 8px;border-radius:99px}.lgh.k{cursor:pointer}.lgh.k:hover{color:var(--ac)}
 #grid.bylist .gh{grid-column:1/-1;padding:18px 2px 0;border-bottom:1px solid var(--ln);margin-bottom:-4px}#grid.bylist .gh:first-child{padding-top:0}
 .lv .lgh{padding:12px 6px 4px}
@@ -310,7 +311,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div id="yp" class="pop" hidden><div class="yh"><button id="y_prev" aria-label="Anos anteriores">‹</button><b id="y_rng"></b><button id="y_next" aria-label="Próximos anos">›</button></div><div class="yg" id="y_g"></div><div class="row"><button id="y_none"></button><button id="y_clr">Todos os anos</button></div></div>
 <div id="fp" class="pop" hidden style="width:260px"><div id="fp_l"></div></div>
 <div id="sbz" hidden><div class="zl"></div><div class="zr"></div></div>
-<dialog id="ld"><div class="sgh"><input id="ld_name" class="t" placeholder="Nome da lista" aria-label="Nome da lista"><span class="mu" id="ld_n"></span><span class="sp"></span><button id="ld_add">+ Adicionar jogos</button><label class="ck"><input type="checkbox" id="ld_rank">Mostrar ranking</label><button id="ld_del">Excluir lista</button><button class="p" id="ld_new" hidden>Criar lista</button><button type="button" class="xb" onclick="LD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><p class="mu" style="margin:10px 18px 0">Segure e arraste as capas para montar seu ranking (ou use Alt + ← →). O 1º, 2º e 3º lugares ganham ouro, prata e bronze.</p><div class="lg" id="ld_g"></div></dialog>
+<dialog id="ld"><div class="sgh"><input id="ld_name" class="t" placeholder="Nome da lista" aria-label="Nome da lista"><span class="mu" id="ld_n"></span><span class="sp"></span><button id="ld_add">+ Adicionar jogos</button><button type="button" id="ld_exp" title="Salvar a lista como imagem">Exportar imagem</button><span id="ld_expo" class="expo" hidden><button type="button" data-x="png">PNG</button><button type="button" data-x="jpg">JPEG</button></span><label class="ck"><input type="checkbox" id="ld_rank">Mostrar ranking</label><button id="ld_del">Excluir lista</button><button class="p" id="ld_new" hidden>Criar lista</button><button type="button" class="xb" onclick="LD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><p class="mu" style="margin:10px 18px 0">Segure e arraste as capas para montar seu ranking (ou use Alt + ← →). O 1º, 2º e 3º lugares ganham ouro, prata e bronze.</p><div class="lg" id="ld_g"></div></dialog>
 <dialog id="ad"><div class="sgh"><b>Adicionar jogos à lista</b><input id="ad_q" placeholder="Buscar jogo" aria-label="Buscar jogo para adicionar"><span class="mu" id="ad_n"></span><span class="sp"></span><button type="button" id="ad_new" title="Cadastrar um jogo que ainda não está na sua biblioteca">+ Novo jogo</button><button onclick="AD.close()">Cancelar</button><button class="p" id="ad_ok" disabled>Adicionar</button></div><div class="lg" id="ad_g"></div></dialog>
 <dialog id="d">
 <div class="dh" id="d_h"><b id="d_title">Adicionar jogo</b><button type="button" id="d_x" class="xb" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -867,6 +868,49 @@ LG.onclick=async e=>{const rm=e.target.closest('[data-rm]');
  if(rm){if(!await confirmX('Remover este jogo da lista?'))return;const id=rm.dataset.rm;
   if(LDL.id){await api('list_toggle',{list:LDL.id,game:id});await load()}else{LDL.ids=LDL.ids.filter(x=>x!==id);listUi()}return}
  const it=e.target.closest('.li');if(it)openG(it.dataset.id)};
+
+// ---- Exportar lista como imagem ----
+const loadImg=u=>new Promise(ok=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=u});
+async function gameImg(g){
+ const tries=[];if(g.cover)tries.push(coverSrc(g));else{if(g.capsule)tries.push(g.capsule);if(g.appid)tries.push(`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`,`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/header.jpg`)}
+ for(const u of tries){const r=await api('img_b64',{url:u});if(r.data){const i=await loadImg(r.data);if(i)return i}}return null}
+function fitTxt(c,t,w){if(c.measureText(t).width<=w)return t;while(t.length>1&&c.measureText(t+'…').width>w)t=t.slice(0,-1);return t+'…'}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+async function exportList(fmt){
+ const gs=LDL.ids.map(id=>S.games.find(g=>g.id===id)).filter(Boolean);if(!gs.length)return note('A lista está vazia.');
+ const btn=$('#ld_expo');btn.querySelectorAll('button').forEach(b=>b.disabled=true);$('#ld_n').textContent='Gerando imagem...';
+ try{
+  const imgs=await Promise.all(gs.map(gameImg));
+  const ac=(getComputedStyle(document.documentElement).getPropertyValue('--acb')||'#1f9d6b').trim()||'#1f9d6b';
+  const cols=Math.min(gs.length,gs.length<=4?gs.length:gs.length<=10?5:6),cw=260,ch=390,gap=26,pad=64,nameH=58;
+  const W=Math.max(pad*2+cols*cw+(cols-1)*gap,900),rows=Math.ceil(gs.length/cols),headH=196,H=headH+rows*(ch+nameH+gap)+pad+30;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const c=cv.getContext('2d');
+  const bg=c.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#141b2b');bg.addColorStop(1,'#0b0f19');c.fillStyle=bg;c.fillRect(0,0,W,H);
+  c.fillStyle=ac;c.fillRect(pad,pad+6,8,64);
+  c.fillStyle='#f2f5fa';c.font='800 56px "Segoe UI",Arial,sans-serif';c.textBaseline='alphabetic';c.fillText(fitTxt(c,(LDL.name||'').trim()||'Minha lista',W-pad*2-30),pad+26,pad+54);
+  c.fillStyle='#8b93a5';c.font='500 22px "Segoe UI",Arial,sans-serif';c.fillText(`${gs.length} ${gs.length===1?'jogo':'jogos'}`,pad+26,pad+92);
+  const gw=cols*cw+(cols-1)*gap,x0=Math.round((W-gw)/2);
+  gs.forEach((g,i)=>{
+   const x=x0+(i%cols)*(cw+gap),y=headH+Math.floor(i/cols)*(ch+nameH+gap);
+   c.save();rr(c,x,y,cw,ch,14);c.clip();c.fillStyle='#232a3b';c.fillRect(x,y,cw,ch);
+   const im=imgs[i];
+   if(im){const s=Math.max(cw/im.width,ch/im.height),w=im.width*s,h=im.height*s;c.drawImage(im,x+(cw-w)/2,y+(ch-h)/2,w,h)}
+   else{c.fillStyle='#8b93a5';c.font='700 90px "Segoe UI",Arial';c.textAlign='center';c.textBaseline='middle';c.fillText((g.name||'?')[0].toUpperCase(),x+cw/2,y+ch/2);c.textAlign='left'}
+   c.restore();c.textBaseline='alphabetic';
+   if(LDL.ranked){const col=i===0?'#f5c542':i===1?'#c9d1dc':i===2?'#d9894b':'#2a3347',tx=i<3?'#15110a':'#f2f5fa';
+    c.fillStyle='#0008';rr(c,x+8,y+8,52,44,10);c.fill();c.fillStyle=col;rr(c,x+8,y+8,50,42,10);c.fill();
+    c.fillStyle=tx;c.font='800 24px "Segoe UI",Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(String(i+1),x+33,y+30);c.textAlign='left';c.textBaseline='alphabetic'}
+   c.fillStyle='#e6eaf2';c.font='600 19px "Segoe UI",Arial';c.fillText(fitTxt(c,g.name||'',cw),x,y+ch+30);
+  });
+  c.fillStyle='#5b647a';c.font='500 16px "Segoe UI",Arial';c.textAlign='right';c.fillText('Registrando Games',W-pad,H-26);
+  const data=cv.toDataURL(fmt==='jpg'?'image/jpeg':'image/png',.93);
+  const r=await api('save_img',{data,ext:fmt,name:(LDL.name||'').trim()||'Minha lista'});
+  if(r.error)note('Não consegui salvar a imagem.');
+ }catch{note('Não consegui gerar a imagem.')}
+ btn.querySelectorAll('button').forEach(b=>b.disabled=false);btn.hidden=true;$('#ld_exp').hidden=false;listUi()}
+$('#ld_exp').onclick=()=>{$('#ld_exp').hidden=true;$('#ld_expo').hidden=false};
+$('#ld_expo').onclick=e=>{const b=e.target.closest('[data-x]');if(b)exportList(b.dataset.x)};
+LD.addEventListener('close',()=>{$('#ld_expo').hidden=true;$('#ld_exp').hidden=false});
 $('#ld_rank').onchange=async()=>{LDL.ranked=$('#ld_rank').checked;LG.classList.toggle('norank',!LDL.ranked);if(LDL.id){await api('list_save',{id:LDL.id,ranked:LDL.ranked});await load()}};
 $('#ld_name').onchange=async()=>{const n=$('#ld_name').value.trim();LDL.name=n;if(LDL.id&&n){await api('list_save',{id:LDL.id,name:n});await load()}};
 $('#ld_name').onkeydown=e=>{if(e.key==='Enter'&&!LDL.id){e.preventDefault();$('#ld_new').click()}};
