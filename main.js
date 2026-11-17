@@ -522,13 +522,16 @@ async function refreshAllInfo() {
 // ---------- Emuladores (PCSX2) ----------
 let emuBusy = false;
 const PS2 = 'PlayStation 2';
-const romTitle = f => { const n = path.basename(f).replace(/\.(iso|chd)$/i, '').replace(/[\[(][^\])]*[\])]/g, ' ').replace(/_+/g, ' ').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim(); return n || path.basename(f).replace(/\.(iso|chd)$/i, ''); };
+const EMU_DEF_FLAGS = ['-batch', '-fullscreen', '-nogui'], EMU_DEF_EXTS = ['.iso', '.chd'];
+const emuFlags = () => { const f = data.emu && data.emu.flags; return Array.isArray(f) ? f : EMU_DEF_FLAGS; };
+const emuExts = () => { const e = data.emu && data.emu.exts; return Array.isArray(e) && e.length ? e : EMU_DEF_EXTS; };
+const emuArgs = (rom, flags) => `"${rom}"${flags.length ? ' ' + flags.join(' ') : ''}`;
+const romTitle = f => { const n = path.basename(f).replace(new RegExp(path.extname(f).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'), '').replace(/[\[(][^\])]*[\])]/g, ' ').replace(/_+/g, ' ').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim(); return n || path.basename(f).replace(/\.(iso|chd)$/i, ''); };
 function walkRoms(dir, depth, out) {
   let es = []; try { es = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
-  for (const e of es) { const p = path.join(dir, e.name); if (e.isFile() && /\.(iso|chd)$/i.test(e.name)) out.push(p); else if (e.isDirectory() && depth < 4 && !/^(\$recycle\.bin|system volume information)$/i.test(e.name)) walkRoms(p, depth + 1, out); }
+  for (const e of es) { const p = path.join(dir, e.name); if (e.isFile() && emuExts().includes(path.extname(e.name).toLowerCase())) out.push(p); else if (e.isDirectory() && depth < 4 && !/^(\$recycle\.bin|system volume information)$/i.test(e.name)) walkRoms(p, depth + 1, out); }
   return out;
 }
-const EMU_FLAGS = '-batch -fullscreen -nogui';
 async function emuEnrich(g) {
   try { const r = await mcInfo(g); if (r) { if (r.score != null) { g.meta = r.score; g.meta_url = r.url; } if (r.released && !g.rel_manual) g.released = r.released; if (r.genres && r.genres.length && !(g.genres || []).length) g.genres = r.genres; } } catch {}
   if (data.config.sgdb) {
@@ -546,7 +549,7 @@ async function emuImport() {
     const files = walkRoms(c.roms, 0, []).filter(f => !have.has(f.toLowerCase()));
     const fresh = [];
     for (const f of files) {
-      const g = { id: rid(), name: romTitle(f), platform: PS2, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.pcsx2, cwd: path.dirname(c.pcsx2) + path.sep, args: `"${f}" ${EMU_FLAGS}`, rom: f, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+      const g = { id: rid(), name: romTitle(f), platform: PS2, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.pcsx2, cwd: path.dirname(c.pcsx2) + path.sep, args: emuArgs(f, emuFlags()), rom: f, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
       data.games.push(g); fresh.push(g);
     }
     if (fresh.length) { data.sideCons = data.sideCons || []; if (!data.sideCons.includes(PS2)) data.sideCons.push(PS2); }
@@ -625,9 +628,17 @@ ipcMain.handle('api', async (_e, p, b) => {
       const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Executável ou script', extensions: ['exe', 'bat', 'cmd'] }, { name: 'Todos', extensions: ['*'] }] });
       return { path: r.canceled ? '' : r.filePaths[0] };
     }
-    case 'emu_save': { data.emu = { ...(data.emu || {}), pcsx2: String(b.pcsx2 || '').replace(/^"+|"+$/g, '').trim(), roms: String(b.roms || '').replace(/^"+|"+$/g, '').trim() }; save(); return { ok: true }; }
+    case 'emu_save': {
+      const old = { flags: emuFlags(), pcsx2: (data.emu || {}).pcsx2 };
+      const flags = Array.isArray(b.flags) ? b.flags.map(x => String(x).trim()).filter(Boolean) : old.flags;
+      const exts = Array.isArray(b.exts) ? [...new Set(b.exts.map(x => '.' + String(x).trim().toLowerCase().replace(/^\.+/, '').replace(/[^a-z0-9]/g, '')).filter(x => x.length > 1))] : emuExts();
+      data.emu = { ...(data.emu || {}), pcsx2: String(b.pcsx2 || '').replace(/^"+|"+$/g, '').trim(), roms: String(b.roms || '').replace(/^"+|"+$/g, '').trim(), flags, exts };
+      // jogos importados que ainda usam o comando padrao antigo acompanham a mudanca
+      if (JSON.stringify(old.flags) !== JSON.stringify(flags)) for (const g of data.games) if (g.rom && g.args === emuArgs(g.rom, old.flags)) g.args = emuArgs(g.rom, flags);
+      save(); return { ok: true };
+    }
     case 'emu_import': { if (emuBusy) return { ok: true }; msg = 'PS2: procurando ROMs...'; emuImport(); return { ok: true }; }
-    case 'pick_rom': { const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: data.emu && data.emu.roms && isDirP(data.emu.roms) ? data.emu.roms : undefined, filters: [{ name: 'ROM de PS2', extensions: ['iso', 'chd'] }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
+    case 'pick_rom': { const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: data.emu && data.emu.roms && isDirP(data.emu.roms) ? data.emu.roms : undefined, filters: [{ name: 'ROM de PS2', extensions: emuExts().map(x => x.slice(1)) }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
     case 'startup_set': {
       data.startMin = b.min !== false; save();
       try { app.setLoginItemSettings({ openAtLogin: !!b.on, args: ['--startup'] }); } catch {}
