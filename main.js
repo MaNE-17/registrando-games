@@ -73,6 +73,8 @@ const U = p => path.join(app.getPath('userData'), p);
 const COVERS = () => U('covers');
 const now = () => Math.floor(Date.now() / 1000);
 const rid = () => crypto.randomBytes(5).toString('hex');
+const isDirP = p => { try { return fs.statSync(p).isDirectory(); } catch { return false; } };
+const parseArgs = s => { const o = []; String(s || '').replace(/"([^"]*)"|(\S+)/g, (_, a, b) => { o.push(a !== undefined ? a : b); return ''; }); return o; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const J = async u => { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 const find = id => data.games.find(x => x.id === id);
@@ -533,7 +535,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }
@@ -564,12 +566,29 @@ ipcMain.handle('api', async (_e, p, b) => {
       const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Executável ou script', extensions: ['exe', 'bat', 'cmd'] }, { name: 'Todos', extensions: ['*'] }] });
       return { path: r.canceled ? '' : r.filePaths[0] };
     }
+    case 'pick_dir': {
+      const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'], defaultPath: b.start && fs.existsSync(b.start) ? b.start : undefined });
+      return { path: r.canceled ? '' : r.filePaths[0] };
+    }
     case 'play': {
       if (!g) return {};
       if (g.uri && g.lkey && (launcherInst.has(g.lkey) || !g.exe || !fs.existsSync(g.exe))) {
         if (/^shell:/i.test(g.uri)) cp.spawn('explorer.exe', [g.uri], { detached: true, stdio: 'ignore' }).unref(); else await shell.openExternal(g.uri);
       }
-      else if (g.exe && fs.existsSync(g.exe)) { const e = await shell.openPath(g.exe); if (e) return { error: e }; }
+      else if (g.exe && fs.existsSync(g.exe)) {
+        const cwd = g.cwd && isDirP(g.cwd) ? g.cwd : '', args = parseArgs(g.args);
+        if (args.length || (cwd && cwd.replace(/[\\/]+$/, '').toLowerCase() !== path.dirname(g.exe).toLowerCase())) {
+          const ok = await new Promise(res => {
+            try {
+              const bat = /\.(bat|cmd)$/i.test(g.exe);
+              const c = bat ? cp.spawn('cmd.exe', ['/c', '"' + g.exe + '"', ...args.map(a => /\s/.test(a) ? '"' + a + '"' : a)], { cwd: cwd || path.dirname(g.exe), detached: true, stdio: 'ignore', windowsVerbatimArguments: true })
+                : cp.spawn(g.exe, args, { cwd: cwd || path.dirname(g.exe), detached: true, stdio: 'ignore' });
+              c.once('error', () => res(false)); c.once('spawn', () => { c.unref(); res(true); });
+            } catch { res(false); }
+          });
+          if (!ok) { const e = await shell.openPath(g.exe); if (e) return { error: e }; }
+        } else { const e = await shell.openPath(g.exe); if (e) return { error: e }; }
+      }
       else if (g.appid) await shell.openExternal('steam://rungameid/' + g.appid);
       else return { error: 'Vincule o executável (.exe) do jogo para poder jogar por aqui.' };
       if (g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando';
