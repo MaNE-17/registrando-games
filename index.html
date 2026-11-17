@@ -54,7 +54,7 @@ label{display:block;font-size:13px;color:var(--mu);margin:14px 0 5px}label b{col
 .sws{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.swb{width:26px;height:26px;border-radius:50%;padding:0;border:2px solid transparent}
 .swb.on,#cc.on{outline:2px solid var(--tx);outline-offset:2px}#cc{width:30px;height:28px;padding:0;border:0;background:none;border-radius:4px}#hx{width:92px;padding:5px 8px;font-family:ui-monospace,Consolas,monospace;font-size:13px}#hx.on{outline:2px solid var(--tx);outline-offset:1px}
 #sgd{width:min(1040px,96vw);height:min(88vh,860px);padding:0;overflow:hidden}#sgd[open]{display:flex;flex-direction:column}
-.sgh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--ln)}.sgh .sp{flex:1}.sgh input[type=checkbox]{margin-right:6px}
+.sgh{position:relative;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 62px 14px 18px;border-bottom:1px solid var(--ln)}.sgh .sp{flex:1}.sgh input[type=checkbox]{margin-right:6px}
 .sgb{flex:1;overflow:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;align-content:start}
 .sgb img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;cursor:pointer;background:var(--ln)}.sgb img:hover,.sgb img:focus-visible{outline:2px solid var(--ac)}
 #c{width:min(580px,94vw)}#c input[type=checkbox]{width:auto;margin-right:8px}
@@ -277,6 +277,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 .rpb{gap:12px}.rpb button{display:inline-flex;align-items:center;gap:9px;height:46px;padding:0 22px;border-radius:12px;font-size:15px;font-weight:600;background:color-mix(in srgb,var(--bg) 55%,transparent);backdrop-filter:blur(12px);border:1px solid color-mix(in srgb,var(--tx) 16%,transparent)}
 .rpb button:hover{border-color:var(--ac);color:var(--ac)}.rpb button.p{background:var(--acb);color:var(--on);border-color:transparent;padding:0 30px;box-shadow:0 8px 24px color-mix(in srgb,var(--acb) 55%,transparent)}.rpb button.p:hover{filter:brightness(1.1);color:var(--on)}
 .rpb button.on{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 55%,transparent)}
+.sgh>.xb{position:absolute;top:14px;right:16px}
 .tpw{display:grid}.tpw>.tp{grid-area:1/1}#c .tp[hidden]{display:block!important;visibility:hidden}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
@@ -297,7 +298,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <div id="yp" class="pop" hidden><div class="yh"><button id="y_prev" aria-label="Anos anteriores">‹</button><b id="y_rng"></b><button id="y_next" aria-label="Próximos anos">›</button></div><div class="yg" id="y_g"></div><div class="row"><button id="y_none"></button><button id="y_clr">Todos os anos</button></div></div>
 <div id="fp" class="pop" hidden style="width:260px"><div id="fp_l"></div></div>
 <div id="sbz" hidden><div class="zl"></div><div class="zr"></div></div>
-<dialog id="ld"><div class="sgh"><input id="ld_name" class="t" placeholder="Nome da lista" aria-label="Nome da lista"><span class="mu" id="ld_n"></span><span class="sp"></span><button id="ld_add">+ Adicionar jogos</button><label class="ck"><input type="checkbox" id="ld_rank">Mostrar ranking</label><button id="ld_del">Excluir lista</button><button class="p" id="ld_new" hidden>Criar lista</button><button onclick="LD.close()">Fechar</button></div><p class="mu" style="margin:10px 18px 0">Segure e arraste as capas para montar seu ranking (ou use Alt + ← →). O 1º, 2º e 3º lugares ganham ouro, prata e bronze.</p><div class="lg" id="ld_g"></div></dialog>
+<dialog id="ld"><div class="sgh"><input id="ld_name" class="t" placeholder="Nome da lista" aria-label="Nome da lista"><span class="mu" id="ld_n"></span><span class="sp"></span><button id="ld_add">+ Adicionar jogos</button><label class="ck"><input type="checkbox" id="ld_rank">Mostrar ranking</label><button id="ld_del">Excluir lista</button><button class="p" id="ld_new" hidden>Criar lista</button><button type="button" class="xb" onclick="LD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><p class="mu" style="margin:10px 18px 0">Segure e arraste as capas para montar seu ranking (ou use Alt + ← →). O 1º, 2º e 3º lugares ganham ouro, prata e bronze.</p><div class="lg" id="ld_g"></div></dialog>
 <dialog id="ad"><div class="sgh"><b>Adicionar jogos à lista</b><input id="ad_q" placeholder="Buscar jogo" aria-label="Buscar jogo para adicionar"><span class="mu" id="ad_n"></span><span class="sp"></span><button onclick="AD.close()">Cancelar</button><button class="p" id="ad_ok" disabled>Adicionar</button></div><div class="lg" id="ad_g"></div></dialog>
 <dialog id="d">
 <div class="dh" id="d_h"><b id="d_title">Adicionar jogo</b><button type="button" id="d_x" class="xb" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -329,7 +330,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 </dialog>
 <dialog id="pd"><div class="dh" id="pd_h"><b id="pd_t">Adicionar launcher</b><button type="button" class="xb" id="pd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="pdbody"><p class="mu" id="pd_p" style="margin:0 0 12px"></p><div class="pgrid" id="pd_l"></div></div>
-<div class="acts2"><span class="mu" id="pd_n"></span><span class="sp"></span><button type="button" class="p" id="pd_ok">Fechar</button></div></dialog>
+<div class="acts2"><span class="mu" id="pd_n"></span><span class="sp"></span></div></dialog>
 <dialog id="cf"><div class="dh"><b id="cf_t">Confirmar</b><button type="button" class="xb" id="cf_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="pdbody"><p id="cf_m" style="margin:0;line-height:1.5;white-space:pre-line"></p></div>
 <div class="acts2"><span class="sp"></span><button type="button" id="cf_no">Cancelar</button><button type="button" class="p" id="cf_ok">OK</button></div></dialog>
@@ -364,13 +365,13 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></div>
 </div><p id="c_msg" class="mu"></p><div class="acts"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><span style="flex:1"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
 
-<dialog id="wpd"><div class="sgh"><b>Wallpaper · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go" class="p">Buscar no Google</button><span class="sp"></span><button id="wp_rm">Remover wallpaper</button><button onclick="WPD.close()">Fechar</button></div>
+<dialog id="wpd"><div class="sgh"><b>Wallpaper · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go" class="p">Buscar no Google</button><span class="sp"></span><button id="wp_rm">Remover wallpaper</button><button type="button" class="xb" onclick="WPD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="wpres" id="wp_res"></div>
 <ol class="wpinfo"><li>Escolha a resolução acima. O Google Imagens abre numa janela já filtrada nesse tamanho exato.</li><li>Clique na imagem que você gostou para abri-la e espere carregar.</li><li>Aperte <b>Usar como wallpaper</b> na barra verde que fica embaixo da janela do Google.</li></ol><p class="mu wpm" id="wp_m"></p></dialog>
 <dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span id="sg_i" class="mu"></span><span class="sp"></span><button id="sg_rmlogo" hidden>Remover logo</button>
 <label class="ck"><input type="checkbox" id="sg_all">Mostrar todas</label>
 <button id="sg_prev">‹ Anterior</button><span id="sg_p" class="mu"></span><button id="sg_next">Próxima ›</button>
-<button onclick="SGD.close()">Fechar</button></div><div class="sgb" id="sg_g"></div></dialog>
+<button type="button" class="xb" onclick="SGD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="sgb" id="sg_g"></div></dialog>
 
 <script>
 const $=s=>document.querySelector(s),D=$('#d'),C=$('#c');
@@ -485,7 +486,7 @@ $('#pd_l').onclick=async e=>{const b=e.target.closest('[data-pn]');if(!b)return;
  if(k==='l')S.sidePlats=[...have];else S.sideCons=[...have];platUi();side._h=null;side();
  if(!on&&F.platform===n){F={smart:'all'};render()}
  await api(k==='l'?'side_set':'side_set2',{list:[...have]});if(on&&k==='l')api('launch_scan',{force:true,only:n}).then(()=>load());await load();if(PD_K===k)platUi()};
-$('#pd_ok').onclick=$('#pd_x').onclick=()=>$('#pd').close();
+$('#pd_x').onclick=()=>$('#pd').close();
 movable($('#pd'),$('#pd_h'));
 function togFav(){FAV=!FAV;if(FAV){INST=false;try{localStorage.setItem('inst','0')}catch{}}if(F.smart==='lists')F.smart='all';render()}
 $('#side').onclick=e=>{const t=e.target.closest('[data-k]');if(!t)return;const k=t.dataset.k,v=t.dataset.v;
