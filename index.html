@@ -220,7 +220,7 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 .pgh{grid-column:1/-1;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--mu);margin:10px 2px 0}.pgh:first-child{margin-top:0}
 .pc.has{opacity:1}.pc{width:100%}
 #fp .it.add:last-of-type{}
-#fp .it.add[data-fadd="p"]{border-radius:0;border-top:0}
+
 #side .sh{display:flex;align-items:center;gap:8px;cursor:pointer}#side .sh:hover{color:var(--tx)}#side .sh .tx{flex:1}#side .sh em{font-style:normal;font-weight:600;letter-spacing:0}
 #side .sh .chv{transition:transform .15s;flex:none}#side .sh .chv.c{transform:rotate(-90deg)}
 .nosb #side .sh{display:none}
@@ -326,6 +326,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #c .bdg{font-size:12px;font-weight:650;padding:3px 11px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}#c .bdg.ok{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 12%,transparent)}
 #c .ep .acts{margin-top:10px}#c .ep .mu#emu_msg{margin:8px 0 0;min-height:0}
 #cm{position:fixed;z-index:400;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008}#cm button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:7px;color:#e5484d;font-size:14px}#cm button:hover{background:color-mix(in srgb,#e5484d 14%,transparent)!important;color:#e5484d!important;border:0!important}
+#c .pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#c .pgrid .pc{padding:8px 12px}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -404,9 +405,9 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <section class="tp" id="tp_sgdb" hidden><div class="th"><h3>SteamGridDB</h3><p class="mu">Milhares de capas, logos e artes alternativas. A chave é usada nos botões de buscar capa e logo, e também ao preencher os jogos automaticamente.</p></div>
 <label for="c_sg">Chave de API</label><input id="c_sg" type="password" autocomplete="off"><p class="mu hn"><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank">Obter minha chave</a>. Precisa de uma conta gratuita no site.</p>
 <p class="mu" id="sg_msg"></p><div class="acts"><button onclick="testSg()">Testar chave</button></div></section>
-<section class="tp" id="tp_lch" hidden><div class="th"><h3>Launchers</h3><p class="mu">O app procura sozinho os jogos <b>instalados</b> da Epic Games, Ubisoft Connect, EA app, Battle.net e Game Pass neste computador, sem login e sem chave, ao abrir e a cada poucos minutos.</p></div>
-<div class="note">Jogos que você excluir da biblioteca não voltam sozinhos. Para jogar, o app abre o jogo pelo próprio launcher quando possível. Se algum jogo for detectado errado, edite ou exclua na tela do jogo.</div>
-<p class="mu" id="l_msg"></p><div id="l_list" class="mu"></div>
+<section class="tp" id="tp_lch" hidden><div class="th"><h3>Launchers</h3><p class="mu">Marque os launchers de PC que você usa. Marcado, ele aparece na barra lateral, filtra os jogos dele e o app procura os jogos <b>instalados</b> dele neste computador, sem login e sem chave. Desmarcado, some da barra lateral (os jogos continuam na biblioteca).</p></div>
+<div class="pgrid" id="lch_l"></div>
+<p class="mu" id="l_msg" style="margin-top:12px"></p><div id="l_list" class="mu"></div>
 <div class="acts"><button class="p" id="l_go" onclick="lchScan()">Procurar jogos instalados agora</button></div></section>
 <section class="tp" id="tp_emu" hidden><div class="th"><h3>Emuladores</h3><p class="mu">Escolha o emulador e a pasta das ROMs. O app cria os jogos, preenche o comando de abertura e busca nota, data, capa e logo.</p></div>
 <div class="emus" id="emus" role="tablist" aria-label="Emuladores"><button type="button" class="ec on" data-emu="pcsx2"><b>PCSX2</b><span>PlayStation 2</span></button></div>
@@ -558,19 +559,22 @@ let PD_G=false;
 function platOpen(k,fromGame){PD_K=k;PD_G=!!fromGame;$('#pd_t').textContent=k==='l'?'Adicionar launcher':'Adicionar plataforma';
  $('#pd_p').textContent=fromGame?'Marque a plataforma deste jogo: ela entra na barra lateral e já fica selecionada. Se ela já estiver lá, escolha na lista de plataformas.':k==='l'?'Marque os launchers de PC que você usa. Marcado, ele aparece na barra lateral e filtra os jogos dele. Desmarcado, some da barra lateral (os jogos continuam na biblioteca).':'Marque as plataformas que quer na barra lateral, em "Plataformas". Desmarcado, some da barra lateral (os jogos continuam na biblioteca).';
  platUi();$('#pd').showModal()}
-function platUi(){const have=pdHave();let g=null,html='';
- for(const x of pdItems()){if(x.g!==g&&x.g){g=x.g;html+=`<div class="pgh">${esc(g)}</div>`}html+=`<button type="button" class="pc${have.has(x.n)?' sel':''}" role="checkbox" aria-checked="${have.has(x.n)}" data-pn="${esc(x.n)}">${x.ic}<em>${esc(dispP(x.n))}</em><span class="ren" role="button" tabindex="0" data-ren="${esc(x.n)}" title="Renomear" aria-label="Renomear ${esc(x.n)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="ck2">${have.has(x.n)?'✓':''}</span></button>`}
- $('#pd_l').innerHTML=html;$('#pd_n').textContent=have.size?have.size+' na barra lateral':'Nenhuma na barra lateral'}
+function pgHtml(items,have){let g=null,html='';
+ for(const x of items){if(x.g!==g&&x.g){g=x.g;html+=`<div class="pgh">${esc(g)}</div>`}html+=`<button type="button" class="pc${have.has(x.n)?' sel':''}" role="checkbox" aria-checked="${have.has(x.n)}" data-pn="${esc(x.n)}">${x.ic}<em>${esc(dispP(x.n))}</em><span class="ren" role="button" tabindex="0" data-ren="${esc(x.n)}" title="Renomear" aria-label="Renomear ${esc(x.n)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="ck2">${have.has(x.n)?'✓':''}</span></button>`}
+ return html}
+function platUi(){const have=pdHave();$('#pd_l').innerHTML=pgHtml(pdItems(),have);$('#pd_n').textContent=have.size?have.size+' na barra lateral':'Nenhuma na barra lateral';lchGrid()}
+function lchGrid(){const e=$('#lch_l');if(!e)return;e.innerHTML=pgHtml(CATALOG.map(n=>({n,g:'',ic:IB(BRAND_D[n])})),new Set(S.sidePlats||SIDE_DEF))}
 async function plRename(n){const cur=dispP(n);const v=await ask('Renomear','Nome que aparece para "'+n+'"','',cur,cur!==n?'Para voltar ao original, digite: '+n:'');if(v===null||v===cur)return;
  await api('pl_rename',{name:n,label:v});S.plNames={...(S.plNames||{})};if(v===n)delete S.plNames[n];else S.plNames[n]=v;await load();platUi()}
-$('#pd_l').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('[data-ren]')){e.preventDefault();e.stopPropagation();plRename(e.target.dataset.ren)}};
-$('#pd_l').onclick=async e=>{const rn=e.target.closest('[data-ren]');if(rn){e.stopPropagation();plRename(rn.dataset.ren);return}const b=e.target.closest('[data-pn]');if(!b)return;const n=b.dataset.pn,k=PD_K,have=pdHave();
+$('#pd_l').onkeydown=$('#lch_l').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('[data-ren]')){e.preventDefault();e.stopPropagation();plRename(e.target.dataset.ren)}};
+const plClick=async e=>{const rn=e.target.closest('[data-ren]');if(rn){e.stopPropagation();plRename(rn.dataset.ren);return}const b=e.target.closest('[data-pn]');if(!b)return;const n=b.dataset.pn,k=PD_K,have=pdHave();
  if(PD_G){if(have.has(n)){note('Essa plataforma já existe, selecione ela na lista de plataformas.');return}
   have.add(n);S.sideCons=[...have];side._h=null;side();$('#pd').close();fillPl(n);await api('side_set2',{list:[...have]});await load();return}
  const on=!have.has(n);on?have.add(n):have.delete(n);
  if(k==='l')S.sidePlats=[...have];else S.sideCons=[...have];platUi();side._h=null;side();
  if(!on&&F.platform===n){F={smart:'all'};render()}
- await api(k==='l'?'side_set':'side_set2',{list:[...have]});if(on&&k==='l')api('launch_scan',{force:true,only:n}).then(()=>load());await load();if(PD_K===k)platUi()};
+ await api(k==='l'?'side_set':'side_set2',{list:[...have]});if(on&&k==='l')api('launch_scan',{force:true,only:n}).then(()=>load());await load();if(PD_K===k)platUi();lchGrid()};
+$('#pd_l').onclick=plClick;$('#lch_l').onclick=e=>{PD_K='l';PD_G=false;return plClick(e)};
 $('#pd_x').onclick=()=>$('#pd').close();
 movable($('#pd'),$('#pd_h'));
 function togFav(){FAV=!FAV;if(FAV){INST=false;try{localStorage.setItem('inst','0')}catch{}}if(F.smart==='lists')F.smart='all';render()}
@@ -811,7 +815,7 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';emuBadge();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;C.showModal()}
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';emuBadge();lchGrid();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
@@ -1065,7 +1069,7 @@ function fOpts(k){const vis=S.games.filter(g=>!g.hidden);
  return genList().map(x=>[x,vis.filter(g=>(g.genres||[]).includes(x)).length,''])}
 function fpUi(){const k=FPK;if(!k)return;
  const on=v=>k==='sort'?$('#sort').value===v:F[k]===v;
- $('#fp_l').innerHTML=(k==='platform'?'<div class="it add" tabindex="0" data-fadd="l"><i style="font-style:normal">Adicionar Launcher</i></div><div class="it add" tabindex="0" data-fadd="p"><i style="font-style:normal">Adicionar Plataforma</i></div>':'')+(k==='sort'?'':`<div class="it ${F[k]?'':'on'}" tabindex="0" data-fv=""><i style="font-style:normal">Todos</i></div>`)+fOpts(k).map(([v,n,ic,lab])=>`<div class="it ${on(v)?'on':''}" tabindex="0" data-fv="${esc(v)}"><i style="font-style:normal">${ic}${esc(lab||v)}</i><span>${n}</span></div>`).join('')}
+ $('#fp_l').innerHTML=(k==='platform'?'<div class="it add" tabindex="0" data-fadd="p"><i style="font-style:normal">Adicionar Plataforma</i></div>':'')+(k==='sort'?'':`<div class="it ${F[k]?'':'on'}" tabindex="0" data-fv=""><i style="font-style:normal">Todos</i></div>`)+fOpts(k).map(([v,n,ic,lab])=>`<div class="it ${on(v)?'on':''}" tabindex="0" data-fv="${esc(v)}"><i style="font-style:normal">${ic}${esc(lab||v)}</i><span>${n}</span></div>`).join('')}
 function togF(e,k){e.stopPropagation();$('#vp').hidden=true;$('#yp').hidden=true;const p=$('#fp');
  if(!p.hidden&&FPK===k){p.hidden=true;return}FPK=k;fpUi();p.hidden=false;placePop(p,e.currentTarget)}
 $('#fp').onclick=e=>{e.stopPropagation();{const fa=e.target.closest('[data-fadd]');if(fa){$('#fp').hidden=true;return platOpen(fa.dataset.fadd)}}const t=e.target.closest('[data-fv]');if(!t)return;const k=FPK,v=t.dataset.fv;
