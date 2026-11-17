@@ -79,6 +79,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const J = async u => { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
+  if (!data.clearLP1) { data.clearLP1 = 1; for (const g of data.games || []) g.last_played = 0; }
   if (!data.fixRomTrack) { data.fixRomTrack = 1; for (const g of data.games || []) if (g.rom) { g.last_played = 0; g.tracked_s = 0; if (g.status === 'Jogando') g.status = 'Backlog'; } }
   for (const g of data.games) if (!g.info4 && g.info3 && g.released) g.info4 = true; }
 function save() { const f = U('backlog_data.json'); fs.writeFileSync(f + '.tmp', JSON.stringify(data, null, 1)); fs.renameSync(f + '.tmp', f); }
