@@ -606,6 +606,10 @@ D.onclick=async e=>{const t=e.target;let b;
  if(b=t.closest('[data-s]')){status=b.dataset.s;if(status==='Zerado'&&!$('#f_fin').value)$('#f_fin').value=new Date().toLocaleDateString('sv-SE');return paintD()}
  if(b=t.closest('[data-r]')){const n=+b.dataset.r,rc=b.getBoundingClientRect(),v=(e.detail&&e.clientX-rc.left<rc.width/2)?n-.5:n;rating=rating===v?0:v;return paintD()}
  if(b=t.closest('[data-l]')){await api('list_toggle',{list:b.dataset.l,game:cur});await load();return paintD()}};
+async function sidePrune(p,exceptId){if(!p||S.games.some(x=>x.id!==exceptId&&canonP(x.platform)===p))return;
+ if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
+ if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
+ if(F.platform===p)F={smart:'all'}}
 async function sideEnsure(p,changed){if(!p||!changed)return;
  if(CATALOG.includes(p)){const l=S.sidePlats||SIDE_DEF;if(!l.includes(p)){S.sidePlats=[...l,p];await api('side_set',{list:S.sidePlats})}}
  else if(CONSOLES.some(c=>c.n===p)){const l=S.sideCons||[];if(!l.includes(p)){S.sideCons=[...l,p];await api('side_set2',{list:S.sideCons})}}}
@@ -617,13 +621,10 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});pendLogo=null;pendCover=null;D.close();load()}
+ const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});pendLogo=null;pendCover=null;D.close();load()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
- if(p&&!S.games.some(x=>x.id!==cur&&canonP(x.platform)===p)){
-  if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
-  if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
-  if(F.platform===p)F={smart:'all'}}
+ await sidePrune(p,cur);
  load()}
 function exeUi(){const v=$('#f_exe').value;$('#f_exeb').textContent=v?'Alterar .exe':'Adicionar .exe';$('#f_exeb').title=v?'Atual: '+v+($('#f_proc').value?' · processo: '+$('#f_proc').value:''):'Escolha o .exe (ou .bat) do jogo para abrir e contar o tempo de jogo'}
 async function pickExe(){const r=await api('pick');if(!r.path)return;$('#f_exe').value=r.path;if(!$('#f_name').value)$('#f_name').value=r.path.split(/[\\/]/).pop().replace(/\.(exe|bat|cmd)$/i,'');
