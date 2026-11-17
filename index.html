@@ -351,6 +351,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 .t5x{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:50%;background:#000a;color:#fff;border:0;padding:0;font-size:16px;line-height:1;display:grid;place-items:center;opacity:0;transition:opacity .15s;cursor:pointer}.t5s:hover .t5x,.t5x:focus-visible{opacity:1}.t5x:hover{background:#e5484d}
 .t5e{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:2/3;border:2px dashed var(--ln);border-radius:10px;background:none;color:var(--mu);cursor:pointer;font-size:13px}.t5e span{font-size:30px;line-height:1}.t5e:hover{border-color:#f5c542;color:#f5c542}
 #grid .t5o{grid-column:1/-1;padding:14px 2px 0;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);border-bottom:1px solid var(--ln);padding-bottom:8px;margin-bottom:-4px}
+#c .pbar{height:10px;border-radius:6px;background:var(--ln);overflow:hidden;margin:10px 0 6px}#c .pfill{height:100%;width:0;background:var(--ac);border-radius:6px;transition:width .2s}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -441,7 +442,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <label class="ck"><input type="checkbox" id="g_min">Abrir minimizado na barra de tarefas ao iniciar com o Windows</label>
 <div class="note">Ao clicar no X, o app fica minimizado na barra de tarefas e continua contando o tempo de jogo. Para fechar de vez, use o ícone da bandeja (perto do relógio) → <b>Sair</b>.</div></section>
 <section class="tp" id="tp_upd" hidden><div class="th"><h3>Atualizações</h3><p class="mu">Versão instalada: <b id="u_ver"></b>. Procure uma versão nova quando quiser.</p></div>
-<p class="mu" id="u_msg"></p><div id="u_notes" class="mu"></div>
+<p class="mu" id="u_msg"></p><div id="u_bar" class="pbar" hidden><div class="pfill" id="u_fill"></div></div><div class="mu" id="u_pct" hidden></div><div id="u_notes" class="mu"></div>
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></section>
 </div></div>
 <div class="cf"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><p id="c_msg" class="mu"></p><span class="sp"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
@@ -863,7 +864,13 @@ const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
 async function updCheck(){$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
-async function updGo(){$('#u_go').disabled=true;$('#u_msg').textContent='Baixando a atualização...';const r=await api('upd_install');$('#u_msg').textContent=r.msg;$('#u_go').disabled=false}
+async function updGo(){const go=$('#u_go');go.disabled=true;$('#u_msg').textContent='Baixando a atualização...';
+ const bar=$('#u_bar'),fl=$('#u_fill'),pc=$('#u_pct');bar.hidden=pc.hidden=false;fl.style.width='0%';
+ const mb=n=>(n/1048576).toFixed(1).replace('.',',')+' MB';
+ const tm=setInterval(async()=>{const p=await api('upd_prog');if(p.phase==='down'&&p.total){const v=Math.min(100,p.got/p.total*100);fl.style.width=v+'%';pc.textContent=`${Math.floor(v)}%  ·  ${mb(p.got)} de ${mb(p.total)}`}},200);
+ const r=await api('upd_install');clearInterval(tm);
+ if(r.ok){fl.style.width='100%';pc.textContent='Instalando...';$('#u_msg').textContent=r.msg;return}
+ bar.hidden=pc.hidden=true;$('#u_msg').textContent=r.msg;go.disabled=false}
 async function testSg(){await saveCfg();$('#sg_msg').textContent='Testando...';$('#sg_msg').textContent=(await api('sgdb_test')).msg}
 $('#tabs').onclick=e=>{const t=e.target.closest('[data-t]');if(!t)return;document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('on',x===t);x.setAttribute('aria-selected',x===t)});document.querySelectorAll('.tp').forEach(p=>p.hidden=p.id!=='tp_'+t.dataset.t)};
 const Z=$('#z');try{Z.value=localStorage.getItem('zoom')||220}catch{Z.value=220}

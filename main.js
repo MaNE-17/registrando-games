@@ -52,21 +52,27 @@ async function updCheck() {
   if (!asset) return { ok: false, msg: 'A versão ' + tag + ' não tem instalador (.exe) anexado.' };
   return { ok: true, novo: true, tag, notes: updInfo.notes, size: asset.size, msg: 'Nova versão disponível: ' + tag };
 }
+let UPD = { phase: '', got: 0, total: 0 };
 async function updInstall() {
+  if (UPD.phase === 'down') return { ok: false, msg: 'Já está baixando...' };
   if (!updInfo || !updInfo.asset) { const c = await updCheck(); if (!c.novo) return c; }
   const a = updInfo.asset;
-  const r = await fetch(`https://api.github.com/repos/${ghRepo()}/releases/assets/${a.id}`, { headers: ghHead('application/octet-stream'), redirect: 'follow' });
-  if (!r.ok) return { ok: false, msg: 'Falha ao baixar a atualização (HTTP ' + r.status + ').' };
-  const dir = path.join(app.getPath('temp'), 'RegistrandoGamesUpdate'); fs.mkdirSync(dir, { recursive: true });
-  const exe = path.join(dir, a.name.replace(/[^\w.\- ]/g, '_'));
-  fs.writeFileSync(exe, Buffer.from(await r.arrayBuffer()));
-  if (fs.statSync(exe).size !== a.size) return { ok: false, msg: 'Download incompleto. Tente de novo.' };
-  // espera o app fechar, instala em silencio e abre de novo
-  const bat = path.join(dir, 'atualizar.cmd');
-  fs.writeFileSync(bat, `@echo off\r\ntimeout /t 2 /nobreak >nul\r\n"${exe}" /S\r\ntimeout /t 2 /nobreak >nul\r\nstart "" "${process.execPath}"\r\n`);
-  cp.spawn('cmd.exe', ['/c', bat], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
-  setTimeout(() => { quitting = true; app.quit(); }, 400);
-  return { ok: true, msg: 'Instalando... o programa vai fechar e abrir sozinho.' };
+  UPD = { phase: 'down', got: 0, total: a.size || 0 };
+  try {
+    const r = await fetch(`https://api.github.com/repos/${ghRepo()}/releases/assets/${a.id}`, { headers: ghHead('application/octet-stream'), redirect: 'follow' });
+    if (!r.ok) { UPD.phase = ''; return { ok: false, msg: 'Falha ao baixar a atualização (HTTP ' + r.status + ').' }; }
+    const dir = path.join(app.getPath('temp'), 'RegistrandoGamesUpdate'); fs.mkdirSync(dir, { recursive: true });
+    const exe = path.join(dir, a.name.replace(/[^\w.\- ]/g, '_'));
+    const ws = fs.createWriteStream(exe), rd = r.body.getReader();
+    for (;;) { const { done, value } = await rd.read(); if (done) break; UPD.got += value.length; if (!ws.write(value)) await new Promise(res => ws.once('drain', res)); }
+    await new Promise((res, rej) => { ws.on('error', rej); ws.end(res); });
+    if (fs.statSync(exe).size !== a.size) { UPD.phase = ''; return { ok: false, msg: 'Download incompleto. Tente de novo.' }; }
+    UPD.phase = 'inst';
+    // instalador silencioso direto (sem janela de prompt); ele fecha este app, instala e reabre
+    cp.spawn(exe, ['/S', '--force-run'], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+    setTimeout(() => { quitting = true; app.quit(); }, 1200);
+    return { ok: true, msg: 'Instalando... o programa vai fechar e abrir sozinho.' };
+  } catch (e) { UPD.phase = ''; return { ok: false, msg: 'Erro: ' + e.message }; }
 }
 const running = new Set();
 const U = p => path.join(app.getPath('userData'), p);
@@ -629,6 +635,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'launch_scan': try { return await launchersImport({ force: !!b.force, only: b.only || null }); } catch (e) { return { counts: {}, msg: 'Erro ao procurar: ' + e.message }; }
     case 'upd_check': try { return await updCheck(); } catch (e) { return { ok: false, msg: 'Sem conexão com o GitHub: ' + e.message }; }
+    case 'upd_prog': return UPD;
     case 'upd_install': try { return await updInstall(); } catch (e) { return { ok: false, msg: 'Erro: ' + e.message }; }
     case 'open_data': shell.openPath(app.getPath('userData')); return { ok: true };
     case 'pick': {
