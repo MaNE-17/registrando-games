@@ -480,11 +480,11 @@ async function wallSave(g, src, kind = 'wall') {
 }
 
 
-// "Atualizar": datas de todos os jogos da Steam (em lote) e data/nota dos jogos manuais ou de outros launchers.
+// "Atualizar": datas de todos os jogos da Steam (em lote); jogos manuais, de outros launchers ou removidos da Steam (sem data) buscam data/nota pelo nome no Metacritic.
 // Datas editadas a mao (rel_manual) nunca sao trocadas; jogo sem resposta so e tentado de novo depois de 7 dias.
 async function refreshAllInfo() {
   await batchRelease(data.games.filter(x => x.appid));
-  const wk = 7 * 864e5, list = data.games.filter(g => !g.appid && g.name && (!g.released && !g.rel_manual || g.meta == null) && !(g.mtry && Date.now() - g.mtry < wk));
+  const wk = 7 * 864e5, list = data.games.filter(g => g.name && (g.appid ? g.info4 && !g.released && !g.rel_manual : (!g.released && !g.rel_manual || g.meta == null)) && !(g.mtry && Date.now() - g.mtry < wk));
   let n = 0;
   for (const g of list) {
     msg = `Buscando datas e notas dos jogos adicionados... (${++n}/${list.length})`;
@@ -542,7 +542,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
-    case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { await sgFill(); } catch {} try { await refreshAllInfo(); } catch {} try { await fillInfo(); } catch {} refreshing = false; }); return { ok: true }; }
+    case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; }); return { ok: true }; }
     case 'side_set': {
       const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
     }
