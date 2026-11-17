@@ -426,7 +426,7 @@ $('#pd_l').onclick=async e=>{const b=e.target.closest('[data-pn]');if(!b)return;
  const on=!have.has(n);on?have.add(n):have.delete(n);
  if(k==='l')S.sidePlats=[...have];else S.sideCons=[...have];platUi();side._h=null;side();
  if(!on&&F.platform===n){F={smart:'all'};render()}
- await api(k==='l'?'side_set':'side_set2',{list:[...have]});if(on&&k==='l')api('launch_scan').then(()=>load());await load();if(PD_K===k)platUi()};
+ await api(k==='l'?'side_set':'side_set2',{list:[...have]});if(on&&k==='l')api('launch_scan',{force:true,only:n}).then(()=>load());await load();if(PD_K===k)platUi()};
 $('#pd_ok').onclick=$('#pd_x').onclick=()=>$('#pd').close();
 movable($('#pd'),$('#pd_h'));
 function togFav(){FAV=!FAV;if(FAV){INST=false;try{localStorage.setItem('inst','0')}catch{}}if(F.smart==='lists')F.smart='all';render()}
@@ -508,7 +508,6 @@ async function saveG(){
  const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});pendCover=null;D.close();load()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
- if(g&&g.lkey){await api('launch_scan');return load()}
  if(p&&!S.games.some(x=>x.id!==cur&&canonP(x.platform)===p)){
   if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
   if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
@@ -564,7 +563,7 @@ function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.
 function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
-async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan');$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
+async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
 async function updCheck(){$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
 async function updGo(){$('#u_go').disabled=true;$('#u_msg').textContent='Baixando a atualização...';const r=await api('upd_install');$('#u_msg').textContent=r.msg;$('#u_go').disabled=false}
 async function testSg(){await saveCfg();$('#sg_msg').textContent='Testando...';$('#sg_msg').textContent=(await api('sgdb_test')).msg}
