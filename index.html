@@ -325,6 +325,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #c .eph{display:flex;align-items:center;justify-content:space-between;gap:10px}#c .eph b{font-size:16px}
 #c .bdg{font-size:12px;font-weight:650;padding:3px 11px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}#c .bdg.ok{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 12%,transparent)}
 #c .ep .acts{margin-top:10px}#c .ep .mu#emu_msg{margin:8px 0 0;min-height:0}
+#cm{position:fixed;z-index:400;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008}#cm button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:7px;color:#e5484d;font-size:14px}#cm button:hover{background:color-mix(in srgb,#e5484d 14%,transparent)!important;color:#e5484d!important;border:0!important}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -535,6 +536,18 @@ function side(){
  const out=ord.filter(k=>!PK.has(k)&&!isC(k)).map(k=>rows[k]).join('')+[...new Set([...so,'l','p'])].filter(k=>secs[k]).map(k=>secs[k]).join('');$('#ver').textContent='v'+(S.version||'');if(out!==side._h){side._h=out;$('#side').innerHTML=out;$('#side').querySelectorAll('.sg').forEach(w=>sortable(w,'.it',sbSave,{axis:'y'}))}}
 const secCol=()=>{try{return JSON.parse(localStorage.getItem('sbc'))||{}}catch{return{}}};
 $('#side').addEventListener('click',e=>{const s=e.target.closest('[data-sec]');if(!s)return;const c=secCol();c[s.dataset.sec]=!c[s.dataset.sec];try{localStorage.setItem('sbc',JSON.stringify(c))}catch{}side._h=null;side()});
+
+// ---- Botao direito numa plataforma da barra lateral: excluir plataforma e jogos ----
+{const cm=document.createElement('div');cm.id='cm';cm.hidden=true;document.body.appendChild(cm);let CMP=null;
+ const hide=()=>{cm.hidden=true;CMP=null};
+ $('#side').addEventListener('contextmenu',e=>{const r=e.target.closest('.it[data-k="plat"]');if(!r||!(r.dataset.o||'').startsWith('co_')){hide();return}
+  e.preventDefault();CMP=r.dataset.v;cm.innerHTML=`<button type="button">Excluir plataforma e todos os jogos</button>`;cm.hidden=false;
+  cm.style.left=Math.min(e.clientX,innerWidth-cm.offsetWidth-8)+'px';cm.style.top=Math.min(e.clientY,innerHeight-cm.offsetHeight-8)+'px'});
+ document.addEventListener('click',e=>{if(!e.target.closest('#cm'))hide()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});window.addEventListener('blur',hide);
+ cm.onclick=async()=>{const p=CMP;hide();if(!p)return;const gs=S.games.filter(g=>canonP(g.platform)===p),n=gs.length;
+  if(!await confirmX(`Excluir a plataforma "${dispP(p)}" e ${n===1?'o 1 jogo':`os ${n} jogos`} dela? Os jogos saem da biblioteca e das listas, e isso não pode ser desfeito.`,'Excluir tudo'))return;
+  if(n)await api('games_del',{ids:gs.map(g=>g.id)});
+  S.sideCons=(S.sideCons||[]).filter(x=>x!==p);await api('side_set2',{list:S.sideCons});if(F.platform===p)F={smart:'all'};await load()}}
 $('#side').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[data-sec]'))e.target.click()});
 
 // ---- Launchers e plataformas na barra lateral (marcar = aparece, desmarcar = some) ----

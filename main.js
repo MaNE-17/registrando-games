@@ -596,6 +596,11 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (x.status === 'Zerado' && !x.finished) x.finished = now(); else if (x.status !== 'Zerado') x.finished = null;
       save(); return { ok: true, id: x.id };
     }
+    case 'games_del': {
+      const ids = new Set((b.ids || []).map(String));
+      for (const x of data.games) if (ids.has(x.id)) { rmCover(x); rmWall(x); rmLogo(x); if (x.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), x.lkey])]; }
+      data.games = data.games.filter(x => !ids.has(x.id)); data.lists.forEach(l => l.ids = l.ids.filter(i => !ids.has(i))); save(); return { ok: true, n: ids.size };
+    }
     case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
