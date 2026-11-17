@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
 const LCH = require('./launchers');
+process.env.RG_DIAG = ''; app.whenReady().then(() => { process.env.RG_DIAG = path.join(app.getPath('userData'), 'epic-diagnostico.txt'); });
 
 // ---------- Pastas ----------
 // Tudo fica em uma pasta so:  ...\Registrando Games\Programa (app)  e  ...\Registrando Games\Dados (jogos, capas, preferencias)

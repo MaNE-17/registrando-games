@@ -78,6 +78,18 @@ function epic() {
       out.push({ launcher: 'Epic Games', key, name: clean(j.DisplayName), exe, uri: j.AppName ? `com.epicgames.launcher://apps/${id}?action=launch&silent=true` : '' });
     } catch {}
   }
+  // LauncherInstalled.dat: lista de jogos instalados que o launcher mantem (formato usado por varias ferramentas)
+  for (const f of [path.join(process.env.ProgramData || 'C:\\ProgramData', 'Epic', 'UnrealEngineLauncher', 'LauncherInstalled.dat'), path.join(process.env.ProgramData || 'C:\\ProgramData', 'Epic', 'EpicGamesLauncher', 'LauncherInstalled.dat')]) {
+    try {
+      for (const it of (JSON.parse(fs.readFileSync(f, 'utf8')).InstallationList || [])) {
+        const loc = it.InstallLocation; if (!loc || !isDir(loc) || /^UE_/i.test(it.AppName || '')) continue;
+        const key = 'epic:' + (it.AppName || PB(loc)); if (keys.has(key)) continue; keys.add(key);
+        const exe = guessExe(loc); if (!exe) continue;
+        const id = [it.NamespaceId, it.ItemId, it.AppName].filter(Boolean).map(encodeURIComponent).join('%3A');
+        out.push({ launcher: 'Epic Games', key, name: clean(PB(loc)), exe, uri: it.AppName ? `com.epicgames.launcher://apps/${id}?action=launch&silent=true` : '' });
+      }
+    } catch {}
+  }
   // Reserva: le direto as pastas dos jogos (.egstore/*.mancpn), sem depender dos manifestos do launcher
   const have = new Set(out.map(o => o.name.toLowerCase()));
   for (const base of epicDirs()) {
@@ -94,7 +106,18 @@ function epic() {
       out.push({ launcher: 'Epic Games', key, name: clean(e.name), exe, uri: app ? `com.epicgames.launcher://apps/${id}?action=launch&silent=true` : '' });
     }
   }
+  if (!out.length) epicDiag();
   return out;
+}
+// Quando nada e encontrado, grava um relatorio das pastas da Epic para eu conseguir ajustar a deteccao
+function epicDiag() {
+  const f = process.env.RG_DIAG; if (!f) return;
+  const L = [], pd = process.env.ProgramData || 'C:\\ProgramData';
+  const tree = (d, depth, ind) => { let es = []; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch { L.push(ind + '(nao consegui ler)'); return; } for (const e of es.slice(0, 60)) { L.push(ind + e.name + (e.isDirectory() ? '\\' : '')); if (e.isDirectory() && depth < 3 && !/^(webcache|logs|cache|blobs|crashes)/i.test(e.name)) tree(path.join(d, e.name), depth + 1, ind + '  '); } };
+  for (const d of [path.join(pd, 'Epic'), path.join(process.env.LOCALAPPDATA || '', 'EpicGamesLauncher'), path.join(process.env.APPDATA || '', 'Epic')]) { L.push('== ' + d + (isDir(d) ? '' : ' (nao existe)')); if (isDir(d)) tree(d, 0, '  '); }
+  L.push('== pastas de jogos Epic encontradas: ' + JSON.stringify(epicDirs()));
+  for (const k of ['HKLM\\SOFTWARE\\WOW6432Node\\Epic Games', 'HKCU\\SOFTWARE\\Epic Games']) { try { L.push('== reg ' + k + '\n' + cp.execFileSync('reg', ['query', k, '/s'], { windowsHide: true, timeout: 8000 }).toString().slice(0, 1500)); } catch { L.push('== reg ' + k + ' (nao existe)'); } }
+  try { fs.writeFileSync(f, L.join('\n')); } catch {}
 }
 
 async function ubisoft() {
