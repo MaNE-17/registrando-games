@@ -79,6 +79,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const J = async u => { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
+  try { emuMigrate(); } catch {}
   if (!data.clearLP1) { data.clearLP1 = 1; for (const g of data.games || []) g.last_played = 0; }
   if (!data.fixRomTrack) { data.fixRomTrack = 1; for (const g of data.games || []) if (g.rom) { g.last_played = 0; g.tracked_s = 0; if (g.status === 'Jogando') g.status = 'Backlog'; } }
   for (const g of data.games) if (!g.info4 && g.info3 && g.released) g.info4 = true; }
@@ -523,13 +524,17 @@ async function refreshAllInfo() {
 let emuBusy = false;
 const PS2 = 'PlayStation 2';
 const EMU_DEF_FLAGS = ['-batch', '-fullscreen', '-nogui'], EMU_DEF_EXTS = ['.iso', '.chd'];
-const emuFlags = () => { const f = data.emu && data.emu.flags; return Array.isArray(f) ? f : EMU_DEF_FLAGS; };
-const emuExts = () => { const e = data.emu && data.emu.exts; return Array.isArray(e) && e.length ? e : EMU_DEF_EXTS; };
+const emuOf = id => (data.emus || []).find(x => x.id === id);
 const emuArgs = (rom, flags) => `"${rom}"${flags.length ? ' ' + flags.join(' ') : ''}`;
+const normExts = a => [...new Set((a || []).map(x => '.' + String(x).trim().toLowerCase().replace(/^\.+/, '').replace(/[^a-z0-9]/g, '')).filter(x => x.length > 1))];
+function emuMigrate() {
+  if (data.emu && !data.emus) data.emus = [{ id: 'pcsx2', name: 'PCSX2', platform: PS2, exe: data.emu.pcsx2 || '', roms: data.emu.roms || '', flags: Array.isArray(data.emu.flags) ? data.emu.flags : EMU_DEF_FLAGS, exts: Array.isArray(data.emu.exts) && data.emu.exts.length ? data.emu.exts : EMU_DEF_EXTS }];
+  if (data.emus) for (const g of data.games || []) if (g.rom && !g.emu) g.emu = (data.emus[0] || {}).id || '';
+}
 const romTitle = f => { const n = path.basename(f).replace(new RegExp(path.extname(f).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'), '').replace(/[\[(][^\])]*[\])]/g, ' ').replace(/_+/g, ' ').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim(); return n || path.basename(f).replace(/\.(iso|chd)$/i, ''); };
-function walkRoms(dir, depth, out) {
+function walkRoms(dir, depth, out, exts) {
   let es = []; try { es = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
-  for (const e of es) { const p = path.join(dir, e.name); if (e.isFile() && emuExts().includes(path.extname(e.name).toLowerCase())) out.push(p); else if (e.isDirectory() && depth < 4 && !/^(\$recycle\.bin|system volume information)$/i.test(e.name)) walkRoms(p, depth + 1, out); }
+  for (const e of es) { const p = path.join(dir, e.name); if (e.isFile() && exts.includes(path.extname(e.name).toLowerCase())) out.push(p); else if (e.isDirectory() && depth < 4 && !/^(\$recycle\.bin|system volume information)$/i.test(e.name)) walkRoms(p, depth + 1, out, exts); }
   return out;
 }
 async function emuEnrich(g) {
@@ -539,25 +544,27 @@ async function emuEnrich(g) {
     try { if (!g.logo) { const p = await sgPage(g, 0, 'logo'); if (p.items[0]) await wallSave(g, p.items[0].url, 'logo'); g.sgl = 1; } } catch {}
   }
 }
-async function emuImport() {
-  const c = data.emu || {};
-  if (!c.pcsx2 || !fs.existsSync(c.pcsx2)) { msg = 'Emuladores: escolha o .exe do PCSX2 primeiro.'; return; }
-  if (!c.roms || !isDirP(c.roms)) { msg = 'Emuladores: escolha a pasta das ROMs primeiro.'; return; }
+async function emuImport(id) {
+  const c = emuOf(id);
+  if (!c) return;
+  if (!c.exe || !fs.existsSync(c.exe)) { msg = `${c.name}: escolha o executável do emulador primeiro.`; return; }
+  if (!c.roms || !isDirP(c.roms)) { msg = `${c.name}: escolha a pasta das ROMs primeiro.`; return; }
+  if (!c.exts || !c.exts.length) { msg = `${c.name}: adicione pelo menos um formato de ROM.`; return; }
   emuBusy = true;
   try {
     const have = new Set(data.games.filter(g => g.rom).map(g => g.rom.toLowerCase()));
-    const files = walkRoms(c.roms, 0, []).filter(f => !have.has(f.toLowerCase()));
+    const files = walkRoms(c.roms, 0, [], c.exts).filter(f => !have.has(f.toLowerCase()));
     const fresh = [];
     for (const f of files) {
-      const g = { id: rid(), name: romTitle(f), platform: PS2, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.pcsx2, cwd: path.dirname(c.pcsx2) + path.sep, args: emuArgs(f, emuFlags()), rom: f, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+      const g = { id: rid(), name: romTitle(f), platform: c.platform, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.exe, cwd: path.dirname(c.exe) + path.sep, args: emuArgs(f, c.flags || []), rom: f, emu: c.id, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
       data.games.push(g); fresh.push(g);
     }
-    if (fresh.length) { data.sideCons = data.sideCons || []; if (!data.sideCons.includes(PS2)) data.sideCons.push(PS2); }
+    if (fresh.length) { data.sideCons = data.sideCons || []; if (!data.sideCons.includes(c.platform)) data.sideCons.push(c.platform); }
     save();
     let n = 0;
-    for (const g of fresh) { msg = `PS2: buscando dados dos jogos... (${++n}/${fresh.length}) ${g.name}`; await emuEnrich(g); save(); await sleep(400); }
-    msg = fresh.length ? `PS2: ${fresh.length} jogo(s) importado(s).` : 'PS2: nenhum jogo novo encontrado na pasta.';
-  } catch (e) { msg = 'PS2: erro ao importar (' + e.message + ')'; }
+    for (const g of fresh) { msg = `${c.name}: buscando dados dos jogos... (${++n}/${fresh.length}) ${g.name}`; await emuEnrich(g); save(); await sleep(400); }
+    msg = fresh.length ? `${c.name}: ${fresh.length} jogo(s) importado(s).` : `${c.name}: nenhum jogo novo encontrado na pasta.`;
+  } catch (e) { msg = `${c.name}: erro ao importar (${e.message})`; }
   finally { emuBusy = false; }
 }
 
@@ -588,11 +595,11 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emu: data.emu || {}, emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }
@@ -629,16 +636,24 @@ ipcMain.handle('api', async (_e, p, b) => {
       return { path: r.canceled ? '' : r.filePaths[0] };
     }
     case 'emu_save': {
-      const old = { flags: emuFlags(), pcsx2: (data.emu || {}).pcsx2 };
-      const flags = Array.isArray(b.flags) ? b.flags.map(x => String(x).trim()).filter(Boolean) : old.flags;
-      const exts = Array.isArray(b.exts) ? [...new Set(b.exts.map(x => '.' + String(x).trim().toLowerCase().replace(/^\.+/, '').replace(/[^a-z0-9]/g, '')).filter(x => x.length > 1))] : emuExts();
-      data.emu = { ...(data.emu || {}), pcsx2: String(b.pcsx2 || '').replace(/^"+|"+$/g, '').trim(), roms: String(b.roms || '').replace(/^"+|"+$/g, '').trim(), flags, exts };
+      data.emus = data.emus || [];
+      let c = emuOf(b.id), old = null;
+      if (!c) { c = { id: rid(), name: 'Novo emulador', platform: PS2, exe: '', roms: '', flags: [], exts: ['.iso', '.chd'] }; data.emus.push(c); }
+      else old = [...(c.flags || [])];
+      const q = v => String(v || '').replace(/^"+|"+$/g, '').trim();
+      if ('name' in b) c.name = String(b.name || '').trim() || c.name;
+      if ('platform' in b && b.platform) c.platform = String(b.platform);
+      if ('exe' in b) c.exe = q(b.exe);
+      if ('roms' in b) c.roms = q(b.roms);
+      if (Array.isArray(b.flags)) c.flags = b.flags.map(x => String(x).trim()).filter(Boolean);
+      if (Array.isArray(b.exts)) c.exts = normExts(b.exts);
       // jogos importados que ainda usam o comando padrao antigo acompanham a mudanca
-      if (JSON.stringify(old.flags) !== JSON.stringify(flags)) for (const g of data.games) if (g.rom && g.args === emuArgs(g.rom, old.flags)) g.args = emuArgs(g.rom, flags);
-      save(); return { ok: true };
+      if (old && JSON.stringify(old) !== JSON.stringify(c.flags)) for (const g of data.games) if (g.rom && g.emu === c.id && g.args === emuArgs(g.rom, old)) g.args = emuArgs(g.rom, c.flags);
+      save(); return { ok: true, id: c.id };
     }
-    case 'emu_import': { if (emuBusy) return { ok: true }; msg = 'PS2: procurando ROMs...'; emuImport(); return { ok: true }; }
-    case 'pick_rom': { const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: data.emu && data.emu.roms && isDirP(data.emu.roms) ? data.emu.roms : undefined, filters: [{ name: 'ROM de PS2', extensions: emuExts().map(x => x.slice(1)) }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
+    case 'emu_del': { data.emus = (data.emus || []).filter(x => x.id !== b.id); save(); return { ok: true }; }
+    case 'emu_import': { if (emuBusy) return { ok: true }; const c = emuOf(b.id); msg = (c ? c.name : 'Emulador') + ': procurando ROMs...'; emuImport(b.id); return { ok: true }; }
+    case 'pick_rom': { const c = emuOf(b.id) || {}; const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: c.roms && isDirP(c.roms) ? c.roms : undefined, filters: [{ name: 'ROM', extensions: (c.exts && c.exts.length ? c.exts : EMU_DEF_EXTS).map(x => x.slice(1)) }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
     case 'startup_set': {
       data.startMin = b.min !== false; save();
       try { app.setLoginItemSettings({ openAtLogin: !!b.on, args: ['--startup'] }); } catch {}
