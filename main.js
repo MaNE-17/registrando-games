@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell, Notification } = require('electron');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
 const LCH = require('./launchers');
 process.env.RG_DIAG = ''; app.whenReady().then(() => { process.env.RG_DIAG = path.join(app.getPath('userData'), 'epic-diagnostico.txt'); });
@@ -52,7 +52,21 @@ async function updCheck() {
   if (!asset) return { ok: false, msg: 'A versão ' + tag + ' não tem instalador (.exe) anexado.' };
   return { ok: true, novo: true, tag, notes: updInfo.notes, size: asset.size, msg: 'Nova versão disponível: ' + tag };
 }
-let UPD = { phase: '', got: 0, total: 0 };
+let UPD = { phase: '', got: 0, total: 0 }, UPDNEW = null, updToldTag = '';
+// aviso de versao nova: confere ao abrir e a cada 6 horas (se a opcao estiver ligada)
+async function updWatch() {
+  try {
+    if (data.updNotify === false || UPD.phase) return;
+    const c = await updCheck();
+    if (c && c.ok && c.novo) {
+      UPDNEW = { tag: c.tag, notes: c.notes || '' };
+      if (updToldTag !== c.tag) {
+        updToldTag = c.tag;
+        try { if (Notification.isSupported()) { const n = new Notification({ title: 'Registrando Games', body: 'Nova versão disponível: ' + c.tag + '. Abra o app para atualizar.' }); n.on('click', () => { try { if (win) { win.show(); if (win.isMinimized()) win.restore(); win.focus(); } } catch {} }); n.show(); } } catch {}
+      }
+    } else if (c && c.ok) UPDNEW = null;
+  } catch {}
+}
 async function updInstall() {
   if (UPD.phase === 'down') return { ok: false, msg: 'Já está baixando...' };
   if (!updInfo || !updInfo.asset) { const c = await updCheck(); if (!c.novo) return c; }
@@ -600,8 +614,8 @@ ipcMain.on('wall-pick', async (e, p) => {
 ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
-    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), updNew: data.updNotify === false ? null : UPDNEW, top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
+      config: { updNotify: data.updNotify !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -663,6 +677,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'emu_del': { data.emus = (data.emus || []).filter(x => x.id !== b.id); save(); return { ok: true }; }
     case 'emu_import': { if (emuBusy) return { ok: true }; const c = emuOf(b.id); msg = (c ? c.name : 'Emulador') + ': procurando ROMs...'; emuImport(b.id); return { ok: true }; }
     case 'pick_rom': { const c = emuOf(b.id) || {}; const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: c.roms && isDirP(c.roms) ? c.roms : undefined, filters: [{ name: 'ROM', extensions: (c.exts && c.exts.length ? c.exts : EMU_DEF_EXTS).map(x => x.slice(1)) }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
+    case 'upd_notify_set': data.updNotify = !!b.on; if (!b.on) UPDNEW = null; save(); if (b.on) updWatch(); return { ok: true };
     case 'startup_set': {
       data.startMin = b.min !== false; save();
       try { app.setLoginItemSettings({ openAtLogin: !!b.on, args: ['--startup'] }); } catch {}
@@ -844,6 +859,7 @@ app.whenReady().then(() => {
   win.setMenu(null);
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.loadFile(path.join(__dirname, 'index.html'));
+  setTimeout(updWatch, 8000); setInterval(updWatch, 6 * 3600 * 1000);
   const fromStartup = process.argv.includes('--startup');
   win.once('ready-to-show', () => { if (fromStartup && data.startMin !== false) { win.showInactive(); win.minimize(); } else win.show(); });
   win.on('close', e => { if (!quitting) { e.preventDefault(); win.minimize(); } });

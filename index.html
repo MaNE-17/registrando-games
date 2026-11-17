@@ -352,6 +352,8 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 .t5e{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:2/3;border:2px dashed var(--ln);border-radius:10px;background:none;color:var(--mu);cursor:pointer;font-size:13px}.t5e span{font-size:30px;line-height:1}.t5e:hover{border-color:#f5c542;color:#f5c542}
 #grid .t5o{grid-column:1/-1;padding:14px 2px 0;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);border-bottom:1px solid var(--ln);padding-bottom:8px;margin-bottom:-4px}
 #c .pbar{height:10px;border-radius:6px;background:var(--ln);overflow:hidden;margin:10px 0 6px}#c .pfill{height:100%;width:0;background:var(--ac);border-radius:6px;transition:width .2s}
+#updb{position:fixed;right:18px;bottom:18px;z-index:250;display:flex;align-items:center;gap:12px;max-width:min(440px,92vw);padding:12px 14px;border:1px solid var(--ac);border-radius:12px;background:var(--sf);box-shadow:0 10px 30px #0006;font-size:14px}
+#updb[hidden]{display:none}#updb b{color:var(--ac)}#updb .sp{flex:1}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -401,6 +403,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="acts2"><button class="p" id="f_exeb" onclick="pickExe()">Adicionar .exe</button><button onclick="playFrom()">▶ Jogar</button><span class="sp"></span><button id="del" onclick="delG()">Excluir</button><button onclick="D.close()">Cancelar</button><button class="p" onclick="saveG()">Salvar</button></div>
 <div class="pdl" id="f_pl" role="listbox" hidden></div>
 </dialog>
+<div id="updb" role="status" hidden><span>Nova versão <b id="updb_v"></b> disponível.</span><span class="sp"></span><button type="button" class="p" id="updb_go">Atualizar</button><button type="button" id="updb_x">Depois</button></div>
 <dialog id="t5d"><div class="sgh"><b>Escolher jogo para o Top 5</b><input id="t5_q" placeholder="Buscar jogo" aria-label="Buscar jogo"><span class="sp"></span><button type="button" id="t5_new" title="Cadastrar um jogo que ainda não está na sua biblioteca">+ Novo jogo</button><button type="button" onclick="T5D.close()">Cancelar</button></div><div class="lg" id="t5_g"></div></dialog>
 <dialog id="pd"><div class="dh" id="pd_h"><b id="pd_t">Adicionar launcher</b><button type="button" class="xb" id="pd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="pdbody"><p class="mu" id="pd_p" style="margin:0 0 12px"></p><div class="pgrid" id="pd_l"></div></div>
@@ -443,6 +446,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="note">Ao clicar no X, o app fica minimizado na barra de tarefas e continua contando o tempo de jogo. Para fechar de vez, use o ícone da bandeja (perto do relógio) → <b>Sair</b>.</div></section>
 <section class="tp" id="tp_upd" hidden><div class="th"><h3>Atualizações</h3><p class="mu">Versão instalada: <b id="u_ver"></b>. Procure uma versão nova quando quiser.</p></div>
 <p class="mu" id="u_msg"></p><div id="u_bar" class="pbar" hidden><div class="pfill" id="u_fill"></div></div><div class="mu" id="u_pct" hidden></div><div id="u_notes" class="mu"></div>
+<label class="ck"><input type="checkbox" id="u_notif">Avisar quando houver uma versão nova</label>
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></section>
 </div></div>
 <div class="cf"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><p id="c_msg" class="mu"></p><span class="sp"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
@@ -503,7 +507,7 @@ const SORT={bylist:(a,b)=>NC(a,b),name:NC,hours:(a,b)=>secs(b)-secs(a),played:(a
 const coverSrc=g=>g.cover?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.cover):g.capsule?g.capsule:g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`:'';
 function imgErr(i){const k=i.dataset.k;if(i.dataset.a&&!i.src.includes('/header.jpg')){FB[k]=`https://cdn.akamai.steamstatic.com/steam/apps/${i.dataset.a}/header.jpg`;i.src=FB[k]}else{FB[k]='none';i.parentNode.classList.add('noimg');i.remove()}}
 let RFT=null;function rfUi(){const b=$('#rfb');if(b)b.classList.toggle('spin',!!(S.refreshing||S.pending))}
-async function load(){S=await api('state');rfUi();render();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=S.pending?`Atualizando dados… ${S.pending}`:''}
+async function load(){S=await api('state');rfUi();render();updBanner();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=S.pending?`Atualizando dados… ${S.pending}`:''}
 function filt(g){
  if(F.smart==='hidden'?!g.hidden:g.hidden)return 0;
  if(INST&&!(S.inst||[]).includes(g.id))return 0;
@@ -760,6 +764,7 @@ function nameFromPath(p){const parts=p.split(/[\\/]/).filter(Boolean),file=parts
 
 
 
+$('#u_notif').onchange=()=>api('upd_notify_set',{on:$('#u_notif').checked}).then(load);
 $('#g_start').onchange=$('#g_min').onchange=()=>api('startup_set',{on:$('#g_start').checked,min:$('#g_min').checked});
 
 // ---- Emuladores (lista de emuladores, cada um com suas opcoes) ----
@@ -860,10 +865,14 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;emuSync();if(!EMUS.some(x=>x.id===EMU_OPEN))EMU_OPEN=EMUS.length===1?EMUS[0].id:null;emuRender();lchGrid();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;C.showModal()}
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;emuSync();if(!EMUS.some(x=>x.id===EMU_OPEN))EMU_OPEN=EMUS.length===1?EMUS[0].id:null;emuRender();lchGrid();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;$('#u_notif').checked=c.updNotify!==false;C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
+let UPDDIS='';
+function updBanner(){const n=S.updNew,b=$('#updb');if(!b)return;const show=!!n&&n.tag!==UPDDIS&&!C.open;b.hidden=!show;if(show)$('#updb_v').textContent=String(n.tag).replace(/^v/i,'')}
+$('#updb_x').onclick=()=>{UPDDIS=(S.updNew||{}).tag||'';updBanner()};
+$('#updb_go').onclick=()=>{UPDDIS=(S.updNew||{}).tag||'';updBanner();cfg();document.querySelector('[data-t=upd]').click();updCheck()};
 async function updCheck(){$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
 async function updGo(){const go=$('#u_go');go.disabled=true;$('#u_msg').textContent='Baixando a atualização...';
  const bar=$('#u_bar'),fl=$('#u_fill'),pc=$('#u_pct');bar.hidden=pc.hidden=false;fl.style.width='0%';
