@@ -418,7 +418,7 @@ const fmt=s=>s<60?'0 h':s<3600?Math.round(s/60)+' min':(s/3600).toFixed(1).repla
 const esc=t=>String(t??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const mcl=m=>m>=75?'g':m>=50?'y':'r';
-function mcPaintF(){const e=$('#f_meta'),v=e.value===''?null:+e.value;e.style.color=v==null?'':v>=70?'#52c889':v>=50?'#f5b301':'#e5484d';e.style.fontWeight=v==null?'':'700'}
+function mcPaintF(){const e=$('#f_meta'),v=e.value===''?null:+e.value;e.style.color=v==null?'':v>=75?'#52c889':v>=50?'#f5b301':'#e5484d';e.style.fontWeight=v==null?'':'700'}
 const sk=g=>g.sortname||g.name,NC=(a,b)=>sk(a).localeCompare(sk(b),undefined,{numeric:true,sensitivity:'base'});
 const SORT={name:NC,hours:(a,b)=>secs(b)-secs(a),played:(a,b)=>(b.last_played||0)-(a.last_played||0),rating:(a,b)=>(b.rating||0)-(a.rating||0),meta:(a,b)=>(b.meta||0)-(a.meta||0),added:(a,b)=>b.added-a.added,fin:(a,b)=>(b.finished||0)-(a.finished||0),namez:(a,b)=>NC(b,a),rel:(a,b)=>(b.released||0)-(a.released||0),relo:(a,b)=>(a.released||9e12)-(b.released||9e12)};
 const coverSrc=g=>g.cover?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.cover):g.capsule?g.capsule:g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`:'';
