@@ -577,7 +577,8 @@ function renderLv(l,grid){
  if(ph!==RPH){rp.innerHTML=ph;RPH=ph}
  if(fresh){const on=lv.querySelector('.lr.on');if(on)on.scrollIntoView({block:'nearest'})}}
 function lvPick(id,kb){LSEL=id;document.querySelectorAll('.lr').forEach(x=>x.classList.toggle('on',x.dataset.lid===id));LVH=lvHtml(LVL);RPH=rpHtml(S.games.find(g=>g.id===id));$('#rp').innerHTML=RPH;if(kb){const e=document.querySelector(`.lr[data-lid="${id}"]`);if(e){e.focus();e.scrollIntoView({block:'nearest'})}}}
-function render(){
+function render(){const g0=$('#grid'),st0=g0.scrollTop;try{renderIn()}finally{if(g0.scrollTop!==st0)g0.scrollTop=st0}}
+function renderIn(){
  const sig=JSON.stringify([F.smart,F.status,F.platform,F.genre,F.list,$('#q').value,INST,YR,FAV]);if(sig!==SELSIG){SEL=null;SELSIG=sig}
  side();const l=S.games.filter(filt).sort(SORT[$('#sort').value]),grid=$('#grid');
  const ids=new Set(S.games.map(g=>g.id));for(const k of CC.keys())if(!k.startsWith('h:')&&!ids.has(k.split('@')[0]))CC.delete(k);
@@ -972,6 +973,7 @@ movable(WPD,document.querySelector('#wpd .sgh'));
 viewUi();
 movable(D,$('#d_h'));movable(SGD,document.querySelector('#sgd .sgh'));movable(AD,document.querySelector('#ad .sgh'));
 $('#d_x').onclick=()=>D.close();
+{let GST=0;const sm=D.showModal.bind(D);D.showModal=()=>{GST=$('#grid').scrollTop;sm()};D.addEventListener('close',()=>{const f=()=>{$('#grid').scrollTop=GST};f();setTimeout(f,60);setTimeout(f,400)})}
 $('#sg_go').onclick=()=>{SGS.gen++;sgLoad(0)};
 $('#sg_rmlogo').onclick=async()=>{await api('logo_clear',{id:SGS.id});SGS.gen++;SGD.close();await load()};
 $('#sg_q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#sg_go').click()}};
