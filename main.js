@@ -79,6 +79,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const J = async u => { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
+  if (!data.fixRomTrack) { data.fixRomTrack = 1; for (const g of data.games || []) if (g.rom) { g.last_played = 0; g.tracked_s = 0; if (g.status === 'Jogando') g.status = 'Backlog'; } }
   for (const g of data.games) if (!g.info4 && g.info3 && g.released) g.info4 = true; }
 function save() { const f = U('backlog_data.json'); fs.writeFileSync(f + '.tmp', JSON.stringify(data, null, 1)); fs.renameSync(f + '.tmp', f); }
 const rmLogo = g => { if (g.logo) try { fs.unlinkSync(path.join(COVERS(), g.logo)); } catch {} g.logo = ''; };
@@ -91,15 +92,27 @@ function track() {
   cp.exec('tasklist /fo csv /nh', { windowsHide: true, maxBuffer: 8e6 }, (err, out) => {
     if (err) return;
     const names = new Set(out.split(/\r?\n/).map(l => (l.match(/^"([^"]+)"/) || [])[1]).filter(Boolean).map(s => s.toLowerCase()));
-    running.clear();
+    const emu = [], hit = [];
     for (const g of data.games) {
       const pn = (g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe) ? path.win32.basename(g.exe) : '')).toLowerCase();
-      if (pn && names.has(pn)) {
+      if (pn && names.has(pn)) (g.rom ? emu : hit).push(g.rom ? [g, pn] : g);
+    }
+    const done = extra => {
+      running.clear();
+      for (const g of [...hit, ...extra]) {
         g.tracked_s = (g.tracked_s || 0) + 5; g.last_played = now(); running.add(g.id);
         if (g.status === 'Backlog') g.status = 'Jogando';
       }
-    }
-    if (running.size && ++tick % 6 === 0) save();
+      if (running.size && ++tick % 6 === 0) save();
+    };
+    if (!emu.length) return done([]);
+    // Jogos de emulador dividem o mesmo .exe: so conta o que tem a ROM na linha de comando do processo aberto
+    const filt = [...new Set(emu.map(x => x[1]))].map(n => `Name='${n.replace(/'/g, "''")}'`).join(' OR ');
+    cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Get-CimInstance Win32_Process -Filter "${filt}" | ForEach-Object { $_.CommandLine }`], { windowsHide: true, timeout: 8000, maxBuffer: 4e6 }, (e, o) => {
+      if (e) return done([]);
+      const lines = String(o).toLowerCase().replace(/\//g, '\\');
+      done(emu.filter(([g]) => lines.includes(g.rom.toLowerCase().replace(/\//g, '\\'))).map(x => x[0]));
+    });
   });
 }
 
