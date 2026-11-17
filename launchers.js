@@ -38,21 +38,61 @@ function regBlocks(out) {
   return blocks;
 }
 
+// Procura arquivos .item (manifestos) em varias pastas do Epic, para funcionar tambem no launcher novo (Preview)
+function epicItems() {
+  const roots = [];
+  const pd = process.env.ProgramData || 'C:\\ProgramData';
+  roots.push(process.env.RG_EPIC || path.join(pd, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests'));
+  for (const b of [path.join(pd, 'Epic'), path.join(process.env.LOCALAPPDATA || '', 'EpicGamesLauncher'), path.join(process.env.LOCALAPPDATA || '', 'Epic'), path.join(process.env.APPDATA || '', 'Epic')]) if (b && isDir(b)) roots.push(b);
+  const found = [], seen = new Set();
+  const walk = (d, depth) => {
+    if (seen.has(d) || depth > 5) return; seen.add(d);
+    let ents = []; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of ents) { const p = path.join(d, e.name); if (e.isFile() && /\.item$/i.test(e.name)) found.push(p); else if (e.isDirectory() && !/^(webcache|logs|cache|crashes|blobs)/i.test(e.name)) walk(p, depth + 1); }
+  };
+  for (const r of roots) walk(r, 0);
+  return found;
+}
+// Pastas de instalacao dos jogos da Epic: .egstore dentro da pasta do jogo (existe nos dois launchers)
+function epicDirs() {
+  const bases = new Set();
+  for (let c = 67; c <= 90; c++) { const d = String.fromCharCode(c) + ':\\'; for (const n of ['Epic Games', 'Program Files\\Epic Games', 'Program Files (x86)\\Epic Games', 'Games\\Epic Games', 'Games\\Epic', 'Jogos\\Epic Games']) { const p = d + n; if (isDir(p)) bases.add(p); } }
+  // pastas extras citadas nos .ini do launcher
+  for (const ini of [path.join(process.env.LOCALAPPDATA || '', 'EpicGamesLauncher', 'Saved', 'Config', 'Windows', 'GameUserSettings.ini'), path.join(process.env.LOCALAPPDATA || '', 'EpicGamesLauncher', 'Saved', 'Config', 'Windows', 'Engine.ini')]) {
+    try { for (const m of fs.readFileSync(ini, 'utf8').matchAll(/^[^=\r\n]*(?:InstallLocation|InstallDir|InstallPath)[^=\r\n]*=\s*"?([^"\r\n]+)"?/gim)) if (isDir(m[1].trim())) bases.add(m[1].trim()); } catch {}
+  }
+  return [...bases];
+}
 function epic() {
-  const dir = process.env.RG_EPIC || path.join(process.env.ProgramData || 'C:\\ProgramData', 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests');
-  const out = []; let files = []; try { files = fs.readdirSync(dir); } catch { return out; }
-  for (const f of files) {
-    if (!/\.item$/i.test(f)) continue;
+  const out = [], keys = new Set();
+  for (const f of epicItems()) {
     try {
-      const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      const j = JSON.parse(fs.readFileSync(f, 'utf8'));
       if (!j.DisplayName || !j.InstallLocation || j.bIsIncompleteInstall) continue;
       if (Array.isArray(j.AppCategories) && j.AppCategories.length && !j.AppCategories.includes('games')) continue;
       if (!isDir(j.InstallLocation)) continue;
       let exe = j.LaunchExecutable ? path.join(j.InstallLocation, j.LaunchExecutable) : '';
       if (!exe || !fs.existsSync(exe)) exe = guessExe(j.InstallLocation);
       const id = [j.CatalogNamespace, j.CatalogItemId, j.AppName].filter(Boolean).map(encodeURIComponent).join('%3A');
-      out.push({ launcher: 'Epic Games', key: 'epic:' + (j.AppName || j.DisplayName), name: clean(j.DisplayName), exe, uri: j.AppName ? `com.epicgames.launcher://apps/${id}?action=launch&silent=true` : '' });
+      const key = 'epic:' + (j.AppName || j.DisplayName); if (keys.has(key)) continue; keys.add(key);
+      out.push({ launcher: 'Epic Games', key, name: clean(j.DisplayName), exe, uri: j.AppName ? `com.epicgames.launcher://apps/${id}?action=launch&silent=true` : '' });
     } catch {}
+  }
+  // Reserva: le direto as pastas dos jogos (.egstore/*.mancpn), sem depender dos manifestos do launcher
+  const have = new Set(out.map(o => o.name.toLowerCase()));
+  for (const base of epicDirs()) {
+    let ents = []; try { ents = fs.readdirSync(base, { withFileTypes: true }); } catch { continue; }
+    for (const e of ents) {
+      if (!e.isDirectory() || /^(launcher|directxredist|epic online services|epicgameslauncher)$/i.test(e.name)) continue;
+      const dir = path.join(base, e.name), st = path.join(dir, '.egstore');
+      if (!isDir(st)) continue;
+      let app = '', ns = '', cat = '';
+      try { for (const m of fs.readdirSync(st)) if (/\.mancpn$/i.test(m)) { const j = JSON.parse(fs.readFileSync(path.join(st, m), 'utf8')); app = j.AppName || app; ns = j.CatalogNamespace || ns; cat = j.CatalogItemId || cat; } } catch {}
+      const key = 'epic:' + (app || e.name); if (keys.has(key) || have.has(clean(e.name).toLowerCase())) continue; keys.add(key);
+      const exe = guessExe(dir); if (!exe) continue;
+      const id = [ns, cat, app].filter(Boolean).map(encodeURIComponent).join('%3A');
+      out.push({ launcher: 'Epic Games', key, name: clean(e.name), exe, uri: app ? `com.epicgames.launcher://apps/${id}?action=launch&silent=true` : '' });
+    }
   }
   return out;
 }
