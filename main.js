@@ -388,7 +388,7 @@ async function launchersImport() {
   if (lchBusy) return { counts: {}, msg: 'Já estou procurando...' };
   lchBusy = true;
   try {
-    const want = data.sidePlats || LCH.SIDE_DEF, found = await LCH.scanAll(want), counts = {}, inst = new Set(), ign = new Set(data.lIgnored || []);
+    const want = data.sidePlats || LCH.SIDE_DEF, found = await LCH.scanAll(want), counts = {}, inst = new Set(), ign = new Set();
     const nzk = s => nzn(s);
     for (const n of LCH.NAMES.filter(x => want.includes(x))) {
       let novos = 0;
@@ -440,7 +440,7 @@ const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'i
 ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
-    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
+    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe)) || (!g.appid && !g.lkey)).map(g => g.id), coversDir: COVERS(),
       config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
