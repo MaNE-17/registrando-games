@@ -293,6 +293,38 @@ header button,header select,header input:not([type=range]){font-size:14.5px;padd
 header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 .hg button{display:inline-flex;align-items:center;gap:6px}.rfi{flex:none}#rfb.spin .rfi{color:var(--ac);animation:rfs .9s linear infinite}@keyframes rfs{to{transform:rotate(360deg)}}
 .xdb{display:flex;flex-direction:column;gap:6px;padding:6px 2px 2px}.xdb .cap{margin-top:10px}#xd{width:min(640px,94vw)}#xd .acts2{margin-top:18px}
+
+/* ---- Configuracoes 1.4.40: menu lateral, sem barra de rolagem ---- */
+#c{width:min(1000px,95vw)!important;padding:0;overflow:hidden}
+#c[open]{display:flex;flex-direction:column;height:min(700px,94vh)}
+#c .dh{margin:0;padding:16px 22px;border-bottom:1px solid var(--ln);font-size:17px}
+#c .cb{display:grid;grid-template-columns:220px minmax(0,1fr);flex:1;min-height:0}
+#c .tabs{display:flex;flex-direction:column;gap:3px;border:0;margin:0;padding:16px 12px;border-right:1px solid var(--ln);background:color-mix(in srgb,var(--sf) 45%,transparent)}
+#c .tg2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--mu);padding:14px 10px 5px}#c .tg2:first-child{padding-top:2px}
+#c .tab{text-align:left;border-radius:9px;padding:9px 12px;font-size:14.5px;box-shadow:none;border:0;color:var(--tx)}
+#c .tab:hover{background:color-mix(in srgb,var(--tx) 8%,transparent)}
+#c .tab.on{background:color-mix(in srgb,var(--ac) 16%,transparent);color:var(--ac);font-weight:650;box-shadow:none}
+#c .tpw{display:block;padding:22px 28px;overflow:hidden;min-height:0}
+#c .tpw>.tp{display:block;grid-area:auto}
+#c .tpw>.tp[hidden]{display:none!important;visibility:visible!important}
+#c .th{margin-bottom:14px}#c .th h3{margin:0 0 4px;font-size:20px}#c .th p{margin:0}
+#c label{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--mu);margin:14px 0 6px}
+#c label.ck{display:flex;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;font-weight:500;color:var(--tx);margin:14px 0 0}
+#c .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}#c .g2 label{margin-top:4px}
+#c .hn{margin:6px 0 0;font-size:12.5px}
+#c .note{margin:16px 0 0;padding:11px 14px;border-radius:10px;background:color-mix(in srgb,var(--tx) 6%,transparent);border:1px solid var(--ln);font-size:13px;color:var(--mu);line-height:1.5}
+#c .note b,#c .note code{color:var(--tx)}#c code{background:color-mix(in srgb,var(--tx) 10%,transparent);padding:1px 6px;border-radius:5px;font-size:12.5px}
+#c .steps{margin:0 0 4px;padding-left:20px;color:var(--mu);font-size:13.5px;line-height:1.6}
+#c .acts{margin-top:20px}
+#c #u_notes{white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:8;-webkit-box-orient:vertical;overflow:hidden}
+#c .cf{display:flex;align-items:center;gap:12px;padding:13px 22px;border-top:1px solid var(--ln)}#c .cf p{margin:0}#c .cf .sp{flex:1}
+#c .emus{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+#c .ec{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 16px;border-radius:10px}#c .ec b{font-size:14px}#c .ec span{font-size:12px;color:var(--mu)}
+#c .ec.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,var(--sf))}#c .ec.on b{color:var(--ac)}
+#c .ep{border:1px solid var(--ln);border-radius:14px;padding:14px 18px 16px;background:color-mix(in srgb,var(--sf) 40%,transparent)}
+#c .eph{display:flex;align-items:center;justify-content:space-between;gap:10px}#c .eph b{font-size:16px}
+#c .bdg{font-size:12px;font-weight:650;padding:3px 11px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}#c .bdg.ok{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 12%,transparent)}
+#c .ep .acts{margin-top:10px}#c .ep .mu#emu_msg{margin:8px 0 0;min-height:0}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -352,37 +384,41 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="askb"><label class="cap" for="ask_i" id="ask_l"></label><input id="ask_i" autocomplete="off"><p class="mu" id="ask_hint"></p></div>
 <div class="acts2"><span class="sp"></span><button type="button" id="ask_no">Cancelar</button><button type="button" class="p" id="ask_ok">Confirmar</button></div></dialog>
 
-<dialog id="c"><div class="dh" id="c_h"><b>Configurações</b><button type="button" class="xb" onclick="C.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="tabs" id="tabs" role="tablist"><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button><button class="tab" role="tab" aria-selected="false" data-t="lch">Launchers</button><button class="tab" role="tab" aria-selected="false" data-t="emu">Emuladores</button></div>
-<div class="tpw"><div class="tp" id="tp_steam"><p>Importa sua biblioteca da Steam com as horas jogadas. Seu perfil precisa estar com os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p>
-<label for="c_key">Chave da API da Steam</label><input id="c_key" type="password" autocomplete="off">
-<p class="mu"><a href="https://steamcommunity.com/dev/apikey" target="_blank">Obter minha chave da API</a>. No campo "Domain Name" pode escrever <i>localhost</i>.</p>
-<label for="c_id">SteamID64</label><input id="c_id" placeholder="7656119...">
-<p class="mu">Número de 17 dígitos que começa com 7656. <a href="https://steamid.io" target="_blank">Descobrir meu SteamID64</a> (cole o link do seu perfil lá).</p>
-<p class="mu"><b>Buscar jogos novos</b> atualiza o tempo de jogo e preenche só os jogos que ainda não têm dados (inclusive os que falharam antes). <b>Refazer todos</b> busca tudo de novo e é bem mais lento.</p><div class="acts"><button onclick="refreshAll(true)">Refazer todos os dados</button><button onclick="refreshAll()">Buscar jogos novos</button><button class="p" onclick="sync()">Salvar e importar da Steam</button></div></div>
-<div class="tp" id="tp_fam" hidden><p>Importa também os jogos compartilhados pela sua Família Steam. Esse recurso <b>não é oficial</b> da Steam e exige um token temporário, que vale por cerca de 24 horas.</p>
-<ol class="mu"><li>Entre na sua conta pelo navegador, em store.steampowered.com.</li><li>Abra <a href="https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" target="_blank">este endereço</a>.</li><li>Copie o valor de <b>webapi_token</b> (sem as aspas) e cole abaixo.</li></ol>
-<label for="c_fam">Token</label><input id="c_fam" type="password" autocomplete="off">
-<p class="mu">O token fica salvo só no seu computador. Nunca envie ele para outras pessoas.</p>
+<dialog id="c"><div class="dh" id="c_h"><b>Configurações</b><button type="button" class="xb" onclick="C.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="cb"><nav class="tabs" id="tabs" role="tablist" aria-label="Seções">
+<span class="tg2">Contas</span><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button>
+<span class="tg2">Biblioteca</span><button class="tab" role="tab" aria-selected="false" data-t="lch">Launchers</button><button class="tab" role="tab" aria-selected="false" data-t="emu">Emuladores</button>
+<span class="tg2">Aplicativo</span><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></nav>
+<div class="tpw">
+<section class="tp" id="tp_steam"><div class="th"><h3>Steam</h3><p class="mu">Importa sua biblioteca com as horas jogadas. Seu perfil precisa ter os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p></div>
+<div class="g2"><div><label for="c_key">Chave da API</label><input id="c_key" type="password" autocomplete="off"><p class="mu hn"><a href="https://steamcommunity.com/dev/apikey" target="_blank">Obter minha chave</a>. Em "Domain Name" escreva <i>localhost</i>.</p></div>
+<div><label for="c_id">SteamID64</label><input id="c_id" placeholder="7656119..."><p class="mu hn">17 dígitos que começam com 7656. <a href="https://steamid.io" target="_blank">Descobrir o meu</a>.</p></div></div>
+<div class="note"><b>Buscar jogos novos</b> atualiza o tempo de jogo e preenche só o que falta. <b>Refazer todos</b> busca tudo de novo e é bem mais lento.</div>
+<div class="acts"><button onclick="refreshAll(true)">Refazer todos os dados</button><button onclick="refreshAll()">Buscar jogos novos</button><button class="p" onclick="sync()">Salvar e importar da Steam</button></div></section>
+<section class="tp" id="tp_fam" hidden><div class="th"><h3>Família Steam</h3><p class="mu">Importa também os jogos compartilhados pela sua Família Steam. Recurso <b>não oficial</b>, que usa um token temporário de cerca de 24 horas.</p></div>
+<ol class="steps"><li>Entre na sua conta em store.steampowered.com.</li><li>Abra <a href="https://store.steampowered.com/pointssummary/ajaxgetasyncconfig" target="_blank">este endereço</a>.</li><li>Copie o valor de <b>webapi_token</b> (sem as aspas) e cole abaixo.</li></ol>
+<label for="c_fam">Token</label><input id="c_fam" type="password" autocomplete="off"><p class="mu hn">Fica salvo só no seu computador. Nunca envie para outras pessoas.</p>
 <label class="ck"><input type="checkbox" id="c_famon">Incluir a Família Steam ao importar</label>
-<div class="acts"><button class="p" onclick="sync()">Salvar e importar</button></div></div>
-<div class="tp" id="tp_sgdb" hidden><p>O SteamGridDB tem milhares de capas alternativas. A chave é usada no botão "Buscar no SteamGridDB" da tela de cada jogo.</p>
-<label for="c_sg">Chave de API do SteamGridDB</label><input id="c_sg" type="password" autocomplete="off">
-<p class="mu"><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank">Obter minha chave</a>. Precisa de uma conta gratuita no site.</p>
-<p class="mu" id="sg_msg"></p><div class="acts"><button onclick="testSg()">Testar chave</button></div>
-</div>
-<div class="tp" id="tp_lch" hidden><p>O programa procura sozinho os jogos <b>instalados</b> da Epic Games, Ubisoft Connect, EA app, Battle.net e Game Pass (Xbox) neste computador, sem login e sem chave. Ele faz isso ao abrir e a cada poucos minutos.</p>
-<p class="mu">Jogos que você excluir da biblioteca não voltam sozinhos. Para jogar, o programa abre o jogo pelo próprio launcher quando possível. Se algum jogo for detectado errado, edite ou exclua na tela do jogo.</p>
+<div class="acts"><button class="p" onclick="sync()">Salvar e importar</button></div></section>
+<section class="tp" id="tp_sgdb" hidden><div class="th"><h3>SteamGridDB</h3><p class="mu">Milhares de capas, logos e artes alternativas. A chave é usada nos botões de buscar capa e logo, e também ao preencher os jogos automaticamente.</p></div>
+<label for="c_sg">Chave de API</label><input id="c_sg" type="password" autocomplete="off"><p class="mu hn"><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank">Obter minha chave</a>. Precisa de uma conta gratuita no site.</p>
+<p class="mu" id="sg_msg"></p><div class="acts"><button onclick="testSg()">Testar chave</button></div></section>
+<section class="tp" id="tp_lch" hidden><div class="th"><h3>Launchers</h3><p class="mu">O app procura sozinho os jogos <b>instalados</b> da Epic Games, Ubisoft Connect, EA app, Battle.net e Game Pass neste computador, sem login e sem chave, ao abrir e a cada poucos minutos.</p></div>
+<div class="note">Jogos que você excluir da biblioteca não voltam sozinhos. Para jogar, o app abre o jogo pelo próprio launcher quando possível. Se algum jogo for detectado errado, edite ou exclua na tela do jogo.</div>
 <p class="mu" id="l_msg"></p><div id="l_list" class="mu"></div>
-<div class="acts"><button class="p" id="l_go" onclick="lchScan()">Procurar jogos instalados agora</button></div></div>
-<div class="tp" id="tp_emu" hidden><p><b>PlayStation 2 · PCSX2.</b> Escolha o programa e a pasta das suas ROMs. O app encontra os jogos em <b>.iso</b> e <b>.chd</b>, cria cada um na plataforma PlayStation 2 e busca nota, data, capa e logo.</p>
-<label class="cap" for="emu_exe">Executável do PCSX2</label><div class="row"><input id="emu_exe" placeholder="Ex.: E:\Emuladores\PCSX2\pcsx2-qt.exe" spellcheck="false"><button type="button" id="emu_exeb">Procurar...</button></div>
-<label class="cap" for="emu_roms" style="margin-top:12px">Pasta das ROMs</label><div class="row"><input id="emu_roms" placeholder="Ex.: E:\Roms\PS2" spellcheck="false"><button type="button" id="emu_romsb">Procurar...</button></div>
-<p class="mu" style="margin-top:12px">Cada jogo abre com: <code>"arquivo da ROM" -batch -fullscreen -nogui</code>. O nome vem do nome do arquivo; capa e logo precisam da chave do SteamGridDB. Jogos já importados não são repetidos.</p>
-<p class="mu" id="emu_msg"></p><div class="acts"><button class="p" id="emu_go">Importar jogos do PS2</button></div></div>
-<div class="tp" id="tp_upd" hidden><p>Versão instalada: <b id="u_ver"></b>. Clique abaixo para procurar uma versão nova.</p>
-<p class="mu" id="u_msg"></p><div id="u_notes" class="mu" style="white-space:pre-wrap;max-height:120px;overflow:auto"></div>
-<div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></div>
-</div><p id="c_msg" class="mu"></p><div class="acts"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><span style="flex:1"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
+<div class="acts"><button class="p" id="l_go" onclick="lchScan()">Procurar jogos instalados agora</button></div></section>
+<section class="tp" id="tp_emu" hidden><div class="th"><h3>Emuladores</h3><p class="mu">Escolha o emulador e a pasta das ROMs. O app cria os jogos, preenche o comando de abertura e busca nota, data, capa e logo.</p></div>
+<div class="emus" id="emus" role="tablist" aria-label="Emuladores"><button type="button" class="ec on" data-emu="pcsx2"><b>PCSX2</b><span>PlayStation 2</span></button></div>
+<div class="ep" id="emu_p_pcsx2"><div class="eph"><div><b>PCSX2</b><span class="mu"> · PlayStation 2 · .iso e .chd</span></div><span class="bdg" id="emu_st"></span></div>
+<label for="emu_exe">Executável</label><div class="row"><input id="emu_exe" placeholder="Ex.: E:\Emuladores\PCSX2\pcsx2-qt.exe" spellcheck="false"><button type="button" id="emu_exeb">Procurar...</button></div>
+<label for="emu_roms">Pasta das ROMs</label><div class="row"><input id="emu_roms" placeholder="Ex.: E:\Roms\PS2" spellcheck="false"><button type="button" id="emu_romsb">Procurar...</button></div>
+<div class="note">Cada jogo abre com <code>"arquivo da ROM" -batch -fullscreen -nogui</code>. O nome vem do arquivo. Jogos já importados não são repetidos. Capa e logo precisam da chave do SteamGridDB.</div>
+<p class="mu" id="emu_msg"></p><div class="acts"><button class="p" id="emu_go">Importar jogos do PS2</button></div></div></section>
+<section class="tp" id="tp_upd" hidden><div class="th"><h3>Atualizações</h3><p class="mu">Versão instalada: <b id="u_ver"></b>. Procure uma versão nova quando quiser.</p></div>
+<p class="mu" id="u_msg"></p><div id="u_notes" class="mu"></div>
+<div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></section>
+</div></div>
+<div class="cf"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><p id="c_msg" class="mu"></p><span class="sp"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
 
 <dialog id="xd"><div class="sgh" id="xd_h"><b>Executável do jogo</b><span class="sp"></span><button type="button" class="xb" id="xd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="xdb"><label class="cap" for="xd_t">Destino</label><div class="row"><input id="xd_t" placeholder="Caminho do .exe ou .bat" spellcheck="false"><button type="button" id="xd_tb">Procurar...</button></div>
@@ -678,9 +714,11 @@ function nameFromPath(p){const parts=p.split(/[\\/]/).filter(Boolean),file=parts
  const dir=parts[parts.length-1];return (dir&&!/^[a-z]:$/i.test(dir)?dir:file.replace(/\.(exe|bat|cmd)$/i,'')).trim()}
 
 
+
+function emuBadge(){const b=$('#emu_st');if(!b)return;const ok=$('#emu_exe').value.trim()&&$('#emu_roms').value.trim();b.textContent=ok?'Configurado':'Falta configurar';b.classList.toggle('ok',!!ok)}
 // ---- Emuladores ----
 const unq2=v=>String(v||'').trim().replace(/^"+|"+$/g,'').trim();
-let EMT=null;const emuSave=()=>api('emu_save',{pcsx2:$('#emu_exe').value,roms:$('#emu_roms').value});
+let EMT=null;const emuSave=()=>{emuBadge();return api('emu_save',{pcsx2:$('#emu_exe').value,roms:$('#emu_roms').value})};
 $('#emu_exeb').onclick=async()=>{const r=await api('pick');if(r.path){$('#emu_exe').value=r.path;emuSave()}};
 $('#emu_romsb').onclick=async()=>{const r=await api('pick_dir',{start:unq2($('#emu_roms').value)});if(r.path){$('#emu_roms').value=r.path;emuSave()}};
 $('#emu_exe').onchange=$('#emu_roms').onchange=emuSave;
@@ -755,7 +793,7 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';C.showModal()}
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';emuBadge();C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
