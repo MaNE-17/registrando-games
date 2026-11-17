@@ -354,9 +354,9 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #c .pbar{height:10px;border-radius:6px;background:var(--ln);overflow:hidden;margin:10px 0 6px}#c .pfill{height:100%;width:0;background:var(--ac);border-radius:6px;transition:width .2s}
 #updb{position:fixed;right:18px;bottom:18px;z-index:250;display:flex;align-items:center;gap:12px;max-width:min(440px,92vw);padding:12px 14px;border:1px solid var(--ac);border-radius:12px;background:var(--sf);box-shadow:0 10px 30px #0006;font-size:14px}
 #updb[hidden]{display:none}#updb b{color:var(--ac)}#updb .sp{flex:1}
-/* desfoque no rodape das capas (opcional) */
-.fxb .card .cv::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34%;z-index:1;pointer-events:none;backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);background:linear-gradient(to bottom,transparent,rgba(0,0,0,.38));-webkit-mask-image:linear-gradient(to bottom,transparent,#000 75%);mask-image:linear-gradient(to bottom,transparent,#000 75%)}
-.fxb .card .cv>button,.fxb .card .cv>span{z-index:2}
+/* desfoque no rodape da pagina (opcional) */
+.fxb main{position:relative}
+.fxb main::after{content:"";position:absolute;left:0;right:var(--fxr,0px);bottom:0;height:76px;z-index:5;pointer-events:none;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--bg) 60%,transparent));-webkit-mask-image:linear-gradient(to bottom,transparent,#000 80%);mask-image:linear-gradient(to bottom,transparent,#000 80%)}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div><div class="spc spc0" aria-hidden="true"></div>
 
@@ -371,7 +371,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="shell"><aside><div id="side"></div><div class="sbf"><span id="ver" class="ver"></span><button id="sbtog" class="sbtog" onclick="togSb()" aria-expanded="true" title="Recolher barra lateral"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg><span class="sbl">Recolher</span></button></div></aside>
 <div id="sbrs" class="rsz" title="Arraste para mudar a largura da barra lateral"></div>
 <main><div id="grid"></div></main></div>
-<div id="vp" class="pop" hidden><label>Tema</label><select id="th_mode" style="width:100%"><option value="auto">Automático (sistema)</option><option value="light">Claro</option><option value="dark">Escuro</option></select><label class="ck" style="margin-top:12px"><input type="checkbox" id="bold">Fonte em negrito (mais legível)</label><label>Cor de destaque</label><div class="sws" id="swa"></div><label>Mostrar nas capas</label><label class="ck"><input type="checkbox" id="in_nm">Nome</label><label class="ck"><input type="checkbox" id="in_st">Status</label><label class="ck"><input type="checkbox" id="in_ti">Tempo de jogo</label><label class="ck"><input type="checkbox" id="mcv">Nota do Metacritic</label><label class="ck"><input type="checkbox" id="fxb">Desfoque no rodapé das capas</label><label>Espaço horizontal · <b id="gxv"></b></label><input type="range" id="gx" min="0" max="48"><label>Espaço vertical · <b id="gyv"></b></label><input type="range" id="gy" min="0" max="64"><label for="sb_side">Posição da barra lateral</label><select id="sb_side" style="width:100%"><option value="l">Esquerda</option><option value="r">Direita</option></select><label>Largura da busca · <b id="swv"></b></label><input type="range" id="swr" min="120" max="480"><button id="ord_reset" style="width:100%;margin-top:14px">Restaurar posições dos botões</button><div class="acts" style="justify-content:flex-start"><button onclick="resetSp()">Restaurar espaçamento</button></div></div>
+<div id="vp" class="pop" hidden><label>Tema</label><select id="th_mode" style="width:100%"><option value="auto">Automático (sistema)</option><option value="light">Claro</option><option value="dark">Escuro</option></select><label class="ck" style="margin-top:12px"><input type="checkbox" id="bold">Fonte em negrito (mais legível)</label><label>Cor de destaque</label><div class="sws" id="swa"></div><label>Mostrar nas capas</label><label class="ck"><input type="checkbox" id="in_nm">Nome</label><label class="ck"><input type="checkbox" id="in_st">Status</label><label class="ck"><input type="checkbox" id="in_ti">Tempo de jogo</label><label class="ck"><input type="checkbox" id="mcv">Nota do Metacritic</label><label class="ck"><input type="checkbox" id="fxb">Desfoque no rodapé da página</label><label>Espaço horizontal · <b id="gxv"></b></label><input type="range" id="gx" min="0" max="48"><label>Espaço vertical · <b id="gyv"></b></label><input type="range" id="gy" min="0" max="64"><label for="sb_side">Posição da barra lateral</label><select id="sb_side" style="width:100%"><option value="l">Esquerda</option><option value="r">Direita</option></select><label>Largura da busca · <b id="swv"></b></label><input type="range" id="swr" min="120" max="480"><button id="ord_reset" style="width:100%;margin-top:14px">Restaurar posições dos botões</button><div class="acts" style="justify-content:flex-start"><button onclick="resetSp()">Restaurar espaçamento</button></div></div>
 
 <div id="yp" class="pop" hidden><div class="yh"><button id="y_prev" aria-label="Anos anteriores">‹</button><b id="y_rng"></b><button id="y_next" aria-label="Próximos anos">›</button></div><div class="yg" id="y_g"></div><div class="row"><button id="y_none"></button><button id="y_clr">Todos os anos</button></div></div>
 <div id="fp" class="pop" hidden style="width:260px"><div id="fp_l"></div></div>
@@ -678,7 +678,7 @@ function renderLv(l,grid){
  if(ph!==RPH){rp.innerHTML=ph;RPH=ph}
  if(fresh){const on=lv.querySelector('.lr.on');if(on)on.scrollIntoView({block:'nearest'})}}
 function lvPick(id,kb){LSEL=id;document.querySelectorAll('.lr').forEach(x=>x.classList.toggle('on',x.dataset.lid===id));LVH=lvHtml(LVL);RPH=rpHtml(S.games.find(g=>g.id===id));$('#rp').innerHTML=RPH;if(kb){const e=document.querySelector(`.lr[data-lid="${id}"]`);if(e){e.focus();e.scrollIntoView({block:'nearest'})}}}
-function render(){const g0=$('#grid'),st0=g0.scrollTop;try{renderIn()}finally{if(g0.scrollTop!==st0)g0.scrollTop=st0}}
+function render(){const g0=$('#grid'),st0=g0.scrollTop;try{renderIn()}finally{if(g0.scrollTop!==st0)g0.scrollTop=st0;if(FXB)fxSb()}}
 function renderIn(){
  const sig=JSON.stringify([F.smart,F.sp,F.status,F.platform,F.genre,F.list,$('#q').value,INST,YR,FAV]);if(sig!==SELSIG){SEL=null;SELSIG=sig}
  side();const l=S.games.filter(filt).sort(SORT[$('#sort').value]),grid=$('#grid');
@@ -911,7 +911,9 @@ $('#mcv').onchange=()=>{MC=$('#mcv').checked;try{localStorage.setItem('mc',MC?'1
 paintSb();paintMc();
 let BOLD=false;try{BOLD=localStorage.getItem('bold')==='1'}catch{}
 let FXB=false;try{FXB=localStorage.getItem('fxb')==='1'}catch{}
-function paintFxb(){document.body.classList.toggle('fxb',FXB);$('#fxb').checked=FXB}
+function fxSb(){const g=$('#grid');document.documentElement.style.setProperty('--fxr',Math.max(0,g.offsetWidth-g.clientWidth)+'px')}
+function paintFxb(){document.body.classList.toggle('fxb',FXB);$('#fxb').checked=FXB;fxSb()}
+addEventListener('resize',fxSb);
 $('#fxb').onchange=()=>{FXB=$('#fxb').checked;try{localStorage.setItem('fxb',FXB?'1':'0')}catch{}paintFxb()};paintFxb();
 function paintBold(){document.body.classList.toggle('bold',BOLD);$('#bold').checked=BOLD}
 $('#bold').onchange=()=>{BOLD=$('#bold').checked;try{localStorage.setItem('bold',BOLD?'1':'0')}catch{}paintBold()};paintBold();
