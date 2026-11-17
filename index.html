@@ -531,7 +531,7 @@ const starsH=r=>`<span class="stv" aria-label="${r} de 5">${[1,2,3,4,5].map(n=>`
 const BYL=()=>$('#sort').value==='bylist'&&F.smart!=='lists';
 function groupsByList(l){const ok=new Set(l.map(g=>g.id)),by=new Map(l.map(g=>[g.id,g])),used=new Set(),out=[];
  for(const L of [...S.lists].sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt'))){const gs=L.ids.filter(id=>ok.has(id)).map(id=>by.get(id));if(gs.length){out.push({id:L.id,name:L.name||'Sem nome',games:gs});gs.forEach(g=>used.add(g.id))}}
- const rest=l.filter(g=>!used.has(g.id));if(rest.length&&!F.list)out.push({id:'',name:'Sem lista',games:rest});return out}
+ return out}
 const lghH=x=>`<div class="lgh${x.id?' k':''}" ${x.id?`data-lgf="${esc(x.id)}" role="button" tabindex="0" title="${F.list===x.id?'Mostrar todas as listas':'Mostrar só esta lista'}"`:''}><b>${esc(x.name)}</b><em>${x.games.length}</em></div>`;
 function lvHtml(l){return BYL()?groupsByList(l).map(x=>lghH(x)+x.games.map(lvRow).join('')).join(''):l.map(lvRow).join('')}
 function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
