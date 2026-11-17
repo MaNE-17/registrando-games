@@ -276,6 +276,9 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <dialog id="pd"><div class="dh" id="pd_h"><b id="pd_t">Adicionar launcher</b><button type="button" class="xb" id="pd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="pdbody"><p class="mu" id="pd_p" style="margin:0 0 12px"></p><div class="pgrid" id="pd_l"></div></div>
 <div class="acts2"><span class="mu" id="pd_n"></span><span class="sp"></span><button type="button" class="p" id="pd_ok">Fechar</button></div></dialog>
+<dialog id="cf"><div class="dh"><b id="cf_t">Confirmar</b><button type="button" class="xb" id="cf_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div class="pdbody"><p id="cf_m" style="margin:0;line-height:1.5;white-space:pre-line"></p></div>
+<div class="acts2"><span class="sp"></span><button type="button" id="cf_no">Cancelar</button><button type="button" class="p" id="cf_ok">OK</button></div></dialog>
 <dialog id="ask"><div class="dh" id="ask_h"><b id="ask_t"></b><button type="button" class="xb" id="ask_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="askb"><label class="cap" for="ask_i" id="ask_l"></label><input id="ask_i" autocomplete="off"><p class="mu" id="ask_hint"></p></div>
 <div class="acts2"><span class="sp"></span><button type="button" id="ask_no">Cancelar</button><button type="button" class="p" id="ask_ok">Confirmar</button></div></dialog>
@@ -410,13 +413,17 @@ $('#side').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('
 let PD_K='l';
 function pdItems(){return PD_K==='l'?CATALOG.map(n=>({n,g:'',ic:IB(BRAND_D[n])})):CONSOLES.map(c=>({n:c.n,g:c.g,ic:conIcon(c)}))}
 const pdHave=()=>new Set(PD_K==='l'?(S.sidePlats||SIDE_DEF):(S.sideCons||[]));
-function platOpen(k){PD_K=k;$('#pd_t').textContent=k==='l'?'Adicionar launcher':'Adicionar plataforma';
- $('#pd_p').textContent=k==='l'?'Marque os launchers de PC que você usa. Marcado, ele aparece na barra lateral e filtra os jogos dele. Desmarcado, some da barra lateral (os jogos continuam na biblioteca).':'Marque as plataformas que quer na barra lateral, em "Plataformas". Desmarcado, some da barra lateral (os jogos continuam na biblioteca).';
+let PD_G=false;
+function platOpen(k,fromGame){PD_K=k;PD_G=!!fromGame;$('#pd_t').textContent=k==='l'?'Adicionar launcher':'Adicionar plataforma';
+ $('#pd_p').textContent=fromGame?'Marque a plataforma deste jogo: ela entra na barra lateral e já fica selecionada. Se ela já estiver lá, escolha na lista de plataformas.':k==='l'?'Marque os launchers de PC que você usa. Marcado, ele aparece na barra lateral e filtra os jogos dele. Desmarcado, some da barra lateral (os jogos continuam na biblioteca).':'Marque as plataformas que quer na barra lateral, em "Plataformas". Desmarcado, some da barra lateral (os jogos continuam na biblioteca).';
  platUi();$('#pd').showModal()}
 function platUi(){const have=pdHave();let g=null,html='';
  for(const x of pdItems()){if(x.g!==g&&x.g){g=x.g;html+=`<div class="pgh">${esc(g)}</div>`}html+=`<button type="button" class="pc${have.has(x.n)?' sel':''}" role="checkbox" aria-checked="${have.has(x.n)}" data-pn="${esc(x.n)}">${x.ic}<em>${esc(x.n)}</em><span class="ck2">${have.has(x.n)?'✓':''}</span></button>`}
  $('#pd_l').innerHTML=html;$('#pd_n').textContent=have.size?have.size+' na barra lateral':'Nenhuma na barra lateral'}
-$('#pd_l').onclick=async e=>{const b=e.target.closest('[data-pn]');if(!b)return;const n=b.dataset.pn,k=PD_K,have=pdHave(),on=!have.has(n);on?have.add(n):have.delete(n);
+$('#pd_l').onclick=async e=>{const b=e.target.closest('[data-pn]');if(!b)return;const n=b.dataset.pn,k=PD_K,have=pdHave();
+ if(PD_G){if(have.has(n)){note('Essa plataforma já existe, selecione ela na lista de plataformas.');return}
+  have.add(n);S.sideCons=[...have];side._h=null;side();$('#pd').close();fillPl(n);await api('side_set2',{list:[...have]});await load();return}
+ const on=!have.has(n);on?have.add(n):have.delete(n);
  if(k==='l')S.sidePlats=[...have];else S.sideCons=[...have];platUi();side._h=null;side();
  if(!on&&F.platform===n){F={smart:'all'};render()}
  await api(k==='l'?'side_set':'side_set2',{list:[...have]});if(on&&k==='l')api('launch_scan').then(()=>load());await load();if(PD_K===k)platUi()};
@@ -459,8 +466,8 @@ function selToggle(id,kb){
 $('#ql').onclick=()=>{const ids=SEL?[...SEL]:S.games.filter(filt).map(g=>g.id);if(ids.length)openListDraft(ids)};
 $('#grid').onclick=e=>{const gl=e.target.closest('[data-list]');if(gl){openList(gl.dataset.list);return}if(e.target.closest('#newg')){openListDraft([]);return}const fv=e.target.closest('[data-fav]');if(fv){const g=S.games.find(x=>x.id===fv.dataset.fav)||{};api('save',{id:g.id,fav:!g.fav}).then(load);return}const hb=e.target.closest('[data-hide]');if(hb){const g=S.games.find(x=>x.id===hb.dataset.hide)||{};api('save',{id:g.id,hidden:!g.hidden}).then(load);return}const p=e.target.closest('[data-play]');if(p){play(p.dataset.play);return}const c=e.target.closest('.card');if(!c)return;if(e.ctrlKey||e.metaKey){selToggle(c.dataset.id);return}openG(c.dataset.id)};
 $('#grid').onkeydown=e=>{if(!e.target.matches('.card,.gcard'))return;const L=e.target.dataset.list,N=e.target.id==='newg';if(e.key==='Enter'){if(N)openListDraft([]);else L?openList(L):openG(e.target.dataset.id)}if(e.key===' '&&!L&&!N){e.preventDefault();selToggle(e.target.dataset.id,1)}};
-async function play(id){const r=await api('play',{id});if(r.error)alert(r.error);load()}
-function playFrom(){if(cur)play(cur);else alert('Salve o jogo primeiro.')}
+async function play(id){const r=await api('play',{id});if(r.error)note(r.error);load()}
+function playFrom(){if(cur)play(cur);else note('Salve o jogo primeiro.')}
 const curG=()=>S.games.find(x=>x.id===cur)||G;
 function setHM(p,s){$('#'+p+'_h').value=Math.floor(s/3600);$('#'+p+'_m').value=Math.floor(s%3600/60)}
 const getHM=p=>(+$('#'+p+'_h').value||0)*3600+(+$('#'+p+'_m').value||0)*60;
@@ -487,6 +494,9 @@ D.onclick=async e=>{const t=e.target;let b;
  if(b=t.closest('[data-s]')){status=b.dataset.s;if(status==='Zerado'&&!$('#f_fin').value)$('#f_fin').value=new Date().toLocaleDateString('sv-SE');return paintD()}
  if(b=t.closest('[data-r]')){const n=+b.dataset.r,rc=b.getBoundingClientRect(),v=(e.detail&&e.clientX-rc.left<rc.width/2)?n-.5:n;rating=rating===v?0:v;return paintD()}
  if(b=t.closest('[data-l]')){await api('list_toggle',{list:b.dataset.l,game:cur});await load();return paintD()}};
+async function sideEnsure(p,changed){if(!p||!changed)return;
+ if(CATALOG.includes(p)){const l=S.sidePlats||SIDE_DEF;if(!l.includes(p)){S.sidePlats=[...l,p];await api('side_set',{list:S.sidePlats})}}
+ else if(CONSOLES.some(c=>c.n===p)){const l=S.sideCons||[];if(!l.includes(p)){S.sideCons=[...l,p];await api('side_set2',{list:S.sideCons})}}}
 async function saveG(){
  const name=$('#f_name').value.trim();if(!name)return $('#f_name').focus();
  const b={id:cur,name,status,rating,review:$('#f_review').value,platform:$('#f_platform').value.trim(),exe:$('#f_exe').value.trim(),
@@ -494,15 +504,22 @@ async function saveG(){
  if($('#f_rel').value!==orig.rel)b.released=$('#f_rel').value?Math.floor(new Date($('#f_rel').value+'T12:00:00').getTime()/1000):null;
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
- const r=await api('save',b);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});pendCover=null;D.close();load()}
-async function delG(){if(confirm('Excluir este jogo?')){await api('delete',{id:cur});D.close();load()}}
+ const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
+ const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});pendCover=null;D.close();load()}
+async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
+ await api('delete',{id:cur});D.close();
+ if(p&&!S.games.some(x=>x.id!==cur&&canonP(x.platform)===p)){
+  if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
+  if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
+  if(F.platform===p)F={smart:'all'}}
+ load()}
 function exeUi(){const v=$('#f_exe').value;$('#f_exeb').textContent=v?'Alterar .exe':'Adicionar .exe';$('#f_exeb').title=v?'Atual: '+v+($('#f_proc').value?' · processo: '+$('#f_proc').value:''):'Escolha o .exe (ou .bat) do jogo para abrir e contar o tempo de jogo'}
 async function pickExe(){const r=await api('pick');if(!r.path)return;$('#f_exe').value=r.path;if(!$('#f_name').value)$('#f_name').value=r.path.split(/[\\/]/).pop().replace(/\.(exe|bat|cmd)$/i,'');
  if(/\.(bat|cmd)$/i.test(r.path)){const p=await ask('Processo do jogo','Nome do .exe que o script abre','Ex.: Jogo.exe',$('#f_proc').value,'Opcional. Sem isso, o tempo de jogo de um .bat não é contado.');if(p!==null)$('#f_proc').value=p}else $('#f_proc').value='';exeUi()}
 async function addExe(){const r=await api('pick');if(r.path)openG(null,{name:r.path.split(/[\\/]/).pop().replace(/\.exe$/i,''),exe:r.path,platform:'PC'})}
 function toCover(src){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=600;c.height=900;const r=2/3;let w=i.width,h=i.height,sx=0,sy=0;
  if(w/h>r){const nw=h*r;sx=(w-nw)/2;w=nw}else{const nh=w/r;sy=(h-nh)/2;h=nh}c.getContext('2d').drawImage(i,sx,sy,w,h,0,0,600,900);ok(c.toDataURL('image/jpeg',.92))};i.onerror=no;i.src=src})}
-async function setCover(d){pendCover=null;try{await api('cover_data',{id:cur,data:await toCover(d)});await load();paintD()}catch{alert('Não consegui usar essa imagem.')}}
+async function setCover(d){pendCover=null;try{await api('cover_data',{id:cur,data:await toCover(d)});await load();paintD()}catch{note('Não consegui usar essa imagem.')}}
 const SGD=$('#sgd');let SGS={gen:0};
 async function sgdb(){
  const g=curG();SGS={id:cur,page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
@@ -538,9 +555,9 @@ $('#sg_g').onclick=async e=>{const i=e.target.closest('img[data-u]');if(!i)retur
  if(r.error){$('#sg_i').textContent=r.error;return}
  SGS.gen++;SGD.close();await setCover(r.data)};
 $('#sg_g').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.u)e.target.click()};
-async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return alert(r.error);
- $('#f_meta').value=r.meta;murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';if(r.note)alert(r.note)}
-async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return alert(r.error);
+async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
+ $('#f_meta').value=r.meta;murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';if(r.note)note(r.note)}
+async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
 function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;C.showModal()}
@@ -581,7 +598,13 @@ $('#f_pl').onclick=async e=>{e.stopPropagation();const x=e.target.closest('[data
 $('#f_pl').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.p!==undefined){e.preventDefault();e.target.click()}else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();$('#f_pl').hidden=true;$('#f_pbtn').focus()}};
 D.addEventListener('click',e=>{if(!e.target.closest('#f_pl')&&!e.target.closest('#f_pbtn'))$('#f_pl').hidden=true});
 document.querySelector('#d .dg2').addEventListener('scroll',()=>{$('#f_pl').hidden=true});
-$('#pl_add').onclick=async()=>{const n=await ask('Nova plataforma','Nome da plataforma','Ex.: PlayStation 4');if(!n)return;await api('platform_add',{name:n});await load();fillPl(n)};
+$('#pl_add').onclick=()=>{$('#f_pl').hidden=true;platOpen('p',true)};
+// Janelas proprias (confirm/alert nativos tiram o foco do teclado no Windows)
+function dlgMsg(msg,{title='Confirmar',ok='OK',cancel=true}={}){return new Promise(res=>{const C=$('#cf');let done=false;const fin=x=>{if(done)return;done=true;if(C.open)C.close();res(x)};
+ $('#cf_t').textContent=title;$('#cf_m').textContent=msg;$('#cf_ok').textContent=ok;$('#cf_no').hidden=!cancel;
+ $('#cf_ok').onclick=()=>fin(true);$('#cf_no').onclick=$('#cf_x').onclick=()=>fin(false);C.onclose=()=>fin(false);C.showModal();$('#cf_ok').focus()})}
+const confirmX=(m,ok='Confirmar')=>dlgMsg(m,{title:'Confirmar',ok});
+const note=m=>dlgMsg(m,{title:'Aviso',ok:'OK',cancel:false});
 // Janela pequena para digitar um nome (plataforma, genero, processo)
 function ask(t,l,ph,v='',hint=''){return new Promise(res=>{const A=$('#ask');let done=false;const fin=x=>{if(done)return;done=true;if(A.open)A.close();res(x)};
  $('#ask_t').textContent=t;$('#ask_l').textContent=l;$('#ask_i').placeholder=ph||'';$('#ask_i').value=v;$('#ask_hint').textContent=hint;
@@ -610,7 +633,7 @@ function togYr(e){e.stopPropagation();$('#vp').hidden=true;$('#fp').hidden=true;
 $('#y_prev').onclick=()=>{YPS-=12;yrUi()};$('#y_next').onclick=()=>{YPS+=12;yrUi()};
 $('#y_g').onclick=e=>{e.stopPropagation();const b=e.target.closest('[data-y]');if(b&&!b.disabled)setYr(+b.dataset.y)};
 $('#y_none').onclick=()=>setYr(-1);$('#y_clr').onclick=()=>{YR=0;yrUi();render()};
-async function refreshAll(full){if(full&&!confirm('Isso busca de novo os dados de TODOS os jogos da Steam e pode levar vários minutos. Continuar?'))return;await api('refresh',{full:!!full});$('#st_msg').textContent='Atualizando dados…';$('#c_msg').textContent='Atualizando...';setTimeout(load,4000)}
+async function refreshAll(full){if(full&&!await confirmX('Isso busca de novo os dados de TODOS os jogos da Steam e pode levar vários minutos. Continuar?'))return;await api('refresh',{full:!!full});$('#st_msg').textContent='Atualizando dados…';$('#c_msg').textContent='Atualizando...';setTimeout(load,4000)}
 // Arrastar para reorganizar: o item acompanha o mouse e os outros se ajustam com animacao
 let DRAGGING=false;
 function sortable(box,sel,onDone,opt={}){
@@ -690,7 +713,7 @@ LG.addEventListener('keydown',e=>{const it=e.target.closest('.li');if(!it)return
  if(e.altKey&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();const left=e.key==='ArrowLeft',s=left?it.previousElementSibling:it.nextElementSibling;
   if(s&&s.classList.contains('li')){left?LG.insertBefore(it,s):LG.insertBefore(s,it);renum();it.focus();saveOrder()}}});
 LG.onclick=async e=>{const rm=e.target.closest('[data-rm]');
- if(rm){if(!confirm('Remover este jogo da lista?'))return;const id=rm.dataset.rm;
+ if(rm){if(!await confirmX('Remover este jogo da lista?'))return;const id=rm.dataset.rm;
   if(LDL.id){await api('list_toggle',{list:LDL.id,game:id});await load()}else{LDL.ids=LDL.ids.filter(x=>x!==id);listUi()}return}
  const it=e.target.closest('.li');if(it)openG(it.dataset.id)};
 $('#ld_rank').onchange=async()=>{LDL.ranked=$('#ld_rank').checked;LG.classList.toggle('norank',!LDL.ranked);if(LDL.id){await api('list_save',{id:LDL.id,ranked:LDL.ranked});await load()}};
@@ -698,7 +721,7 @@ $('#ld_name').onchange=async()=>{const n=$('#ld_name').value.trim();LDL.name=n;i
 $('#ld_name').onkeydown=e=>{if(e.key==='Enter'&&!LDL.id){e.preventDefault();$('#ld_new').click()}};
 $('#ld_new').onclick=async()=>{const n=$('#ld_name').value.trim();if(!n){$('#ld_name').focus();return}
  await api('list_save',{name:n,ids:LDL.ids,ranked:LDL.ranked});await load();const l=S.lists[S.lists.length-1];if(l){LDL.id=l.id;LDL.name=n}listUi()};
-$('#ld_del').onclick=async()=>{if(confirm('Excluir esta lista? Os jogos não serão apagados.')){await api('list_delete',{id:LDL.id});LD.close();await load()}};
+$('#ld_del').onclick=async()=>{if(await confirmX('Excluir esta lista? Os jogos não serão apagados.')){await api('list_delete',{id:LDL.id});LD.close();await load()}};
 // incluir jogos na lista
 let ADS=new Set();
 function openPicker(){ADS=new Set();$('#ad_q').value='';adUi();AD.showModal();$('#ad_q').focus()}
@@ -789,14 +812,14 @@ const GDEF=['Ação','Action RPG','Aventura','Corrida','Hack and slash','Indie',
 const gsel=()=>$('#f_genres').value.split(',').map(x=>x.trim()).filter(Boolean);
 function genreUi(){const sel=gsel(),all=[...new Set([...sel,...genList()])].sort((a,b)=>a.localeCompare(b));
  $('#f_gchips').innerHTML=all.map(x=>`<span class="gw"><button type="button" class="gchip${sel.includes(x)?' on':''}" data-g="${esc(x)}">${esc(x)}</button><button type="button" class="gx" data-gx="${esc(x)}" title="Remover este gênero" aria-label="Remover o gênero ${esc(x)}">${XS}</button></span>`).join('')+'<button type="button" class="p gadd" id="g_add" title="Adicionar outro gênero" aria-label="Adicionar outro gênero"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>'}
-$('#f_gchips').onclick=async e=>{if(e.target.closest('#g_add')){const v=await ask('Novo gênero','Nome do gênero','Ex.: Ritmo');if(v){await api('genre_add',{name:v});const s=gsel();if(!s.includes(v))$('#f_genres').value=[...s,v].join(', ');await load();genreUi()}return}const gx=e.target.closest('[data-gx]');if(gx){const n=gx.dataset.gx;if(!confirm(`Remover o gênero "${n}"? Ele sai da lista e de todos os jogos que o usam.`))return;await api('genre_del',{name:n});$('#f_genres').value=gsel().filter(x=>x!==n).join(', ');await load();genreUi();return}const b=e.target.closest('[data-g]');if(!b)return;const g=b.dataset.g,s=gsel();$('#f_genres').value=(s.includes(g)?s.filter(x=>x!==g):[...s,g]).join(', ');genreUi()};
+$('#f_gchips').onclick=async e=>{if(e.target.closest('#g_add')){const v=await ask('Novo gênero','Nome do gênero','Ex.: Ritmo');if(v){await api('genre_add',{name:v});const s=gsel();if(!s.includes(v))$('#f_genres').value=[...s,v].join(', ');await load();genreUi()}return}const gx=e.target.closest('[data-gx]');if(gx){const n=gx.dataset.gx;if(!await confirmX(`Remover o gênero "${n}"? Ele sai da lista e de todos os jogos que o usam.`))return;await api('genre_del',{name:n});$('#f_genres').value=gsel().filter(x=>x!==n).join(', ');await load();genreUi();return}const b=e.target.closest('[data-g]');if(!b)return;const g=b.dataset.g,s=gsel();$('#f_genres').value=(s.includes(g)?s.filter(x=>x!==g):[...s,g]).join(', ');genreUi()};
 
 function dropHint(){const e=$('#d_cv');if(!pendCover&&!e.querySelector('img'))e.innerHTML='<div class="drop"><div>Arraste uma imagem aqui<br>ou cole com <kbd>Ctrl</kbd> + <kbd>V</kbd></div></div>'}
 $('#f_status').onchange=e=>{status=e.target.value;if(status==='Zerado'&&!$('#f_fin').value)$('#f_fin').value=new Date().toLocaleDateString('sv-SE');paintD()};
-async function applyCover(d){try{if(cur)await setCover(d);else{pendCover=await toCover(d);paintD()}}catch{alert('Não consegui usar essa imagem.')}}
+async function applyCover(d){try{if(cur)await setCover(d);else{pendCover=await toCover(d);paintD()}}catch{note('Não consegui usar essa imagem.')}}
 async function pickCover(){const r=await api('pick_img');if(r.data)applyCover(r.data)}
 async function clearCover(){pendCover=null;if(!cur){paintD();return}await api('cover_clear',{id:cur});await load();paintD()}
-async function useUrl(){const u=$('#d_url').value.trim();if(!u)return;const r=await api('fetch_img',{url:u});if(r.error||!r.data)return alert(r.error||'Não consegui baixar essa imagem.');applyCover(r.data);$('#d_url').value=''}
+async function useUrl(){const u=$('#d_url').value.trim();if(!u)return;const r=await api('fetch_img',{url:u});if(r.error||!r.data)return note(r.error||'Não consegui baixar essa imagem.');applyCover(r.data);$('#d_url').value=''}
 const fileData=f=>new Promise(ok=>{const fr=new FileReader();fr.onload=()=>ok(fr.result);fr.readAsDataURL(f)});
 D.addEventListener('paste',async e=>{const f=[...((e.clipboardData&&e.clipboardData.files)||[])].find(x=>x.type.startsWith('image/'));if(f){e.preventDefault();applyCover(await fileData(f))}});
 const dcv=$('#d_cv');dcv.addEventListener('dragover',e=>{e.preventDefault();dcv.classList.add('over')});dcv.addEventListener('dragleave',()=>dcv.classList.remove('over'));
