@@ -337,7 +337,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <label class="cap nota">Nota</label><div class="stars" id="f_stars"></div></div>
 <div class="full"><label class="cap">Gêneros <span class="mu nc">(clique para marcar)</span></label><div class="gchips" id="f_gchips"></div><input type="hidden" id="f_genres"></div>
 <div class="full"><label class="cap" for="f_review">Comentário / review</label><textarea id="f_review" rows="4" placeholder="O que achou? Momentos marcantes, se jogaria de novo..."></textarea></div>
-<input type="hidden" id="f_exe"><input type="hidden" id="f_proc"><input type="hidden" id="f_cwd"><input type="hidden" id="f_args">
+<input type="hidden" id="f_exe"><input type="hidden" id="f_proc"><input type="hidden" id="f_rom"><input type="hidden" id="f_cwd"><input type="hidden" id="f_args">
 </div></div>
 <div class="acts2"><button class="p" id="f_exeb" onclick="pickExe()">Adicionar .exe</button><button onclick="playFrom()">▶ Jogar</button><span class="sp"></span><button id="del" onclick="delG()">Excluir</button><button onclick="D.close()">Cancelar</button><button class="p" onclick="saveG()">Salvar</button></div>
 <div class="pdl" id="f_pl" role="listbox" hidden></div>
@@ -352,7 +352,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="askb"><label class="cap" for="ask_i" id="ask_l"></label><input id="ask_i" autocomplete="off"><p class="mu" id="ask_hint"></p></div>
 <div class="acts2"><span class="sp"></span><button type="button" id="ask_no">Cancelar</button><button type="button" class="p" id="ask_ok">Confirmar</button></div></dialog>
 
-<dialog id="c"><div class="dh" id="c_h"><b>Configurações</b><button type="button" class="xb" onclick="C.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="tabs" id="tabs" role="tablist"><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button><button class="tab" role="tab" aria-selected="false" data-t="lch">Launchers</button></div>
+<dialog id="c"><div class="dh" id="c_h"><b>Configurações</b><button type="button" class="xb" onclick="C.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="tabs" id="tabs" role="tablist"><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button><button class="tab" role="tab" aria-selected="false" data-t="lch">Launchers</button><button class="tab" role="tab" aria-selected="false" data-t="emu">Emuladores</button></div>
 <div class="tpw"><div class="tp" id="tp_steam"><p>Importa sua biblioteca da Steam com as horas jogadas. Seu perfil precisa estar com os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p>
 <label for="c_key">Chave da API da Steam</label><input id="c_key" type="password" autocomplete="off">
 <p class="mu"><a href="https://steamcommunity.com/dev/apikey" target="_blank">Obter minha chave da API</a>. No campo "Domain Name" pode escrever <i>localhost</i>.</p>
@@ -374,6 +374,11 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <p class="mu">Jogos que você excluir da biblioteca não voltam sozinhos. Para jogar, o programa abre o jogo pelo próprio launcher quando possível. Se algum jogo for detectado errado, edite ou exclua na tela do jogo.</p>
 <p class="mu" id="l_msg"></p><div id="l_list" class="mu"></div>
 <div class="acts"><button class="p" id="l_go" onclick="lchScan()">Procurar jogos instalados agora</button></div></div>
+<div class="tp" id="tp_emu" hidden><p><b>PlayStation 2 · PCSX2.</b> Escolha o programa e a pasta das suas ROMs. O app encontra os jogos em <b>.iso</b> e <b>.chd</b>, cria cada um na plataforma PlayStation 2 e busca nota, data, capa e logo.</p>
+<label class="cap" for="emu_exe">Executável do PCSX2</label><div class="row"><input id="emu_exe" placeholder="Ex.: E:\Emuladores\PCSX2\pcsx2-qt.exe" spellcheck="false"><button type="button" id="emu_exeb">Procurar...</button></div>
+<label class="cap" for="emu_roms" style="margin-top:12px">Pasta das ROMs</label><div class="row"><input id="emu_roms" placeholder="Ex.: E:\Roms\PS2" spellcheck="false"><button type="button" id="emu_romsb">Procurar...</button></div>
+<p class="mu" style="margin-top:12px">Cada jogo abre com: <code>"arquivo da ROM" -batch -fullscreen -nogui</code>. O nome vem do nome do arquivo; capa e logo precisam da chave do SteamGridDB. Jogos já importados não são repetidos.</p>
+<p class="mu" id="emu_msg"></p><div class="acts"><button class="p" id="emu_go">Importar jogos do PS2</button></div></div>
 <div class="tp" id="tp_upd" hidden><p>Versão instalada: <b id="u_ver"></b>. Clique abaixo para procurar uma versão nova.</p>
 <p class="mu" id="u_msg"></p><div id="u_notes" class="mu" style="white-space:pre-wrap;max-height:120px;overflow:auto"></div>
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></div>
@@ -382,7 +387,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <dialog id="xd"><div class="sgh" id="xd_h"><b>Executável do jogo</b><span class="sp"></span><button type="button" class="xb" id="xd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="xdb"><label class="cap" for="xd_t">Destino</label><div class="row"><input id="xd_t" placeholder="Caminho do .exe ou .bat" spellcheck="false"><button type="button" id="xd_tb">Procurar...</button></div>
 <label class="cap" for="xd_c">Iniciar em</label><div class="row"><input id="xd_c" placeholder="Pasta de trabalho (preenchida sozinha)" spellcheck="false"><button type="button" id="xd_cb">Procurar...</button></div>
-<label class="cap" for="xd_a">Opções de inicialização</label><div class="row"><input id="xd_a" placeholder="Opcional. Ex.: -fullscreen ou o caminho da ROM" spellcheck="false"></div>
+<label class="cap" for="xd_a">Opções de inicialização</label><div class="row"><input id="xd_a" placeholder="Opcional. Ex.: -fullscreen ou o caminho da ROM" spellcheck="false"><button type="button" id="xd_rom" hidden>Escolher ROM...</button></div>
 <div id="xd_pw" hidden><label class="cap" for="xd_p">Processo do jogo</label><div class="row"><input id="xd_p" placeholder="Ex.: Jogo.exe (opcional)" spellcheck="false"></div><div class="mu">Para um .bat/.cmd, é o .exe que ele abre. Sem isso o tempo de jogo não é contado.</div></div>
 <div class="acts2"><button type="button" id="xd_rm">Remover</button><span class="sp"></span><button type="button" id="xd_cancel">Cancelar</button><button type="button" class="p" id="xd_ok">OK</button></div></div></dialog>
 <dialog id="wpd"><div class="sgh"><b>Wallpaper · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go" class="p">Buscar no Google</button><span class="sp"></span><button id="wp_rm">Remover wallpaper</button><button type="button" class="xb" onclick="WPD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -635,7 +640,7 @@ function paintD(){
 function openG(id,pre){
  const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
  $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_lp').value=g.last_played?new Date(g.last_played*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',',''):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;pendLogo=null;pendWall=null;$('#look_msg').textContent='';fillPl(canonP(g.platform||F.platform||'PC'));$('#d_fam').hidden=!g.family;
- $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_cwd').value=g.cwd||'';$('#f_args').value=g.args||'';$('#f_meta').value=g.meta??'';mcPaintF();
+ $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_cwd').value=g.cwd||'';$('#f_rom').value=g.rom||'';$('#f_args').value=g.args||'';$('#f_meta').value=g.meta??'';mcPaintF();
  $('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';
  $('#t_s').textContent=fmt((g.steam_min||0)*60);setHM('tk',g.tracked_s||0);setHM('mn',g.manual_s||0);
  orig={tk:getHM('tk'),mn:getHM('mn'),rel:$('#f_rel').value};total();paintD();D.showModal()}
@@ -656,7 +661,7 @@ async function sideEnsure(p,changed){if(!p||!changed)return;
 async function saveG(){
  const name=$('#f_name').value.trim();if(!name)return $('#f_name').focus();
  const b={id:cur,name,status,rating,review:$('#f_review').value,platform:$('#f_platform').value.trim(),exe:$('#f_exe').value.trim(),
-  genres:$('#f_genres').value.split(',').map(x=>x.trim()).filter(Boolean),meta:$('#f_meta').value===''?null:+$('#f_meta').value,meta_url:murl,hidden:hid,fav:favv,proc:$('#f_proc').value.trim(),cwd:$('#f_cwd').value.trim(),args:$('#f_args').value.trim(),sortname:$('#f_sn').value.trim()};
+  genres:$('#f_genres').value.split(',').map(x=>x.trim()).filter(Boolean),meta:$('#f_meta').value===''?null:+$('#f_meta').value,meta_url:murl,hidden:hid,fav:favv,proc:$('#f_proc').value.trim(),cwd:$('#f_cwd').value.trim(),rom:$('#f_rom').value.trim(),args:$('#f_args').value.trim(),sortname:$('#f_sn').value.trim()};
  if($('#f_rel').value!==orig.rel)b.released=$('#f_rel').value?Math.floor(new Date($('#f_rel').value+'T12:00:00').getTime()/1000):null;
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
@@ -672,21 +677,36 @@ function nameFromPath(p){const parts=p.split(/[\\/]/).filter(Boolean),file=parts
  while(parts.length&&(skip.test(parts[parts.length-1])||/^[a-z]:$/i.test(parts[parts.length-1])))parts.pop();
  const dir=parts[parts.length-1];return (dir&&!/^[a-z]:$/i.test(dir)?dir:file.replace(/\.(exe|bat|cmd)$/i,'')).trim()}
 
+
+// ---- Emuladores ----
+const unq2=v=>String(v||'').trim().replace(/^"+|"+$/g,'').trim();
+let EMT=null;const emuSave=()=>api('emu_save',{pcsx2:$('#emu_exe').value,roms:$('#emu_roms').value});
+$('#emu_exeb').onclick=async()=>{const r=await api('pick');if(r.path){$('#emu_exe').value=r.path;emuSave()}};
+$('#emu_romsb').onclick=async()=>{const r=await api('pick_dir',{start:unq2($('#emu_roms').value)});if(r.path){$('#emu_roms').value=r.path;emuSave()}};
+$('#emu_exe').onchange=$('#emu_roms').onchange=emuSave;
+$('#emu_go').onclick=async()=>{await emuSave();$('#emu_go').disabled=true;$('#emu_msg').textContent='Procurando ROMs...';await api('emu_import');clearInterval(EMT);let n=0;
+ EMT=setInterval(async()=>{n++;const live=!(D.open&&false);await load();$('#emu_msg').textContent=S.msg||'';if(n>2&&!S.config.emuBusy){clearInterval(EMT);$('#emu_go').disabled=false}},1500)};
+
 // ---- Executavel do jogo (Destino / Iniciar em / Opcoes) ----
 const XD=$('#xd'),unq=v=>String(v||'').trim().replace(/^"+|"+$/g,'').trim(),dirOf=p=>{const i=Math.max(p.lastIndexOf('\\'),p.lastIndexOf('/'));return i>0?p.slice(0,i+1):''};
-let XAUTO='';
+let XAUTO='',XROM='';
+const romName=p=>(p.split(/[\\/]/).pop()||'').replace(/\.(iso|chd)$/i,'').replace(/[\[(][^\])]*[\])]/g,' ').replace(/_+/g,' ').replace(/\s+/g,' ').trim();
 function xdUi(){$('#xd_pw').hidden=!/\.(bat|cmd)$/i.test(unq($('#xd_t').value))}
 function xdSet(p){const prev=XAUTO;p=unq(p);$('#xd_t').value=p;const d=dirOf(p);if(!$('#xd_c').value.trim()||unq($('#xd_c').value)===prev)$('#xd_c').value=d;XAUTO=d;xdUi()}
 async function pickExe(){
- $('#xd_t').value=$('#f_exe').value;$('#xd_c').value=$('#f_cwd').value||dirOf($('#f_exe').value);XAUTO=dirOf($('#f_exe').value);$('#xd_a').value=$('#f_args').value;$('#xd_p').value=$('#f_proc').value;xdUi();$('#xd_rm').hidden=!$('#f_exe').value;
+ $('#xd_t').value=$('#f_exe').value;$('#xd_c').value=$('#f_cwd').value||dirOf($('#f_exe').value);XAUTO=dirOf($('#f_exe').value);$('#xd_a').value=$('#f_args').value;$('#xd_p').value=$('#f_proc').value;XROM=$('#f_rom').value;
+ const emu=(S.config.emu||{}).pcsx2,ps2=canonP($('#f_platform').value)==='PlayStation 2'&&!!emu;$('#xd_rom').hidden=!ps2;
+ if(ps2&&!$('#f_exe').value){$('#xd_t').value=emu;$('#xd_c').value=dirOf(emu);XAUTO=dirOf(emu);$('#xd_a').value='-batch -fullscreen -nogui'}
+ xdUi();$('#xd_rm').hidden=!$('#f_exe').value;
  XD.showModal();$('#xd_t').focus()}
 $('#xd_tb').onclick=async()=>{const r=await api('pick');if(r.path)xdSet(r.path)};
 $('#xd_cb').onclick=async()=>{const r=await api('pick_dir',{start:unq($('#xd_c').value)});if(r.path){$('#xd_c').value=r.path.replace(/[\\/]*$/,'\\');XAUTO=''}};
+$('#xd_rom').onclick=async()=>{const r=await api('pick_rom');if(!r.path)return;XROM=r.path;$('#xd_a').value=`"${r.path}" -batch -fullscreen -nogui`;if(!$('#f_name').value.trim())$('#f_name').value=romName(r.path)};
 $('#xd_t').oninput=xdUi;$('#xd_t').onchange=()=>xdSet($('#xd_t').value);
 $('#xd_x').onclick=$('#xd_cancel').onclick=()=>XD.close();
-$('#xd_rm').onclick=()=>{$('#f_exe').value='';$('#f_cwd').value='';$('#f_args').value='';$('#f_proc').value='';exeUi();XD.close()};
+$('#xd_rm').onclick=()=>{$('#f_rom').value='';$('#f_exe').value='';$('#f_cwd').value='';$('#f_args').value='';$('#f_proc').value='';exeUi();XD.close()};
 $('#xd_ok').onclick=()=>{const t=unq($('#xd_t').value);if(!t)return $('#xd_t').focus();
- $('#f_exe').value=t;$('#f_cwd').value=unq($('#xd_c').value);$('#f_args').value=$('#xd_a').value.trim();$('#f_proc').value=/\.(bat|cmd)$/i.test(t)?$('#xd_p').value.trim():'';
+ $('#f_exe').value=t;$('#f_rom').value=XROM;$('#f_cwd').value=unq($('#xd_c').value);$('#f_args').value=$('#xd_a').value.trim();$('#f_proc').value=/\.(bat|cmd)$/i.test(t)?$('#xd_p').value.trim():'';
  if(!$('#f_name').value.trim())$('#f_name').value=nameFromPath(t);exeUi();XD.close()};
 movable(XD,$('#xd_h'));
 async function addExe(){const r=await api('pick');if(r.path)openG(null,{name:r.path.split(/[\\/]/).pop().replace(/\.exe$/i,''),exe:r.path,platform:'PC'})}
@@ -735,7 +755,7 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;C.showModal()}
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}

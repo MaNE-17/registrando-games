@@ -504,6 +504,46 @@ async function refreshAllInfo() {
   }
 }
 
+
+// ---------- Emuladores (PCSX2) ----------
+let emuBusy = false;
+const PS2 = 'PlayStation 2';
+const romTitle = f => { const n = path.basename(f).replace(/\.(iso|chd)$/i, '').replace(/[\[(][^\])]*[\])]/g, ' ').replace(/_+/g, ' ').replace(/\s+/g, ' ').replace(/\s*-\s*$/, '').trim(); return n || path.basename(f).replace(/\.(iso|chd)$/i, ''); };
+function walkRoms(dir, depth, out) {
+  let es = []; try { es = fs.readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+  for (const e of es) { const p = path.join(dir, e.name); if (e.isFile() && /\.(iso|chd)$/i.test(e.name)) out.push(p); else if (e.isDirectory() && depth < 4 && !/^(\$recycle\.bin|system volume information)$/i.test(e.name)) walkRoms(p, depth + 1, out); }
+  return out;
+}
+const EMU_FLAGS = '-batch -fullscreen -nogui';
+async function emuEnrich(g) {
+  try { const r = await mcInfo(g); if (r) { if (r.score != null) { g.meta = r.score; g.meta_url = r.url; } if (r.released && !g.rel_manual) g.released = r.released; if (r.genres && r.genres.length && !(g.genres || []).length) g.genres = r.genres; } } catch {}
+  if (data.config.sgdb) {
+    try { if (!g.cover) { const p = await sgPage(g, 0, 'cover'); if (p.items[0]) await wallSave(g, p.items[0].url, 'cover'); g.sgc = 1; } } catch {}
+    try { if (!g.logo) { const p = await sgPage(g, 0, 'logo'); if (p.items[0]) await wallSave(g, p.items[0].url, 'logo'); g.sgl = 1; } } catch {}
+  }
+}
+async function emuImport() {
+  const c = data.emu || {};
+  if (!c.pcsx2 || !fs.existsSync(c.pcsx2)) { msg = 'Emuladores: escolha o .exe do PCSX2 primeiro.'; return; }
+  if (!c.roms || !isDirP(c.roms)) { msg = 'Emuladores: escolha a pasta das ROMs primeiro.'; return; }
+  emuBusy = true;
+  try {
+    const have = new Set(data.games.filter(g => g.rom).map(g => g.rom.toLowerCase()));
+    const files = walkRoms(c.roms, 0, []).filter(f => !have.has(f.toLowerCase()));
+    const fresh = [];
+    for (const f of files) {
+      const g = { id: rid(), name: romTitle(f), platform: PS2, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.pcsx2, cwd: path.dirname(c.pcsx2) + path.sep, args: `"${f}" ${EMU_FLAGS}`, rom: f, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+      data.games.push(g); fresh.push(g);
+    }
+    if (fresh.length) { data.sideCons = data.sideCons || []; if (!data.sideCons.includes(PS2)) data.sideCons.push(PS2); }
+    save();
+    let n = 0;
+    for (const g of fresh) { msg = `PS2: buscando dados dos jogos... (${++n}/${fresh.length}) ${g.name}`; await emuEnrich(g); save(); await sleep(400); }
+    msg = fresh.length ? `PS2: ${fresh.length} jogo(s) importado(s).` : 'PS2: nenhum jogo novo encontrado na pasta.';
+  } catch (e) { msg = 'PS2: erro ao importar (' + e.message + ')'; }
+  finally { emuBusy = false; }
+}
+
 // Preenche capa e logo do SteamGridDB so nos jogos que ainda nao tem (nao mexe nos ja definidos nem refaz os ja tentados)
 async function sgFill() {
   if (!data.config.sgdb) return;
@@ -531,11 +571,11 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emu: data.emu || {}, emuBusy, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }
@@ -566,6 +606,9 @@ ipcMain.handle('api', async (_e, p, b) => {
       const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Executável ou script', extensions: ['exe', 'bat', 'cmd'] }, { name: 'Todos', extensions: ['*'] }] });
       return { path: r.canceled ? '' : r.filePaths[0] };
     }
+    case 'emu_save': { data.emu = { ...(data.emu || {}), pcsx2: String(b.pcsx2 || '').replace(/^"+|"+$/g, '').trim(), roms: String(b.roms || '').replace(/^"+|"+$/g, '').trim() }; save(); return { ok: true }; }
+    case 'emu_import': { if (emuBusy) return { ok: true }; msg = 'PS2: procurando ROMs...'; emuImport(); return { ok: true }; }
+    case 'pick_rom': { const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: data.emu && data.emu.roms && isDirP(data.emu.roms) ? data.emu.roms : undefined, filters: [{ name: 'ROM de PS2', extensions: ['iso', 'chd'] }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
     case 'pick_dir': {
       const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'], defaultPath: b.start && fs.existsSync(b.start) ? b.start : undefined });
       return { path: r.canceled ? '' : r.filePaths[0] };
