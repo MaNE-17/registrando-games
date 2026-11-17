@@ -77,6 +77,7 @@ const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
   for (const g of data.games) if (!g.info4 && g.info3 && g.released) g.info4 = true; }
 function save() { const f = U('backlog_data.json'); fs.writeFileSync(f + '.tmp', JSON.stringify(data, null, 1)); fs.renameSync(f + '.tmp', f); }
+const rmWall = g => { if (g.wall) try { fs.unlinkSync(path.join(COVERS(), g.wall)); } catch {} g.wall = ''; };
 const rmCover = g => { if (g.cover) try { fs.unlinkSync(path.join(COVERS(), g.cover)); } catch {} g.cover = ''; };
 
 // Rastreio: a cada 5s confere se o .exe de algum jogo esta aberto (Windows)
@@ -457,7 +458,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (x.status === 'Zerado' && !x.finished) x.finished = now(); else if (x.status !== 'Zerado') x.finished = null;
       save(); return { ok: true, id: x.id };
     }
-    case 'delete': if (g) { rmCover(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
+    case 'delete': if (g) { rmCover(g); rmWall(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
@@ -517,6 +518,31 @@ ipcMain.handle('api', async (_e, p, b) => {
       g.cover = `${g.id}-${Date.now()}.jpg`;
       fs.writeFileSync(path.join(COVERS(), g.cover), Buffer.from(b.data.split(',')[1], 'base64')); save(); return { ok: true };
     }
+    case 'wall_search': {
+      const q = String(b.q || '').trim(); if (!q) return { items: [], error: 'Digite o nome do jogo.' };
+      const R = { '1080': '1920x1080', '1440': '2560x1440', '2160': '3840x2160', 'uw1080': '2560x1080', 'uw1440': '3440x1440', 'uw2160': '5120x2160' };
+      const res = R[b.res] || R['1080'], page = Math.max(1, +b.page || 1);
+      try {
+        const r = await fetch(`https://wallhaven.cc/api/v1/search?q=${encodeURIComponent(q)}&categories=111&purity=100&sorting=relevance&resolutions=${res}&page=${page}`, { headers: { 'User-Agent': 'RegistrandoGames' } });
+        if (r.status === 429) return { items: [], error: 'Muitas buscas seguidas. Espere um minuto e tente de novo.' };
+        if (!r.ok) return { items: [], error: 'O site de wallpapers não respondeu (' + r.status + ').' };
+        const j = await r.json();
+        return { items: (j.data || []).map(d => ({ id: d.id, thumb: (d.thumbs && (d.thumbs.large || d.thumbs.small)) || '', url: d.path, res: d.resolution })), page, pages: (j.meta && j.meta.last_page) || 1, total: (j.meta && j.meta.total) || 0 };
+      } catch (e) { return { items: [], error: 'Sem conexão com o site de wallpapers.' }; }
+    }
+    case 'wall_set': {
+      if (!g) return { error: 'Salve o jogo primeiro.' };
+      let u; try { u = new URL(b.url); } catch { return { error: 'Link inválido.' }; }
+      if (u.protocol !== 'https:' || !/(^|\.)wallhaven\.cc$/.test(u.hostname)) return { error: 'Link não permitido.' };
+      try {
+        const r = await fetch(u.href, { headers: { 'User-Agent': 'RegistrandoGames' } }); if (!r.ok) throw 0;
+        const buf = Buffer.from(await r.arrayBuffer()); if (buf.length < 1000) throw 0;
+        fs.mkdirSync(COVERS(), { recursive: true }); rmWall(g);
+        g.wall = `${g.id}-wp-${Date.now()}${/\.png$/i.test(u.pathname) ? '.png' : '.jpg'}`;
+        fs.writeFileSync(path.join(COVERS(), g.wall), buf); save(); return { ok: true };
+      } catch { return { error: 'Não consegui baixar esse wallpaper.' }; }
+    }
+    case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
     case 'cover_clear': if (g) { rmCover(g); save(); } return { ok: true };
     case 'sgdb': {
       if (!g) return {};
