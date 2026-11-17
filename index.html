@@ -752,12 +752,12 @@ function emuRender(){const L=$('#emu_list');
 <div class="g2"><div><label>Nome</label><input data-f="name" value="${esc(e.name)}" spellcheck="false"></div><div><label>Plataforma</label><select data-f="platform">${CONSOLES.map(c=>`<option value="${esc(c.n)}"${c.n===e.platform?' selected':''}>${esc(dispP(c.n))}</option>`).join('')}</select></div></div>
 <label>Executável</label><div class="row"><input data-f="exe" value="${esc(e.exe)}" placeholder="Ex.: ...\\Emulador\\emulador.exe" spellcheck="false"><button type="button" data-pick="exe">Procurar...</button></div>
 <label>Pasta das ROMs</label><div class="row"><input data-f="roms" value="${esc(e.roms)}" placeholder="Ex.: ...\\Roms\\Console" spellcheck="false"><button type="button" data-pick="roms">Procurar...</button></div>
-<div class="g2 chg"><div><label>Comandos de inicialização</label><input data-f="flags" value="${esc((e.flags||[]).join(' '))}" placeholder="Ex.: -batch -fullscreen" spellcheck="false"></div><div><label>Formatos de ROM</label><div class="chips">${chips('exts')}</div></div></div>
+<div class="g2 chg"><div><label>Comandos de inicialização</label><div class="row"><input data-f="flags" value="${esc((e.flags||[]).join(' '))}" placeholder="Ex.: -batch -fullscreen" spellcheck="false"><select data-f="pos" title="Posição dos comandos"><option value="after"${e.pos!=='before'?' selected':''}>Depois da ROM</option><option value="before"${e.pos==='before'?' selected':''}>Antes da ROM</option></select></div></div><div><label>Formatos de ROM</label><div class="chips">${chips('exts')}</div></div></div>
 <div class="acts"><button type="button" class="p" data-imp>Importar jogos</button><button type="button" class="dng" data-del>Remover emulador</button></div></div>`:'')+'</div>'}).join('')}
 const emuPut=(e,f)=>api('emu_save',{id:e.id,...f});
 $('#emu_new').onclick=async()=>{const n=await ask('Novo emulador','Nome do emulador','Ex.: PCSX2','');if(!n)return;const r=await api('emu_save',{name:n});await load();emuSync();EMU_OPEN=r.id;emuRender()};
 $('#emu_list').addEventListener('change',async ev=>{const t=ev.target.closest('[data-f]');if(!t)return;const card=t.closest('.ec2'),e=EMUS.find(x=>x.id===card.dataset.id);if(!e)return;
- const f=t.dataset.f;if(f==='flags'){e.flags=t.value.match(/"[^"]*"|\S+/g)||[]}else e[f]=t.value.trim()||(f==='name'?e.name:'');await emuPut(e,{[f]:f==='flags'?e.flags:t.value});await load();emuSync();emuRender()});
+ const f=t.dataset.f;if(f==='flags'){e.flags=t.value.match(/"[^"]*"|\S+/g)||[]}else if(f==='pos')e.pos=t.value;else e[f]=t.value.trim()||(f==='name'?e.name:'');await emuPut(e,{[f]:f==='flags'?e.flags:t.value});await load();emuSync();emuRender()});
 $('#emu_list').addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.matches('[data-tg]'))ev.target.click()});
 $('#emu_list').addEventListener('click',async ev=>{const card=ev.target.closest('.ec2');if(!card)return;const e=EMUS.find(x=>x.id===card.dataset.id);if(!e)return;const b=ev.target.closest('button,[data-tg]');if(!b)return;
  if(b.matches('[data-tg]')){EMU_OPEN=EMU_OPEN===e.id?null:e.id;emuRender();const o=$('#emu_list .ec2.open');if(o)o.scrollIntoView({block:'nearest'});return}
@@ -785,7 +785,7 @@ async function pickExe(){
  XD.showModal();$('#xd_t').focus()}
 $('#xd_tb').onclick=async()=>{const r=await api('pick');if(r.path)xdSet(r.path)};
 $('#xd_cb').onclick=async()=>{const r=await api('pick_dir',{start:unq($('#xd_c').value)});if(r.path){$('#xd_c').value=r.path.replace(/[\\/]*$/,'\\');XAUTO=''}};
-$('#xd_rom').onclick=async()=>{const r=await api('pick_rom',{id:XEMU});if(!r.path)return;XROM=r.path;const EM=(S.config.emus||[]).find(e=>e.id===XEMU)||{},fl=EM.flags||[];$('#xd_a').value=`"${r.path}"`+(fl.length?' '+fl.join(' '):'');if(!$('#f_name').value.trim())$('#f_name').value=romName(r.path)};
+$('#xd_rom').onclick=async()=>{const r=await api('pick_rom',{id:XEMU});if(!r.path)return;XROM=r.path;const EM=(S.config.emus||[]).find(e=>e.id===XEMU)||{},fl=EM.flags||[];$('#xd_a').value=fl.length&&EM.pos==='before'?fl.join(' ')+` "${r.path}"`:`"${r.path}"`+(fl.length?' '+fl.join(' '):'');if(!$('#f_name').value.trim())$('#f_name').value=romName(r.path)};
 $('#xd_t').oninput=xdUi;$('#xd_t').onchange=()=>xdSet($('#xd_t').value);
 $('#xd_x').onclick=$('#xd_cancel').onclick=()=>XD.close();
 $('#xd_rm').onclick=()=>{$('#f_rom').value='';$('#f_emu').value='';$('#f_exe').value='';$('#f_cwd').value='';$('#f_args').value='';$('#f_proc').value='';exeUi();XD.close()};

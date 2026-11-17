@@ -525,7 +525,7 @@ let emuBusy = false;
 const PS2 = 'PlayStation 2';
 const EMU_DEF_FLAGS = ['-batch', '-fullscreen', '-nogui'], EMU_DEF_EXTS = ['.iso', '.chd'];
 const emuOf = id => (data.emus || []).find(x => x.id === id);
-const emuArgs = (rom, flags) => `"${rom}"${flags.length ? ' ' + flags.join(' ') : ''}`;
+const emuArgs = (rom, flags, pos) => pos === 'before' && flags.length ? `${flags.join(' ')} "${rom}"` : `"${rom}"${flags.length ? ' ' + flags.join(' ') : ''}`;
 const normExts = a => [...new Set((a || []).map(x => '.' + String(x).trim().toLowerCase().replace(/^\.+/, '').replace(/[^a-z0-9]/g, '')).filter(x => x.length > 1))];
 function emuMigrate() {
   if (data.emu && !data.emus) data.emus = [{ id: 'pcsx2', name: 'PCSX2', platform: PS2, exe: data.emu.pcsx2 || '', roms: data.emu.roms || '', flags: Array.isArray(data.emu.flags) ? data.emu.flags : EMU_DEF_FLAGS, exts: Array.isArray(data.emu.exts) && data.emu.exts.length ? data.emu.exts : EMU_DEF_EXTS }];
@@ -556,7 +556,7 @@ async function emuImport(id) {
     const files = walkRoms(c.roms, 0, [], c.exts).filter(f => !have.has(f.toLowerCase()));
     const fresh = [];
     for (const f of files) {
-      const g = { id: rid(), name: romTitle(f), platform: c.platform, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.exe, cwd: path.dirname(c.exe) + path.sep, args: emuArgs(f, c.flags || []), rom: f, emu: c.id, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+      const g = { id: rid(), name: romTitle(f), platform: c.platform, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.exe, cwd: path.dirname(c.exe) + path.sep, args: emuArgs(f, c.flags || [], c.pos), rom: f, emu: c.id, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
       data.games.push(g); fresh.push(g);
     }
     if (fresh.length) { data.sideCons = data.sideCons || []; if (!data.sideCons.includes(c.platform)) data.sideCons.push(c.platform); }
@@ -637,18 +637,19 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'emu_save': {
       data.emus = data.emus || [];
-      let c = emuOf(b.id), old = null;
+      let c = emuOf(b.id), old = null, oldPos = null;
       if (!c) { c = { id: rid(), name: 'Novo emulador', platform: PS2, exe: '', roms: '', flags: [], exts: [] }; data.emus.push(c); }
-      else old = [...(c.flags || [])];
+      else { old = [...(c.flags || [])]; oldPos = c.pos; }
       const q = v => String(v || '').replace(/^"+|"+$/g, '').trim();
       if ('name' in b) c.name = String(b.name || '').trim() || c.name;
       if ('platform' in b && b.platform) c.platform = String(b.platform);
       if ('exe' in b) c.exe = q(b.exe);
       if ('roms' in b) c.roms = q(b.roms);
+      if (b.pos === 'before' || b.pos === 'after') c.pos = b.pos;
       if (Array.isArray(b.flags)) c.flags = b.flags.map(x => String(x).trim()).filter(Boolean);
       if (Array.isArray(b.exts)) c.exts = normExts(b.exts);
       // jogos importados que ainda usam o comando padrao antigo acompanham a mudanca
-      if (old && JSON.stringify(old) !== JSON.stringify(c.flags)) for (const g of data.games) if (g.rom && g.emu === c.id && g.args === emuArgs(g.rom, old)) g.args = emuArgs(g.rom, c.flags);
+      if (old && (JSON.stringify(old) !== JSON.stringify(c.flags) || oldPos !== c.pos)) for (const g of data.games) if (g.rom && g.emu === c.id && g.args === emuArgs(g.rom, old, oldPos)) g.args = emuArgs(g.rom, c.flags, c.pos);
       save(); return { ok: true, id: c.id };
     }
     case 'emu_del': { data.emus = (data.emus || []).filter(x => x.id !== b.id); save(); return { ok: true }; }
