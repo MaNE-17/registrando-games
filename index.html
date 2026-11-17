@@ -307,7 +307,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div id="fp" class="pop" hidden style="width:260px"><div id="fp_l"></div></div>
 <div id="sbz" hidden><div class="zl"></div><div class="zr"></div></div>
 <dialog id="ld"><div class="sgh"><input id="ld_name" class="t" placeholder="Nome da lista" aria-label="Nome da lista"><span class="mu" id="ld_n"></span><span class="sp"></span><button id="ld_add">+ Adicionar jogos</button><label class="ck"><input type="checkbox" id="ld_rank">Mostrar ranking</label><button id="ld_del">Excluir lista</button><button class="p" id="ld_new" hidden>Criar lista</button><button type="button" class="xb" onclick="LD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><p class="mu" style="margin:10px 18px 0">Segure e arraste as capas para montar seu ranking (ou use Alt + ← →). O 1º, 2º e 3º lugares ganham ouro, prata e bronze.</p><div class="lg" id="ld_g"></div></dialog>
-<dialog id="ad"><div class="sgh"><b>Adicionar jogos à lista</b><input id="ad_q" placeholder="Buscar jogo" aria-label="Buscar jogo para adicionar"><span class="mu" id="ad_n"></span><span class="sp"></span><button onclick="AD.close()">Cancelar</button><button class="p" id="ad_ok" disabled>Adicionar</button></div><div class="lg" id="ad_g"></div></dialog>
+<dialog id="ad"><div class="sgh"><b>Adicionar jogos à lista</b><input id="ad_q" placeholder="Buscar jogo" aria-label="Buscar jogo para adicionar"><span class="mu" id="ad_n"></span><span class="sp"></span><button type="button" id="ad_new" title="Cadastrar um jogo que ainda não está na sua biblioteca">+ Novo jogo</button><button onclick="AD.close()">Cancelar</button><button class="p" id="ad_ok" disabled>Adicionar</button></div><div class="lg" id="ad_g"></div></dialog>
 <dialog id="d">
 <div class="dh" id="d_h"><b id="d_title">Adicionar jogo</b><button type="button" id="d_x" class="xb" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="dg2">
@@ -638,7 +638,7 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;D.close();load()}
+ const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur;NEWFORLIST=false;D.close();if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
  await sidePrune(p,cur);
@@ -874,6 +874,7 @@ $('#ad_g').onclick=e=>{const it=e.target.closest('.ai');if(!it||it.classList.con
 $('#ad_ok').onclick=async()=>{const ids=[...ADS];AD.close();
  if(LDL.id){await api('list_add',{id:LDL.id,ids});await load()}else{LDL.ids.push(...ids.filter(i=>!LDL.ids.includes(i)));listUi()}};
 $('#ld_add').onclick=openPicker;
+let NEWFORLIST=false;$('#ad_new').onclick=()=>{AD.close();NEWFORLIST=true;openG()};D.addEventListener('close',()=>setTimeout(()=>{NEWFORLIST=false},50));
 function renderGroups(grid){
  grid.innerHTML=S.lists.map(l=>{const gs=l.ids.map(id=>S.games.find(g=>g.id===id)).filter(Boolean).slice(0,4);
   const cells=gs.map((g,i)=>{const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
