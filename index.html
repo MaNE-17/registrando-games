@@ -552,14 +552,18 @@ document.addEventListener('click',e=>{const g=S.games.find(x=>x.id===LSEL);
  if(e.target.closest('#lrs')&&g){g.logoSize=120;g.logoX=0;g.logoY=100;g.logoHide=false;logoSave(g);LMO=true;lvPick(g.id);return}
  if(LMO&&!e.target.closest('#lmn')){LMO=false;const m=$('#lmn');if(m)m.hidden=true}});
 function rpFb(i){const c=i.dataset.cv;i.onerror=null;if(c){i.src=c;i.classList.add('blur')}else i.remove()}
+let LVH=null,RPH=null,LVL=[];
 function renderLv(l,grid){
  if(!l.length){grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;return}
  if(!l.some(g=>g.id===LSEL))LSEL=l[0].id;
- const old=grid.querySelector('.lv'),st=old?old.scrollTop:0;
- grid.innerHTML=`<div class="lv" role="listbox" aria-label="Jogos">${l.map(lvRow).join('')}</div><div class="rp" id="rp"></div>`;
- $('#rp').innerHTML=rpHtml(l.find(g=>g.id===LSEL));const lv=grid.querySelector('.lv');lv.scrollTop=st;
- const on=lv.querySelector('.lr.on');if(on&&!old)on.scrollIntoView({block:'nearest'})}
-function lvPick(id,kb){LSEL=id;document.querySelectorAll('.lr').forEach(x=>x.classList.toggle('on',x.dataset.lid===id));$('#rp').innerHTML=rpHtml(S.games.find(g=>g.id===id));if(kb){const e=document.querySelector(`.lr[data-lid="${id}"]`);if(e){e.focus();e.scrollIntoView({block:'nearest'})}}}
+ const html=l.map(lvRow).join(''),ph=rpHtml(l.find(g=>g.id===LSEL));
+ LVL=l;let fresh=0,lv=grid.querySelector('.lv'),rp=grid.querySelector('#rp');
+ if(!lv||!rp){grid.innerHTML=`<div class="lv" role="listbox" aria-label="Jogos"></div><div class="rp" id="rp"></div>`;lv=grid.querySelector('.lv');rp=$('#rp');LVH=RPH=null;fresh=1}
+ const st=lv.scrollTop;
+ if(html!==LVH){lv.innerHTML=html;LVH=html;lv.scrollTop=st}
+ if(ph!==RPH){rp.innerHTML=ph;RPH=ph}
+ if(fresh){const on=lv.querySelector('.lr.on');if(on)on.scrollIntoView({block:'nearest'})}}
+function lvPick(id,kb){LSEL=id;document.querySelectorAll('.lr').forEach(x=>x.classList.toggle('on',x.dataset.lid===id));LVH=LVL.map(lvRow).join('');RPH=rpHtml(S.games.find(g=>g.id===id));$('#rp').innerHTML=RPH;if(kb){const e=document.querySelector(`.lr[data-lid="${id}"]`);if(e){e.focus();e.scrollIntoView({block:'nearest'})}}}
 function render(){
  const sig=JSON.stringify([F.smart,F.status,F.platform,F.genre,F.list,$('#q').value,INST,YR,FAV]);if(sig!==SELSIG){SEL=null;SELSIG=sig}
  side();const l=S.games.filter(filt).sort(SORT[$('#sort').value]),grid=$('#grid');

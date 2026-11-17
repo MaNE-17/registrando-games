@@ -473,9 +473,26 @@ async function wallSave(g, src, kind = 'wall') {
   }
   if (!buf || buf.length < (kind === 'logo' ? 800 : 5000) || buf.length > 60e6) return { error: 'Imagem inválida ou grande demais.' };
   fs.mkdirSync(COVERS(), { recursive: true });
-  if (kind === 'logo') { rmLogo(g); g.logo = `${g.id}-lg-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.logo), buf); }
+  if (kind === 'cover') { rmCover(g); g.cover = `${g.id}-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.cover), buf); }
+  else if (kind === 'logo') { rmLogo(g); g.logo = `${g.id}-lg-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.logo), buf); }
   else { rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.wall), buf); }
-  save(); return { ok: true, file: kind === 'logo' ? g.logo : g.wall };
+  save(); return { ok: true, file: kind === 'logo' ? g.logo : kind === 'cover' ? g.cover : g.wall };
+}
+
+// Preenche capa e logo do SteamGridDB so nos jogos que ainda nao tem (nao mexe nos ja definidos nem refaz os ja tentados)
+async function sgFill() {
+  if (!data.config.sgdb) return;
+  const todo = data.games.filter(g => (!g.cover && !g.sgc) || (!g.logo && !g.sgl));
+  let n = 0;
+  for (const g of todo) {
+    try {
+      msg = `Buscando capas e logos no SteamGridDB... (${++n}/${todo.length})`;
+      if (!g.cover && !g.sgc) { const r = await sgPage(g, 0, 'cover'); if (r.items[0]) await wallSave(g, r.items[0].url, 'cover'); g.sgc = 1; }
+      if (!g.logo && !g.sgl) { const r = await sgPage(g, 0, 'logo'); if (r.items[0]) await wallSave(g, r.items[0].url, 'logo'); g.sgl = 1; }
+      save(); await sleep(250);
+    } catch (e) { if (/401|403/.test(e.message || '')) break; }
+  }
+  save();
 }
 ipcMain.on('wall-pick', async (e, p) => {
   const g = data.games.find(x => x.id === wpGame) || (wpGame === 'novo' ? { id: 'tmp' } : null); if (!g || !p || typeof p.src !== 'string') return;
@@ -503,7 +520,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
-    case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
+    case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(async () => { try { await sgFill(); } catch {} fillInfo(); }); return { ok: true }; }
     case 'side_set': {
       const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
     }
@@ -564,7 +581,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (!g) return {};
       fs.mkdirSync(COVERS(), { recursive: true }); rmCover(g);
       g.cover = `${g.id}-${Date.now()}.jpg`;
-      fs.writeFileSync(path.join(COVERS(), g.cover), Buffer.from(b.data.split(',')[1], 'base64')); save(); return { ok: true };
+      fs.writeFileSync(path.join(COVERS(), g.cover), Buffer.from(b.data.split(',')[1], 'base64')); g.sgc = 1; save(); return { ok: true };
     }
     case 'wall_open': {
       if (!g && b.id !== 'novo') return { error: 'Salve o jogo primeiro.' };
@@ -582,9 +599,9 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
     case 'wall_attach': { if (!g || !/^tmp-wp-\d+\.\w+$/.test(String(b.file || ''))) return { ok: false }; const src = path.join(COVERS(), b.file); if (!fs.existsSync(src)) return { ok: false }; rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${path.extname(b.file)}`; fs.renameSync(src, path.join(COVERS(), g.wall)); save(); return { ok: true }; }
-    case 'logo_clear': if (g) { rmLogo(g); save(); } return { ok: true };
+    case 'logo_clear': if (g) { rmLogo(g); g.sgl = 1; save(); } return { ok: true };
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
-    case 'cover_clear': if (g) { rmCover(g); save(); } return { ok: true };
+    case 'cover_clear': if (g) { rmCover(g); g.sgc = 1; save(); } return { ok: true };
     case 'sgdb': {
       if (!g && !(b.id === 'novo' && (b.q || '').trim())) return {};
       if (!data.config.sgdb) return { error: 'Cole sua chave do SteamGridDB em Configurações.' };
