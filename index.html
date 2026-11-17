@@ -418,6 +418,7 @@ const fmt=s=>s<60?'0 h':s<3600?Math.round(s/60)+' min':(s/3600).toFixed(1).repla
 const esc=t=>String(t??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const mcl=m=>m>=75?'g':m>=50?'y':'r';
+function mcPaintF(){const e=$('#f_meta'),v=e.value===''?null:+e.value;e.style.color=v==null?'':v>=70?'#52c889':v>=50?'#f5b301':'#e5484d';e.style.fontWeight=v==null?'':'700'}
 const sk=g=>g.sortname||g.name,NC=(a,b)=>sk(a).localeCompare(sk(b),undefined,{numeric:true,sensitivity:'base'});
 const SORT={name:NC,hours:(a,b)=>secs(b)-secs(a),played:(a,b)=>(b.last_played||0)-(a.last_played||0),rating:(a,b)=>(b.rating||0)-(a.rating||0),meta:(a,b)=>(b.meta||0)-(a.meta||0),added:(a,b)=>b.added-a.added,fin:(a,b)=>(b.finished||0)-(a.finished||0),namez:(a,b)=>NC(b,a),rel:(a,b)=>(b.released||0)-(a.released||0),relo:(a,b)=>(a.released||9e12)-(b.released||9e12)};
 const coverSrc=g=>g.cover?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.cover):g.capsule?g.capsule:g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`:'';
@@ -614,7 +615,7 @@ function paintD(){
 function openG(id,pre){
  const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
  $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_lp').value=g.last_played?new Date(g.last_played*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',',''):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;pendLogo=null;pendWall=null;$('#look_msg').textContent='';fillPl(canonP(g.platform||F.platform||'PC'));$('#d_fam').hidden=!g.family;
- $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_meta').value=g.meta??'';
+ $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_meta').value=g.meta??'';mcPaintF();
  $('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';
  $('#t_s').textContent=fmt((g.steam_min||0)*60);setHM('tk',g.tracked_s||0);setHM('mn',g.manual_s||0);
  orig={tk:getHM('tk'),mn:getHM('mn'),rel:$('#f_rel').value};total();paintD();D.showModal()}
@@ -694,7 +695,7 @@ $('#sg_g').onclick=async e=>{const i=e.target.closest('img[data-u]');if(!i)retur
  SGS.gen++;SGD.close();await applyCover(r.data)};
 $('#sg_g').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.u)e.target.click()};
 async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
- $('#f_meta').value=r.meta;murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';if(r.note)note(r.note)}
+ $('#f_meta').value=r.meta;mcPaintF();murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';if(r.note)note(r.note)}
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
@@ -889,7 +890,7 @@ async function lookupGame(){
  const r=await api('lookup',{name,platform:$('#f_platform').value});$('#f_look').disabled=false;
  if(r.error){m.textContent=r.error;return}
  const got=[];
- if(r.meta!=null&&$('#f_meta').value===''){$('#f_meta').value=r.meta;murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';got.push('nota')}
+ if(r.meta!=null&&$('#f_meta').value===''){$('#f_meta').value=r.meta;mcPaintF();murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';got.push('nota')}
  
  if(r.released&&!$('#f_rel').value){$('#f_rel').value=dstr(r.released);got.push('data')}
  if(r.cover&&!(cur&&curG().cover)){try{const f=await api('fetch_img',{url:r.cover});if(f.data){pendCover=await toCover(f.data);got.push('capa')}}catch{}}
@@ -970,6 +971,7 @@ function genreUi(){const sel=gsel(),all=[...new Set([...sel,...genList()])].sort
 $('#f_gchips').onclick=async e=>{if(e.target.closest('#g_add')){const v=await ask('Novo gênero','Nome do gênero','Ex.: Ritmo');if(v){await api('genre_add',{name:v});const s=gsel();if(!s.includes(v))$('#f_genres').value=[...s,v].join(', ');await load();genreUi()}return}const gx=e.target.closest('[data-gx]');if(gx){const n=gx.dataset.gx;if(!await confirmX(`Remover o gênero "${n}"? Ele sai da lista e de todos os jogos que o usam.`))return;await api('genre_del',{name:n});$('#f_genres').value=gsel().filter(x=>x!==n).join(', ');await load();genreUi();return}const b=e.target.closest('[data-g]');if(!b)return;const g=b.dataset.g,s=gsel();$('#f_genres').value=(s.includes(g)?s.filter(x=>x!==g):[...s,g]).join(', ');genreUi()};
 
 function dropHint(){const e=$('#d_cv');if(!pendCover&&!e.querySelector('img'))e.innerHTML='<div class="drop"><div>Arraste uma imagem aqui<br>ou cole com <kbd>Ctrl</kbd> + <kbd>V</kbd></div></div>'}
+$('#f_meta').addEventListener('input',mcPaintF);
 $('#f_status').onchange=e=>{status=e.target.value;if(status==='Zerado'&&!$('#f_fin').value)$('#f_fin').value=new Date().toLocaleDateString('sv-SE');paintD()};
 async function applyCover(d){try{if(cur)await setCover(d);else{pendCover=await toCover(d);paintD()}}catch{note('Não consegui usar essa imagem.')}}
 async function pickCover(){const r=await api('pick_img');if(r.data)applyCover(r.data)}
