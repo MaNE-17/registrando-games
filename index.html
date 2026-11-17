@@ -634,7 +634,11 @@ async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;
  await sidePrune(p,cur);
  load()}
 function exeUi(){const v=$('#f_exe').value;$('#f_exeb').textContent=v?'Alterar .exe':'Adicionar .exe';$('#f_exeb').title=v?'Atual: '+v+($('#f_proc').value?' · processo: '+$('#f_proc').value:''):'Escolha o .exe (ou .bat) do jogo para abrir e contar o tempo de jogo'}
-async function pickExe(){const r=await api('pick');if(!r.path)return;$('#f_exe').value=r.path;if(!$('#f_name').value)$('#f_name').value=r.path.split(/[\\/]/).pop().replace(/\.(exe|bat|cmd)$/i,'');
+// Nome do jogo = pasta onde ele esta (pula pastas tecnicas como bin, Win64, Release)
+function nameFromPath(p){const parts=p.split(/[\\/]/).filter(Boolean),file=parts.pop()||'',skip=/^(bin|bin32|bin64|binaries|win32|win64|windows|windowsnoeditor|x64|x86|x86_64|release|debug|shipping|game|games|app|application|program|launcher|client|retail|final|build|data|content|main|exe)$/i;
+ while(parts.length&&(skip.test(parts[parts.length-1])||/^[a-z]:$/i.test(parts[parts.length-1])))parts.pop();
+ const dir=parts[parts.length-1];return (dir&&!/^[a-z]:$/i.test(dir)?dir:file.replace(/\.(exe|bat|cmd)$/i,'')).trim()}
+async function pickExe(){const r=await api('pick');if(!r.path)return;$('#f_exe').value=r.path;if(!$('#f_name').value)$('#f_name').value=nameFromPath(r.path);
  if(/\.(bat|cmd)$/i.test(r.path)){const p=await ask('Processo do jogo','Nome do .exe que o script abre','Ex.: Jogo.exe',$('#f_proc').value,'Opcional. Sem isso, o tempo de jogo de um .bat não é contado.');if(p!==null)$('#f_proc').value=p}else $('#f_proc').value='';exeUi()}
 async function addExe(){const r=await api('pick');if(r.path)openG(null,{name:r.path.split(/[\\/]/).pop().replace(/\.exe$/i,''),exe:r.path,platform:'PC'})}
 function toCover(src){return new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=600;c.height=900;const r=2/3;let w=i.width,h=i.height,sx=0,sy=0;
