@@ -320,13 +320,21 @@ async function importFamily(c) {
   const gid = ((await J(`https://api.steampowered.com/IFamilyGroupsService/GetFamilyGroupForUser/v1/?access_token=${t}&steamid=${sid}`)).response || {}).family_groupid;
   if (!gid) throw new Error('não encontrei uma Família Steam nessa conta');
   const apps = ((await J(`https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/?access_token=${t}&family_groupid=${gid}&steamid=${sid}&include_own=true&include_free=false&include_excluded=false&include_non_games=false`)).response || {}).apps || [];
-  const have = new Set(data.games.filter(g => g.appid).map(g => g.appid));
+  const by = new Map(data.games.filter(g => g.appid).map(g => [g.appid, g]));
   let n = 0;
   for (const a of apps) {
-    if (!a.appid || have.has(a.appid)) continue;
-    n++; have.add(a.appid);
-    data.games.push({ id: rid(), name: a.name || ('App ' + a.appid), appid: a.appid, platform: 'Steam', family: true, genres: [], status: 'Backlog', rating: 0, review: '',
-      exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() });
+    if (!a.appid) continue;
+    const pm = Number(a.rt_playtime || a.playtime_forever || 0) || 0, lp = Number(a.rt_last_played || a.rtime_last_played || 0) || 0;
+    const ex = by.get(a.appid);
+    if (ex) {
+      if (pm > (ex.steam_min || 0)) ex.steam_min = pm;
+      if (lp) ex.last_played = Math.max(ex.last_played || 0, lp);
+      continue;
+    }
+    n++;
+    const g = { id: rid(), name: a.name || ('App ' + a.appid), appid: a.appid, platform: 'Steam', family: true, genres: [], status: 'Backlog', rating: 0, review: '',
+      exe: '', steam_min: pm, tracked_s: 0, manual_s: 0, last_played: lp, finished: null, added: now() };
+    by.set(a.appid, g); data.games.push(g);
   }
   save(); return n;
 }
