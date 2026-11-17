@@ -623,7 +623,8 @@ D.onclick=async e=>{const t=e.target;let b;
  if(b=t.closest('[data-s]')){status=b.dataset.s;if(status==='Zerado'&&!$('#f_fin').value)$('#f_fin').value=new Date().toLocaleDateString('sv-SE');return paintD()}
  if(b=t.closest('[data-r]')){const n=+b.dataset.r,rc=b.getBoundingClientRect(),v=(e.detail&&e.clientX-rc.left<rc.width/2)?n-.5:n;rating=rating===v?0:v;return paintD()}
  if(b=t.closest('[data-l]')){await api('list_toggle',{list:b.dataset.l,game:cur});await load();return paintD()}};
-async function sidePrune(p,exceptId){if(!p||S.games.some(x=>x.id!==exceptId&&canonP(x.platform)===p))return;
+const linkedG=g=>!!(g&&(g.appid||g.lkey||g.exe));
+async function sidePrune(p,exceptId){if(!p||S.games.some(x=>x.id!==exceptId&&linkedG(x)&&canonP(x.platform)===p))return;
  if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
  if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
  if(F.platform===p)F={smart:'all'}}
@@ -638,7 +639,7 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur;NEWFORLIST=false;D.close();if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
+ const r=await api('save',b);const lk=!!(b.exe||(prev&&(prev.appid||prev.lkey)));if(lk)await sideEnsure(pn,true);else if(prev&&linkedG(prev)&&canonP(prev.platform)===pn)await sidePrune(pn,prev.id);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur;NEWFORLIST=false;D.close();if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
  await sidePrune(p,cur);
