@@ -508,6 +508,7 @@ async function saveG(){
  const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});pendCover=null;D.close();load()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
+ if(g&&g.lkey){await api('launch_scan');return load()}
  if(p&&!S.games.some(x=>x.id!==cur&&canonP(x.platform)===p)){
   if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
   if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
