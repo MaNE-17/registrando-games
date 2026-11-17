@@ -223,6 +223,7 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 #side .sh{display:flex;align-items:center;gap:8px;cursor:pointer}#side .sh:hover{color:var(--tx)}#side .sh .tx{flex:1}#side .sh em{font-style:normal;font-weight:600;letter-spacing:0}
 #side .sh .chv{transition:transform .15s;flex:none}#side .sh .chv.c{transform:rotate(-90deg)}
 .nosb #side .sh{display:none}
+#side .sg{display:flex;flex-direction:column;gap:inherit}#side .sh{touch-action:none}
 aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 .tpw{display:grid}.tpw>.tp{grid-area:1/1}#c .tp[hidden]{display:block!important;visibility:hidden}
 </style>
@@ -397,8 +398,10 @@ function side(){
  let sb=[];try{sb=JSON.parse(localStorage.getItem('sbo'))||[]}catch{}
  const keys=Object.keys(rows),ord=[...new Set(sb)].filter(k=>keys.includes(k));keys.forEach(k=>{if(!ord.includes(k))ord.push(k)});
  const PK=new Set(Object.values(BRAND)),isC=k=>k.startsWith('co_'),rail=document.body.classList.contains('nosb'),col=secCol();
- const sec=(id,title,list)=>{if(!list.length)return'';const c=!rail&&col[id];return `<div class="sh" role="button" tabindex="0" data-sec="${id}" aria-expanded="${!c}" title="${c?'Expandir':'Recolher'} ${title}"><svg class="chv${c?' c':''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="tx">${title}</span><em class="tx">${list.length}</em></div>`+(c?'':list.map(k=>rows[k]).join(''))};
- const out=ord.filter(k=>!PK.has(k)&&!isC(k)).map(k=>rows[k]).join('')+sec('l','Launchers',ord.filter(k=>PK.has(k)))+sec('p','Plataformas',ord.filter(isC));$('#ver').textContent='v'+(S.version||'');if(out!==side._h){side._h=out;$('#side').innerHTML=out}}
+ const sec=(id,title,list)=>{if(!list.length)return'';const c=!rail&&col[id];return `<div class="sg" data-sg="${id}"><div class="sh" role="button" tabindex="0" data-sec="${id}" aria-expanded="${!c}" title="${c?'Expandir':'Recolher'} ${title} (arraste para mover)"><svg class="chv${c?' c':''}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="tx">${title}</span></div>`+(c?'':list.map(k=>rows[k]).join(''))+'</div>'};
+ let so=[];try{so=JSON.parse(localStorage.getItem('sbs'))||[]}catch{}
+ const secs={l:sec('l','Launchers',ord.filter(k=>PK.has(k))),p:sec('p','Plataformas',ord.filter(isC))};
+ const out=ord.filter(k=>!PK.has(k)&&!isC(k)).map(k=>rows[k]).join('')+[...new Set([...so,'l','p'])].filter(k=>secs[k]).map(k=>secs[k]).join('');$('#ver').textContent='v'+(S.version||'');if(out!==side._h){side._h=out;$('#side').innerHTML=out;$('#side').querySelectorAll('.sg').forEach(w=>sortable(w,'.it',sbSave,{axis:'y'}))}}
 const secCol=()=>{try{return JSON.parse(localStorage.getItem('sbc'))||{}}catch{return{}}};
 $('#side').addEventListener('click',e=>{const s=e.target.closest('[data-sec]');if(!s)return;const c=secCol();c[s.dataset.sec]=!c[s.dataset.sec];try{localStorage.setItem('sbc',JSON.stringify(c))}catch{}side._h=null;side()});
 $('#side').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[data-sec]'))e.target.click()});
@@ -640,7 +643,7 @@ function sortable(box,sel,onDone,opt={}){
   g.style.left=pr.left+'px';g.style.top=pr.top+'px';g.style.transform='scale(1)';g.style.boxShadow='none';
   setTimeout(()=>{g.remove();s.it.style.opacity='';document.body.style.userSelect='';document.body.style.cursor='';DRAGGING=false;if(onDone)onDone(items())},210)}
  box.addEventListener('pointerdown',e=>{if(e.button!==0||st)return;
-  const it=e.target.closest(sel);if(!it||it.parentElement!==box)return;
+  const it=e.target.closest(sel);if(!it||it.parentElement!==box)return;if(opt.handle&&!e.target.closest(opt.handle))return;
   const ctl=!!e.target.closest('input,select,textarea');
   st={it,id:e.pointerId,x:e.clientX,y:e.clientY,on:false,long:ctl,timer:null};
   if(ctl)st.timer=setTimeout(()=>{if(st&&!st.on)begin(st.x,st.y)},350);
@@ -653,7 +656,11 @@ function hdrApply(){let s=[];try{s=JSON.parse(localStorage.getItem('hdr3'))||[]}
  ord.forEach(k=>{const el=HD.querySelector(`:scope>[data-h="${k}"]`);if(el)HD.appendChild(el)})}
 function hdrSave(){try{localStorage.setItem('hdr3',JSON.stringify([...new Set([...HD.children].map(c=>c.dataset.h).filter(Boolean))]))}catch{}}
 sortable(HD,'[data-h]',hdrSave);
-sortable($('#side'),'.it',its=>{try{localStorage.setItem('sbo',JSON.stringify([...new Set(its.map(i=>i.dataset.o))]))}catch{}side._h=null;side()},{axis:'y'});
+function sbSave(its){try{const sub=its.map(i=>i.dataset.o);let cur=[];try{cur=JSON.parse(localStorage.getItem('sbo'))||[]}catch{}
+ document.querySelectorAll('#side .it').forEach(i=>{if(!cur.includes(i.dataset.o))cur.push(i.dataset.o)});sub.forEach(k=>{if(!cur.includes(k))cur.push(k)});
+ const pos=cur.map((k,i)=>sub.includes(k)?i:-1).filter(i=>i>=0);pos.forEach((p,j)=>cur[p]=sub[j]);localStorage.setItem('sbo',JSON.stringify([...new Set(cur)]))}catch{}side._h=null;side()}
+sortable($('#side'),'.it',sbSave,{axis:'y'});
+sortable($('#side'),'.sg',gs=>{try{localStorage.setItem('sbs',JSON.stringify(gs.map(g=>g.dataset.sg)))}catch{}side._h=null;side()},{axis:'y',handle:'.sh'});
 HD.addEventListener('keydown',e=>{if(!e.altKey||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;const it=e.target.closest('[data-h]');if(!it)return;e.preventDefault();
  const left=e.key==='ArrowLeft',s=left?it.previousElementSibling:it.nextElementSibling;if(s&&s.dataset.h){left?HD.insertBefore(it,s):HD.insertBefore(s,it);e.target.focus();hdrSave()}});
 $('#ord_reset').onclick=()=>{try{localStorage.removeItem('hdr3');localStorage.removeItem('sbo')}catch{}hdrApply();side._h=null;side()};
