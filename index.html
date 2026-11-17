@@ -327,7 +327,12 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <div class="tp" id="tp_sgdb" hidden><p>O SteamGridDB tem milhares de capas alternativas. A chave é usada no botão "Buscar no SteamGridDB" da tela de cada jogo.</p>
 <label for="c_sg">Chave de API do SteamGridDB</label><input id="c_sg" type="password" autocomplete="off">
 <p class="mu"><a href="https://www.steamgriddb.com/profile/preferences/api" target="_blank">Obter minha chave</a>. Precisa de uma conta gratuita no site.</p>
-<p class="mu" id="sg_msg"></p><div class="acts"><button onclick="testSg()">Testar chave</button></div></div>
+<p class="mu" id="sg_msg"></p><div class="acts"><button onclick="testSg()">Testar chave</button></div>
+<hr style="border:0;border-top:1px solid var(--ln);margin:18px 0">
+<p><b>Google Imagens</b> (botão "Buscar wallpaper"). Grátis, 100 buscas por dia. Precisa de duas coisas:</p>
+<label for="c_gk">Chave de API do Google</label><input id="c_gk" type="password" autocomplete="off">
+<label for="c_gx">ID do mecanismo de busca (cx)</label><input id="c_gx" type="text" autocomplete="off">
+<p class="mu">1) Em <a href="https://console.cloud.google.com/apis/library/customsearch.googleapis.com" target="_blank">console.cloud.google.com</a>, ative a "Custom Search API" e crie uma chave em Credenciais.<br>2) Em <a href="https://programmablesearchengine.google.com/controlpanel/create" target="_blank">programmablesearchengine.google.com</a>, crie um mecanismo com "Pesquisar na web inteira", ative "Pesquisa de imagens" e copie o ID.</p></div>
 <div class="tp" id="tp_lch" hidden><p>O programa procura sozinho os jogos <b>instalados</b> da Epic Games, Ubisoft Connect, EA app, Battle.net e Game Pass (Xbox) neste computador, sem login e sem chave. Ele faz isso ao abrir e a cada poucos minutos.</p>
 <p class="mu">Jogos que você excluir da biblioteca não voltam sozinhos. Para jogar, o programa abre o jogo pelo próprio launcher quando possível. Se algum jogo for detectado errado, edite ou exclua na tela do jogo.</p>
 <p class="mu" id="l_msg"></p><div id="l_list" class="mu"></div>
@@ -337,7 +342,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></div>
 </div><p id="c_msg" class="mu"></p><div class="acts"><button onclick="api('open_data')" title="Abre a pasta com seus jogos, capas e preferências (para backup)">Abrir pasta de dados</button><span style="flex:1"></span><button class="p" onclick="saveCfg().then(()=>C.close())">Salvar</button></div></dialog>
 
-<dialog id="wpd"><div class="sgh"><b>Wallpapers</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go">Buscar</button><span id="wp_i" class="mu"></span><span class="sp"></span>
+<dialog id="wpd"><div class="sgh"><b>Wallpapers · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go">Buscar</button><span id="wp_i" class="mu"></span><span class="sp"></span>
 <button id="wp_prev">‹ Anterior</button><span id="wp_p" class="mu"></span><button id="wp_next">Próxima ›</button><button id="wp_rm">Remover wallpaper</button><button onclick="WPD.close()">Fechar</button></div>
 <div class="wpres" id="wp_res"></div><div class="wpb" id="wp_g"></div></dialog>
 <dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span id="sg_i" class="mu"></span><span class="sp"></span>
@@ -625,8 +630,8 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;C.showModal()}
-const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_gk').value=c.gkey||'';$('#c_gx').value=c.gcx||'';$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;C.showModal()}
+const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),gkey:$('#c_gk').value.trim(),gcx:$('#c_gx').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
 async function updCheck(){$('#u_msg').textContent='Procurando...';$('#u_go').hidden=true;$('#u_notes').textContent='';const r=await api('upd_check');$('#u_msg').textContent=r.msg;if(r.novo){$('#u_go').hidden=false;$('#u_notes').textContent=r.notes||''}}
