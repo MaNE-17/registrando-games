@@ -1,6 +1,6 @@
 {
   "name": "registrando-games",
-  "version": "1.4.43",
+  "version": "1.4.44",
   "description": "Registrando Games: biblioteca e backlog de jogos com rastreio de tempo",
   "author": "Registrando Games",
   "main": "main.js",
