@@ -76,7 +76,7 @@ body.bold{font-weight:600;--mu:#566071}
 
 .hg{display:inline-flex;gap:8px;align-items:center}.spc{flex:1;min-width:8px}
 header.edit{gap:14px}header.edit [data-h]{outline:2px dashed var(--ac);outline-offset:3px;cursor:grab;border-radius:8px}
-header.edit .spc{min-width:56px;background:repeating-linear-gradient(45deg,transparent 0 6px,var(--ln) 6px 8px)}
+header.edit .spc0{display:none}header.edit .spc{min-width:56px;background:repeating-linear-gradient(45deg,transparent 0 6px,var(--ln) 6px 8px)}
 
 #ld{width:min(1100px,96vw);height:min(90vh,900px);padding:0;overflow:hidden}#ld[open]{display:flex;flex-direction:column}
 #ld_name{width:auto;min-width:220px;margin:0;font-size:18px}
@@ -355,7 +355,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #updb{position:fixed;right:18px;bottom:18px;z-index:250;display:flex;align-items:center;gap:12px;max-width:min(440px,92vw);padding:12px 14px;border:1px solid var(--ac);border-radius:12px;background:var(--sf);box-shadow:0 10px 30px #0006;font-size:14px}
 #updb[hidden]{display:none}#updb b{color:var(--ac)}#updb .sp{flex:1}
 </style>
-<header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
+<header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div><div class="spc spc0" aria-hidden="true"></div>
 
 <div class="sw" data-h="search"><input id="q" placeholder="Buscar jogo" aria-label="Buscar jogo"><button id="qx" class="qx" hidden aria-label="Limpar busca" title="Limpar busca">×</button><button id="ql" class="ql" hidden>+ Criar lista rápida</button></div>
 <button data-h="sort" id="fb_sort" class="fb dd" onclick="togF(event,'sort')" title="Ordenar">Nome (A–Z)</button>
@@ -989,7 +989,7 @@ function sortable(box,sel,onDone,opt={}){
   if(ctl)st.timer=setTimeout(()=>{if(st&&!st.on)begin(st.x,st.y)},350);
   addEventListener('pointermove',move);addEventListener('pointerup',up);addEventListener('pointercancel',up)});
  box.addEventListener('click',e=>{if(just){e.stopPropagation();e.preventDefault()}},true)}
-const HD=document.querySelector('header'),HDEF=['search','sort','year','platform','genre','status','view','hidden','zoom','clear','spacer','refresh','add','visual','cfg'];
+const HD=document.querySelector('header'),HDEF=['search','sort','year','platform','genre','status','view','hidden','zoom','clear','spacer','add','visual','refresh','cfg'];
 function hdrApply(){let s=[];try{s=JSON.parse(localStorage.getItem('hdr3'))||[]}catch{}
  const ord=[...new Set(s)].filter(k=>HDEF.includes(k));
  HDEF.forEach((k,i)=>{if(ord.includes(k))return;const at=ord.indexOf(HDEF[i-1]);at>=0?ord.splice(at+1,0,k):ord.push(k)});
