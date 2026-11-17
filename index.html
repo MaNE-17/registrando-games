@@ -229,6 +229,9 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 
 /* ---- 1.4.0: modo lista ---- */
 #grid.lvw{display:flex;padding:0;gap:0;overflow:hidden;height:100%}
+.lgh{display:flex;align-items:center;gap:8px;padding:10px 4px 4px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu)}.lgh b{font-weight:700}.lgh em{font-style:normal;font-size:11px;background:color-mix(in srgb,var(--tx) 10%,transparent);padding:1px 8px;border-radius:99px}.lgh.k{cursor:pointer}.lgh.k:hover{color:var(--ac)}
+#grid.bylist .gh{grid-column:1/-1;padding:18px 2px 0;border-bottom:1px solid var(--ln);margin-bottom:-4px}#grid.bylist .gh:first-child{padding-top:0}
+.lv .lgh{padding:12px 6px 4px}
 .lv{width:340px;flex:none;overflow:auto;padding:14px 10px;border-right:1px solid var(--ln);display:flex;flex-direction:column;gap:4px}
 .lr{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:10px;cursor:pointer;border:1px solid transparent}
 .lr:hover{background:color-mix(in srgb,var(--ac) 8%,var(--sf))}
@@ -298,7 +301,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <button data-h="visual" class="dd" onclick="togPop(event)">Visual</button><button data-h="year" id="by" class="tg dd" onclick="togYr(event)">Ano</button><button data-h="clear" id="fb_clear" class="fb" hidden onclick="clearFilters()" title="Limpar todos os filtros">✕ Limpar filtros</button><span class="hg" data-h="refresh"><button id="rfb" onclick="refreshAll()" title="Atualizar o tempo de jogo e buscar os dados dos jogos novos" aria-label="Atualizar dados dos jogos da Steam"><svg class="rfi" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg> Atualizar</button><span class="mu" id="st_msg"></span></span>
 <div class="spc" data-h="spacer" aria-hidden="true"></div><button data-h="add" class="p" onclick="openG()">+ Adicionar jogo</button><button data-h="cfg" class="fb" onclick="cfg()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--ac)"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Configurações</button>
 </header>
-<select id="sort" hidden aria-hidden="true"><option value="name">Nome (A–Z)</option><option value="namez">Nome (Z–A)</option><option value="hours">Mais horas</option><option value="played">Jogado recentemente</option><option value="meta">Metacritic</option><option value="rel">Lançamento (mais novos)</option><option value="relo">Lançamento (mais antigos)</option><option value="added">Adicionado</option></select>
+<select id="sort" hidden aria-hidden="true"><option value="name">Nome (A–Z)</option><option value="namez">Nome (Z–A)</option><option value="hours">Mais horas</option><option value="played">Jogado recentemente</option><option value="meta">Metacritic</option><option value="rel">Lançamento (mais novos)</option><option value="relo">Lançamento (mais antigos)</option><option value="added">Adicionado</option><option value="bylist">Listas</option></select>
 <div class="shell"><aside><div id="side"></div><div class="sbf"><span id="ver" class="ver"></span><button id="sbtog" class="sbtog" onclick="togSb()" aria-expanded="true" title="Recolher barra lateral"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg><span class="sbl">Recolher</span></button></div></aside>
 <div id="sbrs" class="rsz" title="Arraste para mudar a largura da barra lateral"></div>
 <main><div id="grid"></div></main></div>
@@ -420,7 +423,7 @@ const nz=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(
 const mcl=m=>m>=75?'g':m>=50?'y':'r';
 function mcPaintF(){const e=$('#f_meta'),v=e.value===''?null:+e.value;e.style.color=v==null?'':v>=75?'#52c889':v>=50?'#f5b301':'#e5484d';e.style.fontWeight=v==null?'':'700'}
 const sk=g=>g.sortname||g.name,NC=(a,b)=>sk(a).localeCompare(sk(b),undefined,{numeric:true,sensitivity:'base'});
-const SORT={name:NC,hours:(a,b)=>secs(b)-secs(a),played:(a,b)=>(b.last_played||0)-(a.last_played||0),rating:(a,b)=>(b.rating||0)-(a.rating||0),meta:(a,b)=>(b.meta||0)-(a.meta||0),added:(a,b)=>b.added-a.added,fin:(a,b)=>(b.finished||0)-(a.finished||0),namez:(a,b)=>NC(b,a),rel:(a,b)=>(b.released||0)-(a.released||0),relo:(a,b)=>(a.released||9e12)-(b.released||9e12)};
+const SORT={bylist:(a,b)=>NC(a,b),name:NC,hours:(a,b)=>secs(b)-secs(a),played:(a,b)=>(b.last_played||0)-(a.last_played||0),rating:(a,b)=>(b.rating||0)-(a.rating||0),meta:(a,b)=>(b.meta||0)-(a.meta||0),added:(a,b)=>b.added-a.added,fin:(a,b)=>(b.finished||0)-(a.finished||0),namez:(a,b)=>NC(b,a),rel:(a,b)=>(b.released||0)-(a.released||0),relo:(a,b)=>(a.released||9e12)-(b.released||9e12)};
 const coverSrc=g=>g.cover?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.cover):g.capsule?g.capsule:g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`:'';
 function imgErr(i){const k=i.dataset.k;if(i.dataset.a&&!i.src.includes('/header.jpg')){FB[k]=`https://cdn.akamai.steamstatic.com/steam/apps/${i.dataset.a}/header.jpg`;i.src=FB[k]}else{FB[k]='none';i.parentNode.classList.add('noimg');i.remove()}}
 let RFT=null;function rfUi(){const b=$('#rfb');if(b)b.classList.toggle('spin',!!(S.refreshing||S.pending))}
@@ -525,6 +528,12 @@ function togView(){VIEW=VIEW==='list'?'grid':'list';try{localStorage.setItem('vi
 const wallSrc=g=>g.wall?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.wall):g.appid?`https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_hero.jpg`:'';
 const dpt=ts=>new Date(ts*1000).toLocaleDateString('pt-BR');
 const starsH=r=>`<span class="stv" aria-label="${r} de 5">${[1,2,3,4,5].map(n=>`<i style="--p:${Math.max(0,Math.min(1,r-(n-1)))*100}%">★</i>`).join('')}</span>`;
+const BYL=()=>$('#sort').value==='bylist'&&F.smart!=='lists';
+function groupsByList(l){const ok=new Set(l.map(g=>g.id)),by=new Map(l.map(g=>[g.id,g])),used=new Set(),out=[];
+ for(const L of [...S.lists].sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt'))){const gs=L.ids.filter(id=>ok.has(id)).map(id=>by.get(id));if(gs.length){out.push({id:L.id,name:L.name||'Sem nome',games:gs});gs.forEach(g=>used.add(g.id))}}
+ const rest=l.filter(g=>!used.has(g.id));if(rest.length&&!F.list)out.push({id:'',name:'Sem lista',games:rest});return out}
+const lghH=x=>`<div class="lgh${x.id?' k':''}" ${x.id?`data-lgf="${esc(x.id)}" role="button" tabindex="0" title="${F.list===x.id?'Mostrar todas as listas':'Mostrar só esta lista'}"`:''}><b>${esc(x.name)}</b><em>${x.games.length}</em></div>`;
+function lvHtml(l){return BYL()?groupsByList(l).map(x=>lghH(x)+x.games.map(lvRow).join('')).join(''):l.map(lvRow).join('')}
 function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
  return `<div class="lr${g.id===LSEL?' on':''}${SEL&&SEL.has(g.id)?' sel':''}" tabindex="0" data-lid="${g.id}" title="${esc(g.name)}"><div class="lt${src?'':' noimg'}">${src?`<img src="${esc(src)}" loading="lazy" onerror="this.remove()" alt="">`:''}</div><div class="ln"><b>${esc(g.name)}</b></div>${g.fav?'<span class="lf">♥</span>':''}</div>`}
 function rpHtml(g){if(!g)return'<div class="rpe">Nenhum jogo nesse filtro.</div>';
@@ -560,27 +569,29 @@ let LVH=null,RPH=null,LVL=[];
 function renderLv(l,grid){
  if(!l.length){grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;return}
  if(!l.some(g=>g.id===LSEL))LSEL=l[0].id;
- const html=l.map(lvRow).join(''),ph=rpHtml(l.find(g=>g.id===LSEL));
+ const html=lvHtml(l),ph=rpHtml(l.find(g=>g.id===LSEL));
  LVL=l;let fresh=0,lv=grid.querySelector('.lv'),rp=grid.querySelector('#rp');
  if(!lv||!rp){grid.innerHTML=`<div class="lv" role="listbox" aria-label="Jogos"></div><div class="rp" id="rp"></div>`;lv=grid.querySelector('.lv');rp=$('#rp');LVH=RPH=null;fresh=1}
  const st=lv.scrollTop;
  if(html!==LVH){lv.innerHTML=html;LVH=html;lv.scrollTop=st}
  if(ph!==RPH){rp.innerHTML=ph;RPH=ph}
  if(fresh){const on=lv.querySelector('.lr.on');if(on)on.scrollIntoView({block:'nearest'})}}
-function lvPick(id,kb){LSEL=id;document.querySelectorAll('.lr').forEach(x=>x.classList.toggle('on',x.dataset.lid===id));LVH=LVL.map(lvRow).join('');RPH=rpHtml(S.games.find(g=>g.id===id));$('#rp').innerHTML=RPH;if(kb){const e=document.querySelector(`.lr[data-lid="${id}"]`);if(e){e.focus();e.scrollIntoView({block:'nearest'})}}}
+function lvPick(id,kb){LSEL=id;document.querySelectorAll('.lr').forEach(x=>x.classList.toggle('on',x.dataset.lid===id));LVH=lvHtml(LVL);RPH=rpHtml(S.games.find(g=>g.id===id));$('#rp').innerHTML=RPH;if(kb){const e=document.querySelector(`.lr[data-lid="${id}"]`);if(e){e.focus();e.scrollIntoView({block:'nearest'})}}}
 function render(){
  const sig=JSON.stringify([F.smart,F.status,F.platform,F.genre,F.list,$('#q').value,INST,YR,FAV]);if(sig!==SELSIG){SEL=null;SELSIG=sig}
  side();const l=S.games.filter(filt).sort(SORT[$('#sort').value]),grid=$('#grid');
- const ids=new Set(S.games.map(g=>g.id));for(const k of CC.keys())if(!ids.has(k))CC.delete(k);
- grid.classList.toggle('groups',F.smart==='lists');grid.classList.toggle('lvw',VIEW==='list'&&F.smart!=='lists');
+ const ids=new Set(S.games.map(g=>g.id));for(const k of CC.keys())if(!k.startsWith('h:')&&!ids.has(k.split('@')[0]))CC.delete(k);
+ grid.classList.toggle('groups',F.smart==='lists');grid.classList.toggle('bylist',BYL());grid.classList.toggle('lvw',VIEW==='list'&&F.smart!=='lists');
  if(F.smart==='lists')renderGroups(grid);
  else if(VIEW==='list')renderLv(l,grid);
  else if(!l.length)grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;
  else{
-  const els=l.map(g=>{const h=card(g),o=CC.get(g.id);if(o&&o.h===h)return o.el;
+  const gp=BYL()?groupsByList(l):null,seq=gp?gp.flatMap(x=>[{hd:x},...x.games.map(g=>({g,k:g.id+'@'+x.id}))]):l.map(g=>({g,k:g.id}));
+  const els=seq.map(it=>{if(it.hd){const h=lghH(it.hd),o=CC.get('h:'+it.hd.id);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;el.classList.add('gh');CC.set('h:'+it.hd.id,{el,h});return el}
+   const g=it.g,h=card(g),o=CC.get(it.k);if(o&&o.h===h)return o.el;
    const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;
    if(o){const a=o.el.querySelector('.cv img'),b=el.querySelector('.cv img');if(a&&b&&a.getAttribute('src')===b.getAttribute('src'))b.replaceWith(a)}
-   CC.set(g.id,{el,h});return el});
+   CC.set(it.k,{el,h});return el});
   const cur=[...grid.children];
   if(cur.length!==els.length||cur.some((c,i)=>c!==els[i]))grid.replaceChildren(...els)}
  fbUi();if(!$('#fp').hidden)fpUi();yrBtn();if(!$('#yp').hidden)yrUi();qlUi(l);const n=$('#nl');if(n)n.focus()}
@@ -595,7 +606,7 @@ $('#ql').onclick=()=>{const ids=SEL?[...SEL]:S.games.filter(filt).map(g=>g.id);i
 $('#grid').addEventListener('click',e=>{const r=e.target.closest('.lr');if(r){if(e.ctrlKey||e.metaKey){selToggle(r.dataset.lid);return}lvPick(r.dataset.lid);return}const b=e.target.closest('[data-rp]');if(!b)return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;const a=b.dataset.rp;if(a==='play')play(g.id);else if(a==='edit')openG(g.id);else if(a==='fav')api('save',{id:g.id,fav:!g.fav}).then(load)});
 $('#grid').addEventListener('dblclick',e=>{const r=e.target.closest('.lr');if(r)openG(r.dataset.lid)});
 $('#grid').addEventListener('keydown',e=>{const r=e.target.closest('.lr');if(!r)return;if(e.key==='Enter'){openG(r.dataset.lid);return}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const s=e.key==='ArrowDown'?r.nextElementSibling:r.previousElementSibling;if(s&&s.dataset.lid)lvPick(s.dataset.lid,1)}});
-$('#grid').onclick=e=>{if(e.target.closest('.lv,.rp'))return;const gl=e.target.closest('[data-list]');if(gl){openList(gl.dataset.list);return}if(e.target.closest('#newg')){openListDraft([]);return}const fv=e.target.closest('[data-fav]');if(fv){const g=S.games.find(x=>x.id===fv.dataset.fav)||{};api('save',{id:g.id,fav:!g.fav}).then(load);return}const hb=e.target.closest('[data-hide]');if(hb){const g=S.games.find(x=>x.id===hb.dataset.hide)||{};api('save',{id:g.id,hidden:!g.hidden}).then(load);return}const p=e.target.closest('[data-play]');if(p){play(p.dataset.play);return}const c=e.target.closest('.card');if(!c)return;if(e.ctrlKey||e.metaKey){selToggle(c.dataset.id);return}openG(c.dataset.id)};
+$('#grid').onclick=e=>{const lf=e.target.closest('[data-lgf]');if(lf){F.list=F.list===lf.dataset.lgf?undefined:lf.dataset.lgf;render();return}if(e.target.closest('.lv,.rp'))return;const gl=e.target.closest('[data-list]');if(gl){openList(gl.dataset.list);return}if(e.target.closest('#newg')){openListDraft([]);return}const fv=e.target.closest('[data-fav]');if(fv){const g=S.games.find(x=>x.id===fv.dataset.fav)||{};api('save',{id:g.id,fav:!g.fav}).then(load);return}const hb=e.target.closest('[data-hide]');if(hb){const g=S.games.find(x=>x.id===hb.dataset.hide)||{};api('save',{id:g.id,hidden:!g.hidden}).then(load);return}const p=e.target.closest('[data-play]');if(p){play(p.dataset.play);return}const c=e.target.closest('.card');if(!c)return;if(e.ctrlKey||e.metaKey){selToggle(c.dataset.id);return}openG(c.dataset.id)};
 $('#grid').onkeydown=e=>{if(!e.target.matches('.card,.gcard'))return;const L=e.target.dataset.list,N=e.target.id==='newg';if(e.key==='Enter'){if(N)openListDraft([]);else L?openList(L):openG(e.target.dataset.id)}if(e.key===' '&&!L&&!N){e.preventDefault();selToggle(e.target.dataset.id,1)}};
 async function play(id){const r=await api('play',{id});if(r.error)note(r.error);load()}
 function playFrom(){if(cur)play(cur);else note('Salve o jogo primeiro.')}
@@ -900,7 +911,7 @@ async function lookupGame(){
 $('#f_look').onclick=lookupGame;
 $('#f_name').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();lookupGame()}};
 let FPK=null;const FLAB={status:'Status',platform:'Plataforma',genre:'Gênero'};
-const SORTS=[['name','Nome (A–Z)'],['namez','Nome (Z–A)'],['hours','Mais horas'],['played','Jogado recentemente'],['meta','Metacritic'],['rel','Lançamento (mais novos)'],['relo','Lançamento (mais antigos)'],['added','Adicionado']];
+const SORTS=[['name','Nome (A–Z)'],['namez','Nome (Z–A)'],['hours','Mais horas'],['played','Jogado recentemente'],['meta','Metacritic'],['rel','Lançamento (mais novos)'],['relo','Lançamento (mais antigos)'],['added','Adicionado'],['bylist','Listas']];
 const EYE='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--ac)"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--ac)"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>';
 function fOpts(k){const vis=S.games.filter(g=>!g.hidden);
@@ -922,7 +933,7 @@ function fbUi(){for(const k of['status','platform','genre']){const b=$('#fb_'+k)
  $('#fb_lists').classList.toggle('on',F.smart==='lists');
  const hid=F.smart==='hidden',nh=S.games.filter(g=>g.hidden).length,b=$('#fb_hidden');
  b.classList.toggle('on',hid);b.innerHTML=hid?EYE_OFF:EYE;b.title=hid?'Voltar para todos os jogos':`Mostrar só os jogos ocultos (${nh})`;b.setAttribute('aria-label',b.title);$('#fb_clear').hidden=!filtActive()}
-const filtActive=()=>!!(F.status||F.platform||F.genre||F.smart==='hidden'||INST||FAV||YR||$('#q').value.trim());
+const filtActive=()=>!!(F.list||F.status||F.platform||F.genre||F.smart==='hidden'||INST||FAV||YR||$('#q').value.trim());
 function clearFilters(){F={smart:'all'};INST=false;FAV=false;YR=0;try{localStorage.setItem('inst','0')}catch{}$('#q').value='';$('#qx').hidden=true;SEL=null;render()}
 let PREV=null;
 function openLists(){if(F.smart==='lists'){F=PREV||{smart:'all'};PREV=null}else{PREV={...F};F={smart:'lists'}}render()}
