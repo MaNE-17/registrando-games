@@ -250,7 +250,8 @@ async function lookup(t) {
       }
     } catch {}
   }
-  if (data.config.sgdb) { try { const p = await sgPage({ id: 'novo', name: t.name }, 0); if (p.items[0]) out.cover = p.items[0].url; } catch {} }
+  if (data.config.sgdb) { try { const p = await sgPage({ id: 'novo', name: t.name }, 0); if (p.items[0]) out.cover = p.items[0].url; } catch {}
+    try { const pl = await sgPage({ id: 'novo', name: t.name }, 0, 'logo'); if (pl.items[0]) out.logo = pl.items[0].url; } catch {} }
   return out;
 }
 

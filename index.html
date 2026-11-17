@@ -400,6 +400,7 @@ matchMedia('(prefers-color-scheme:dark)').onchange=()=>{applyTheme();paintSw()};
 applyTheme();paintSw();
 const ST=['Backlog','Jogando','Zerado','Pausado','Abandonado'];
 const COL={Backlog:'#8a93a6',Jogando:'#2b4fd8',Zerado:'#2f9e6b',Pausado:'#d9962b',Abandonado:'#b5543f'};
+let pendLogo=null;
 let S={games:[],lists:[],running:[],config:{},coversDir:''},F={smart:'all'},cur=null,G={},status='Backlog',rating=0,orig={},murl=null,hid=false,INST=false,FAV=false,favv=false,YR=0,pendCover=null;
 const api=(p,b)=>window.bridge.invoke(p,b||{});
 const now=()=>Date.now()/1000;
@@ -594,7 +595,7 @@ function paintD(){
  exeUi();genreUi();dropHint()}
 function openG(id,pre){
  const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
- $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;$('#look_msg').textContent='';fillPl(canonP(g.platform||F.platform||'PC'));$('#d_fam').hidden=!g.family;
+ $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;pendLogo=null;$('#look_msg').textContent='';fillPl(canonP(g.platform||F.platform||'PC'));$('#d_fam').hidden=!g.family;
  $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_meta').value=g.meta??'';
  $('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';
  $('#t_s').textContent=fmt((g.steam_min||0)*60);setHM('tk',g.tracked_s||0);setHM('mn',g.manual_s||0);
@@ -616,7 +617,7 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});pendCover=null;D.close();load()}
+ const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});pendLogo=null;pendCover=null;D.close();load()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
  if(p&&!S.games.some(x=>x.id!==cur&&canonP(x.platform)===p)){
@@ -866,6 +867,7 @@ async function lookupGame(){
  
  if(r.released&&!$('#f_rel').value){$('#f_rel').value=dstr(r.released);got.push('data')}
  if(r.cover&&!(cur&&curG().cover)){try{const f=await api('fetch_img',{url:r.cover});if(f.data){pendCover=await toCover(f.data);got.push('capa')}}catch{}}
+ if(r.logo&&!(cur&&curG().logo)){pendLogo=r.logo;got.push('logo')}
  paintD();
  m.textContent=(got.length?`Preenchido: ${got.join(', ')}${r.title?` · encontrado: ${r.title}`:''}${r.platFound?` · Metacritic (${r.platFound})`:''}. Confira antes de salvar.`:'Não encontrei dados novos para esse nome.')+(r.mcErr?' '+r.mcErr:'')+(!r.cover&&!S.config.sgdb?' Para buscar a capa, configure o SteamGridDB em Configurações.':'')}
 $('#f_look').onclick=lookupGame;
