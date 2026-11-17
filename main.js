@@ -481,7 +481,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe)) || (!g.appid && !g.lkey)).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -498,6 +498,12 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
     case 'side_set': {
       const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
+    }
+    case 'pl_rename': {
+      const n = String(b.name || '').slice(0, 60), l = String(b.label || '').trim().slice(0, 40); if (!n) return { ok: false };
+      data.plNames = data.plNames || {};
+      if (!l || l === n) delete data.plNames[n]; else data.plNames[n] = l;
+      save(); return { ok: true };
     }
     case 'side_set2': {
       data.sideCons = [...new Set((b.list || []).filter(x => typeof x === 'string' && x.length && x.length < 40))]; save(); return { ok: true };
