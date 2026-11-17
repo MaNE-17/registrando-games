@@ -497,7 +497,7 @@ function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base
 function rpHtml(g){if(!g)return'<div class="rpe">Nenhum jogo nesse filtro.</div>';
  const ws=wallSrc(g),cv=coverSrc(g),run=S.running.includes(g.id),ins=(S.inst||[]).includes(g.id);
  const row=(k,v)=>v?`<div class="ri"><span>${k}</span><b>${v}</b></div>`:'';
- const t=secs(g),lg=logoSrc(g),ls=g.logoSize||120,lx=g.logoX||0,ly=g.logoY||0,lh=!!g.logoHide,lgv=lg&&!lh;
+ const t=secs(g),lg=logoSrc(g),ls=g.logoSize||120,lx=g.logoX??0,ly=g.logoY??100,lh=!!g.logoHide,lgv=lg&&!lh;
  return `<div class="wp">${ws?`<img class="wpi" src="${esc(ws)}" alt="" onerror="rpFb(this)" data-cv="${esc(cv)}">`:cv?`<img class="wpi blur" src="${esc(cv)}" alt="">`:''}<div class="wpg"></div></div>
  <div class="rpc"><div class="rpt">${lgv?`<h2 class="hl"><img class="rlogo" id="rlogo" src="${esc(lg)}" alt="${esc(g.name)}" style="${logoStyle(ls,lx,ly)}" onerror="this.parentElement.innerHTML=this.alt"></h2>`:`<h2>${esc(g.name)}</h2>`}<div class="rps">${esc(canonP(g.platform)||'')}${g.released?(g.platform?' · ':'')+new Date(g.released*1000).getFullYear():''}${ins?' · Instalado':''}</div></div>
  <div class="rpg">${row('Lançamento',g.released?dpt(g.released):'')}${row('Nota',g.rating?starsH(g.rating)+` <small>${g.rating.toString().replace('.',',')}</small>`:'')}${row('Metacritic',g.meta?`<span class="mcv ${mcl(g.meta)}">${g.meta}</span>`:'')}${row('Status',esc(g.status||'Backlog'))}${row('Zerado em',g.status==='Zerado'&&g.finished?dpt(g.finished):'')}${row('Tempo de jogo',t?fmt(t):'')}${row('Último jogo',g.last_played?dpt(g.last_played):'')}</div>
@@ -513,12 +513,12 @@ const logoSrc=g=>g.logo?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+
 const logoStyle=(s,x,y)=>`max-height:${Math.round(220*s/100)}px;max-width:min(${Math.round(560*s/100)}px,92%);position:relative;left:${x}%;transform:translateX(-${x}%);top:${-y}px`;
 let LSZT=null,LMO=false;
 function logoSave(g){clearTimeout(LSZT);LSZT=setTimeout(()=>api('save',{id:g.id,logoSize:g.logoSize,logoX:g.logoX,logoY:g.logoY,logoHide:!!g.logoHide}),400)}
-function logoLive(g){const im=$('#rlogo');if(im)im.style.cssText=logoStyle(g.logoSize||120,g.logoX||0,g.logoY||0);$('#lszv').textContent=(g.logoSize||120)+'%';$('#lyzv').textContent=g.logoY||0;$('#lxzv').textContent=(g.logoX||0)+'%'}
+function logoLive(g){const im=$('#rlogo');if(im)im.style.cssText=logoStyle(g.logoSize||120,g.logoX??0,g.logoY??100);$('#lszv').textContent=(g.logoSize||120)+'%';$('#lyzv').textContent=g.logoY??100;$('#lxzv').textContent=(g.logoX??0)+'%'}
 document.addEventListener('input',e=>{const id=e.target.id;if(id!=='lsz'&&id!=='lxz'&&id!=='lyz')return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;const v=+e.target.value;if(id==='lsz')g.logoSize=v;else if(id==='lxz')g.logoX=v;else g.logoY=v;logoLive(g);logoSave(g)});
 document.addEventListener('change',e=>{if(e.target.id!=='lhd')return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;g.logoHide=e.target.checked;logoSave(g);LMO=true;lvPick(g.id)});
 document.addEventListener('click',e=>{const g=S.games.find(x=>x.id===LSEL);
  if(e.target.closest('#lmb')){LMO=!LMO;$('#lmn').hidden=!LMO;$('#lmb').setAttribute('aria-expanded',LMO);return}
- if(e.target.closest('#lrs')&&g){g.logoSize=120;g.logoX=0;g.logoY=0;g.logoHide=false;logoSave(g);LMO=true;lvPick(g.id);return}
+ if(e.target.closest('#lrs')&&g){g.logoSize=120;g.logoX=0;g.logoY=100;g.logoHide=false;logoSave(g);LMO=true;lvPick(g.id);return}
  if(LMO&&!e.target.closest('#lmn')){LMO=false;const m=$('#lmn');if(m)m.hidden=true}});
 function rpFb(i){const c=i.dataset.cv;i.onerror=null;if(c){i.src=c;i.classList.add('blur')}else i.remove()}
 function renderLv(l,grid){
