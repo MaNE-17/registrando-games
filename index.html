@@ -407,7 +407,7 @@ matchMedia('(prefers-color-scheme:dark)').onchange=()=>{applyTheme();paintSw()};
 applyTheme();paintSw();
 const ST=['Backlog','Jogando','Zerado','Pausado','Abandonado'];
 const COL={Backlog:'#8a93a6',Jogando:'#2b4fd8',Zerado:'#2f9e6b',Pausado:'#d9962b',Abandonado:'#b5543f'};
-let pendLogo=null;
+let pendLogo=null,pendWall=null;
 let S={games:[],lists:[],running:[],config:{},coversDir:''},F={smart:'all'},cur=null,G={},status='Backlog',rating=0,orig={},murl=null,hid=false,INST=false,FAV=false,favv=false,YR=0,pendCover=null;
 const api=(p,b)=>window.bridge.invoke(p,b||{});
 const now=()=>Date.now()/1000;
@@ -602,11 +602,11 @@ function paintD(){
  $('#d_cv').innerHTML=pendCover?`<img src="${pendCover}" alt="">`:src?`<img src="${esc(src)}" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:'';
  $('#f_status').innerHTML=ST.map(s=>`<option${s===status?' selected':''}>${s}</option>`).join('');
  $('#f_stars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="sb" data-r="${n}" aria-label="${n} estrelas"><i class="bg">★</i><i class="fg" style="width:${Math.max(0,Math.min(1,rating-(n-1)))*100}%"><b>★</b></i></button>`).join('')+`<span class="mu" id="rtxt" style="margin-left:8px">${rating?String(rating).replace('.',','):'Sem nota'}</span>`;
- $('#d_sgbtn').hidden=!cur;$('#d_wpbtn').hidden=!cur;$('#d_lgbtn').hidden=!cur;$('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
+ $('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
  exeUi();genreUi();dropHint()}
 function openG(id,pre){
  const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
- $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;pendLogo=null;$('#look_msg').textContent='';fillPl(canonP(g.platform||F.platform||'PC'));$('#d_fam').hidden=!g.family;
+ $('#f_name').value=g.name||'';$('#f_review').value=g.review??g.notes??'';$('#f_fin').value=g.finished?dstr(g.finished):'';$('#f_rel').value=g.released?dstr(g.released):'';$('#f_sn').value=g.sortname||'';$('#rel_why').textContent=g.released?'':(g.rel_why||'');pendCover=null;pendLogo=null;pendWall=null;$('#look_msg').textContent='';fillPl(canonP(g.platform||F.platform||'PC'));$('#d_fam').hidden=!g.family;
  $('#f_genres').value=(g.genres||[]).join(', ');$('#f_exe').value=g.exe||'';$('#f_proc').value=g.proc||'';$('#f_meta').value=g.meta??'';
  $('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';
  $('#t_s').textContent=fmt((g.steam_min||0)*60);setHM('tk',g.tracked_s||0);setHM('mn',g.manual_s||0);
@@ -632,7 +632,7 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});pendLogo=null;pendCover=null;D.close();load()}
+ const r=await api('save',b);await sideEnsure(pn,!prev||canonP(prev.platform)!==pn);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;D.close();load()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
  await sidePrune(p,cur);
@@ -650,8 +650,8 @@ function toCover(src){return new Promise((ok,no)=>{const i=new Image();i.onload=
 async function setCover(d){pendCover=null;try{await api('cover_data',{id:cur,data:await toCover(d)});await load();paintD()}catch{note('Não consegui usar essa imagem.')}}
 const SGD=$('#sgd');let SGS={gen:0};
 async function sgdb(kind){
- const g=curG();SGS={id:cur,kind:kind==='logo'?'logo':'cover',page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
- $('#sg_t').textContent=SGS.kind==='logo'?'Logos':'Capas';$('#sg_g').classList.toggle('logos',SGS.kind==='logo');$('#sg_rmlogo').hidden=!(SGS.kind==='logo'&&g.logo);$('#sg_q').value=g.sgname||g.name||'';$('#sg_g').innerHTML='';$('#sg_i').textContent='Buscando...';
+ const g=cur?curG():{name:$('#f_name').value.trim()};if(!cur&&!g.name)return note('Digite o nome do jogo primeiro.');SGS={id:cur||'novo',kind:kind==='logo'?'logo':'cover',page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
+ $('#sg_t').textContent=SGS.kind==='logo'?'Logos':'Capas';$('#sg_g').classList.toggle('logos',SGS.kind==='logo');$('#sg_rmlogo').hidden=!(cur&&SGS.kind==='logo'&&g.logo);$('#sg_q').value=g.sgname||g.name||'';$('#sg_g').innerHTML='';$('#sg_i').textContent='Buscando...';
  SGD.showModal();sgLoad(0)}
 async function sgLoad(page){
  if(page===0){const gg=S.games.find(x=>x.id===SGS.id),q=$('#sg_q').value.trim();if(gg){if(q&&nz(q)!==nz(gg.name))gg.sgname=q;else delete gg.sgname}}
@@ -678,11 +678,12 @@ $('#sg_prev').onclick=()=>{SGS.gen++;sgLoad(SGS.page-1)};
 $('#sg_next').onclick=()=>{SGS.gen++;sgLoad(SGS.page+1)};
 SGD.addEventListener('close',()=>{SGS.gen++});
 $('#sg_g').onclick=async e=>{const i=e.target.closest('img[data-u]');if(!i)return;
+ if(SGS.kind==='logo'&&SGS.id==='novo'){pendLogo=i.dataset.u;SGS.gen++;SGD.close();$('#look_msg').textContent='Logo escolhida: será aplicada ao salvar.';return}
  if(SGS.kind==='logo'){$('#sg_i').textContent='Aplicando logo...';const r=await api('logo_set',{id:SGS.id,url:i.dataset.u});if(r.error){$('#sg_i').textContent=r.error;return}SGS.gen++;SGD.close();await load();return}
  $('#sg_i').textContent='Aplicando capa...';
  const r=await api('fetch_img',{url:i.dataset.u});
  if(r.error){$('#sg_i').textContent=r.error;return}
- SGS.gen++;SGD.close();await setCover(r.data)};
+ SGS.gen++;SGD.close();await applyCover(r.data)};
 $('#sg_g').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.u)e.target.click()};
 async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_meta').value=r.meta;murl=r.url||null;$('#meta_a').innerHTML=murl?`<a href="${esc(murl)}" target="_blank">ver no Metacritic</a>`:'';if(r.note)note(r.note)}
@@ -941,8 +942,8 @@ const WRES=[['16:9',[['1080','1080p · 1920×1080'],['1440','1440p · 2560×1440
 function wpResUi(){$('#wp_res').innerHTML=WRES.map(([t,l])=>`<span class="wpgl">${t}</span>`+l.map(([k,n])=>`<button type="button" class="chip${WS.res===k?' on':''}" data-res="${k}">${n}</button>`).join('')).join('')}
 function wallOpen(){const q=$('#wp_q').value.trim();const gg=S.games.find(x=>x.id===WS.id);if(gg){if(q&&nz(q)!==nz(gg.name))gg.wpname=q;else delete gg.wpname}
  $('#wp_m').textContent='Abrindo o Google Imagens em outra janela...';api('wall_open',{id:WS.id,q,res:WS.res}).then(r=>{$('#wp_m').textContent=r.error||'Janela do Google aberta. Escolha a imagem e use a barra verde lá embaixo.'})}
-function wallDlg(){const g=curG();if(!cur)return;WS={id:cur,res:WS.res||'1080'};$('#wp_q').value=g.wpname||g.name||'';$('#wp_rm').hidden=!g.wall;wpResUi();$('#wp_m').textContent='';WPD.showModal();wallOpen()}
-async function wallDone(){WPD.close();await load();if(D.open)paintD&&paintD()}
+function wallDlg(){const g=cur?curG():{name:$('#f_name').value.trim()};if(!cur&&!g.name)return note('Digite o nome do jogo primeiro.');WS={id:cur||'novo',res:WS.res||'1080'};$('#wp_q').value=g.wpname||g.name||'';$('#wp_rm').hidden=!g.wall;wpResUi();$('#wp_m').textContent='';WPD.showModal();wallOpen()}
+async function wallDone(f){WPD.close();if(f){pendWall=f;$('#look_msg').textContent='Wallpaper escolhido: será aplicado ao salvar.'}await load();if(D.open)paintD&&paintD()}
 $('#wp_go').onclick=wallOpen;$('#wp_q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();wallOpen()}};
 $('#wp_res').onclick=e=>{const b=e.target.closest('[data-res]');if(!b)return;WS.res=b.dataset.res;wpResUi();wallOpen()};
 $('#wp_rm').onclick=async()=>{await api('wall_clear',{id:WS.id});WPD.close();await load()};

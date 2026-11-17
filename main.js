@@ -475,14 +475,14 @@ async function wallSave(g, src, kind = 'wall') {
   fs.mkdirSync(COVERS(), { recursive: true });
   if (kind === 'logo') { rmLogo(g); g.logo = `${g.id}-lg-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.logo), buf); }
   else { rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.wall), buf); }
-  save(); return { ok: true };
+  save(); return { ok: true, file: kind === 'logo' ? g.logo : g.wall };
 }
 ipcMain.on('wall-pick', async (e, p) => {
-  const g = data.games.find(x => x.id === wpGame); if (!g || !p || typeof p.src !== 'string') return;
+  const g = data.games.find(x => x.id === wpGame) || (wpGame === 'novo' ? { id: 'tmp' } : null); if (!g || !p || typeof p.src !== 'string') return;
   const r = await wallSave(g, p.src);
   if (r.error) { dialog.showMessageBox(wpWin && !wpWin.isDestroyed() ? wpWin : win, { type: 'warning', message: r.error }); return; }
   if (wpWin && !wpWin.isDestroyed()) wpWin.close();
-  if (win && !win.isDestroyed()) { win.webContents.executeJavaScript('wallDone()').catch(() => {}); win.show(); win.focus(); }
+  if (win && !win.isDestroyed()) { win.webContents.executeJavaScript('wallDone(' + JSON.stringify(wpGame === 'novo' ? (r.file || '') : '') + ')').catch(() => {}); win.show(); win.focus(); }
 });
 
 ipcMain.handle('api', async (_e, p, b) => {
@@ -567,10 +567,10 @@ ipcMain.handle('api', async (_e, p, b) => {
       fs.writeFileSync(path.join(COVERS(), g.cover), Buffer.from(b.data.split(',')[1], 'base64')); save(); return { ok: true };
     }
     case 'wall_open': {
-      if (!g) return { error: 'Salve o jogo primeiro.' };
+      if (!g && b.id !== 'novo') return { error: 'Salve o jogo primeiro.' };
       const R = { '1080': '1920x1080', '1440': '2560x1440', '2160': '3840x2160', 'uw1080': '2560x1080', 'uw1440': '3440x1440', 'uw2160': '5120x2160' };
-      const q = String(b.q || g.name || '').trim() + ' wallpaper imagesize:' + (R[b.res] || R['1080']);
-      wpGame = g.id;
+      const q = String(b.q || (g && g.name) || '').trim() + ' wallpaper imagesize:' + (R[b.res] || R['1080']);
+      wpGame = g ? g.id : 'novo';
       if (!wpWin || wpWin.isDestroyed()) {
         wpWin = new BrowserWindow({ width: 1280, height: 860, title: 'Google Imagens - escolha o wallpaper', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'wallpre.js'), contextIsolation: false, sandbox: false, partition: 'persist:google' } });
         wpWin.webContents.setUserAgent(wpWin.webContents.getUserAgent().replace(/\s?(Electron|registrando-games)\/\S+/gi, ''));
@@ -581,13 +581,15 @@ ipcMain.handle('api', async (_e, p, b) => {
       wpWin.show(); wpWin.focus(); return { ok: true };
     }
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
+    case 'wall_attach': { if (!g || !/^tmp-wp-\d+\.\w+$/.test(String(b.file || ''))) return { ok: false }; const src = path.join(COVERS(), b.file); if (!fs.existsSync(src)) return { ok: false }; rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${path.extname(b.file)}`; fs.renameSync(src, path.join(COVERS(), g.wall)); save(); return { ok: true }; }
     case 'logo_clear': if (g) { rmLogo(g); save(); } return { ok: true };
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
     case 'cover_clear': if (g) { rmCover(g); save(); } return { ok: true };
     case 'sgdb': {
-      if (!g) return {};
+      if (!g && !(b.id === 'novo' && (b.q || '').trim())) return {};
       if (!data.config.sgdb) return { error: 'Cole sua chave do SteamGridDB em Configurações.' };
       try {
+        if (!g) { if (!data.config.sgdb) return { error: 'Cole sua chave do SteamGridDB em Configurações.' }; return await sgPage({ id: 'novo', name: (b.q || '').trim() }, b.page || 0, b.kind); }
         let t = g; const q = (b.q || '').trim();
         if (q && nzn(q) !== nzn(g.name)) { t = { ...g, name: q, appid: null }; if (!b.page) { g.sgname = q; save(); } }
         else if (!b.page && g.sgname) { delete g.sgname; save(); }
