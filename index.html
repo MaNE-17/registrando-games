@@ -331,7 +331,10 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #c .thr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}#c .thr button{white-space:nowrap}
 #c .tpw>#tp_emu:not([hidden]){display:flex;flex-direction:column;height:100%;min-height:0}#tp_emu #emu_list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px}
 #c .ec2{border:1px solid var(--ln);border-radius:14px;background:color-mix(in srgb,var(--sf) 40%,transparent)}#c .ec2.open{border-color:color-mix(in srgb,var(--ac) 40%,var(--ln))}
-#c .ech{display:flex;align-items:center;gap:8px;padding:12px 16px;cursor:pointer;font-size:15px}#c .ech b{font-size:15px}#c .ech .sp{flex:1}#c .ech .chv{transition:transform .15s;flex:none}#c .ech .chv.c{transform:rotate(-90deg)}
+#c .ech{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;font-size:15px}#c .ech b{font-size:15px}#c .ech .sp{flex:1}#c .ech .chv{transition:transform .15s;flex:none}#c .ech .chv.c{transform:rotate(-90deg)}
+#c .ecb .chg{grid-template-columns:1fr;gap:4px;margin-top:6px}#c .ecb .chg>div{display:flex;flex-direction:column;gap:5px;margin-bottom:4px}#c .ecb .chg label{margin:0}#c .ecb .chg .row{gap:8px}#c .ecb .chg .row input{flex:1;min-width:0}#c .ecb .chg .row select{flex:none;width:170px}
+#c .ecb .chg .chips{align-items:center;gap:8px;min-height:40px;padding:5px 8px;border:1px solid var(--ln);background:var(--bg,var(--sf));border-radius:10px;box-sizing:border-box}#c .ecb .chg .chp{padding:3px 4px 3px 10px;height:28px;box-sizing:border-box;border-radius:7px}#c .ecb .chg .chp.add{padding:3px 12px}
+#c .ecb .acts{margin-top:8px}
 #c .ecb{padding:0 16px 16px}#c .ecb .g2 label{margin-top:2px}#c .dng:hover{color:#e5484d!important;border-color:#e5484d!important;background:color-mix(in srgb,#e5484d 12%,var(--sf))!important}
 #c .ecb .acts{gap:10px}#tp_emu #emu_msg{margin:8px 0 0;min-height:0}
 </style>
@@ -416,7 +419,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="pgrid" id="lch_l"></div>
 <p class="mu" id="l_msg" style="margin-top:12px"></p><div id="l_list" class="mu"></div>
 <div class="acts"><button class="p" id="l_go" onclick="lchScan()">Procurar jogos instalados agora</button></div></section>
-<section class="tp" id="tp_emu" hidden><div class="th thr"><div><h3>Emuladores</h3><p class="mu">Cada emulador tem a sua pasta de ROMs, comandos e formatos. O app cria os jogos na plataforma escolhida e busca nota, data, capa e logo.</p></div><button type="button" class="p" id="emu_new">+ Adicionar emulador</button></div>
+<section class="tp" id="tp_emu" hidden><div class="th thr"><div><h3>Emuladores</h3><p class="mu">Cada emulador tem pasta de ROMs, comandos e formatos próprios.</p></div><button type="button" class="p" id="emu_new">+ Adicionar emulador</button></div>
 <div id="emu_list"></div><p class="mu" id="emu_msg"></p></section>
 <section class="tp" id="tp_gen" hidden><div class="th"><h3>Geral</h3><p class="mu">Como o Registrando Games se comporta no Windows.</p></div>
 <label class="ck"><input type="checkbox" id="g_start">Iniciar com o Windows</label>
