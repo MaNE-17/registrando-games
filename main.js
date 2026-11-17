@@ -27,6 +27,7 @@ const OLD_DIR = process.env.RG_ANTIGO || path.join(app.getPath('appData'), 'back
 app.setPath('userData', DATA_DIR);
 app.setAppUserModelId('com.local.registrandogames');
 
+let wpWin = null, wpGame = null;
 let win, tray, quitting = false, msg = '', busy = false, tick = 0;
 let data = { games: [], config: {}, lists: [] };
 
@@ -443,11 +444,39 @@ async function sgPage(g, page) {
 }
 const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', bmp: 'image/bmp' };
 
+
+// Wallpaper escolhido na janela do Google Imagens
+async function wallSave(g, src) {
+  let buf, ext = '.jpg';
+  if (src.startsWith('data:image')) { buf = Buffer.from(src.split(',')[1] || '', 'base64'); if (/^data:image\/png/.test(src)) ext = '.png'; }
+  else {
+    let u; try { u = new URL(src); } catch { return { error: 'Link inválido.' }; }
+    const hn = u.hostname.toLowerCase();
+    if (u.protocol !== 'https:' && u.protocol !== 'http:' || hn === 'localhost' || hn.includes(':') || /^(10\.|127\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/.test(hn)) return { error: 'Link não permitido.' };
+    try {
+      const r = await fetch(u.href, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36', Referer: u.origin + '/', Accept: 'image/*' }, signal: AbortSignal.timeout(45000) });
+      if (!r.ok) return { error: 'Esse site não deixou baixar a imagem (' + r.status + '). Tente outra.' };
+      const ct = (r.headers.get('content-type') || '').toLowerCase(); if (!ct.startsWith('image/')) return { error: 'Esse link não é uma imagem. Tente outra.' };
+      buf = Buffer.from(await r.arrayBuffer()); ext = ct.includes('png') ? '.png' : ct.includes('webp') ? '.webp' : '.jpg';
+    } catch { return { error: 'Não consegui baixar essa imagem. Tente outra.' }; }
+  }
+  if (!buf || buf.length < 5000 || buf.length > 60e6) return { error: 'Imagem inválida ou grande demais.' };
+  fs.mkdirSync(COVERS(), { recursive: true }); rmWall(g);
+  g.wall = `${g.id}-wp-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.wall), buf); save(); return { ok: true };
+}
+ipcMain.on('wall-pick', async (e, p) => {
+  const g = data.games.find(x => x.id === wpGame); if (!g || !p || typeof p.src !== 'string') return;
+  const r = await wallSave(g, p.src);
+  if (r.error) { dialog.showMessageBox(wpWin && !wpWin.isDestroyed() ? wpWin : win, { type: 'warning', message: r.error }); return; }
+  if (wpWin && !wpWin.isDestroyed()) wpWin.close();
+  if (win && !win.isDestroyed()) { win.webContents.executeJavaScript('wallDone()').catch(() => {}); win.show(); win.focus(); }
+});
+
 ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey)) || (g.exe && fs.existsSync(g.exe)) || (!g.appid && !g.lkey)).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '', gkey: data.config.gkey || '', gcx: data.config.gcx || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -459,7 +488,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       save(); return { ok: true, id: x.id };
     }
     case 'delete': if (g) { rmCover(g); rmWall(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
-    case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim(), gkey: (b.gkey || '').trim(), gcx: (b.gcx || '').trim() }; save(); return { ok: true };
+    case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh': { if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; steamSync().finally(() => fillInfo()); return { ok: true }; }
     case 'side_set': {
@@ -518,46 +547,19 @@ ipcMain.handle('api', async (_e, p, b) => {
       g.cover = `${g.id}-${Date.now()}.jpg`;
       fs.writeFileSync(path.join(COVERS(), g.cover), Buffer.from(b.data.split(',')[1], 'base64')); save(); return { ok: true };
     }
-    case 'wall_search': {
-      const q = String(b.q || '').trim(); if (!q) return { items: [], error: 'Digite o nome do jogo.' };
-      if (!data.config.gkey || !data.config.gcx) return { items: [], error: 'Falta configurar o Google Imagens: Configurações → aba SteamGridDB, seção "Google Imagens".' };
-      const SPEC = { '1080': { w: 1900, r: [1.7, 1.86], s: 'xlarge', t: '1920x1080' }, '1440': { w: 2500, r: [1.7, 1.86], s: 'xxlarge', t: '2560x1440' }, '2160': { w: 3800, r: [1.7, 1.86], s: 'xxlarge', t: '3840x2160' },
-        'uw1080': { w: 2500, r: [2.2, 2.6], s: 'xlarge', t: '2560x1080' }, 'uw1440': { w: 3400, r: [2.2, 2.6], s: 'xxlarge', t: '3440x1440' }, 'uw2160': { w: 5000, r: [2.2, 2.6], s: 'xxlarge', t: '5120x2160' } };
-      const sp = SPEC[b.res] || SPEC['1080'], page = Math.max(1, Math.min(5, +b.page || 1)), items = [];
-      try {
-        for (let k = 0; k < 2; k++) {
-          const start = (page - 1) * 20 + k * 10 + 1;
-          const u = `https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(data.config.gkey)}&cx=${encodeURIComponent(data.config.gcx)}&searchType=image&num=10&start=${start}&safe=active&imgSize=${sp.s}&q=${encodeURIComponent(q + ' wallpaper ' + sp.t)}`;
-          const r = await fetch(u, { signal: AbortSignal.timeout(20000) });
-          const j = await r.json().catch(() => ({}));
-          if (!r.ok) {
-            const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
-            if (r.status === 429) return { items: [], error: 'Limite diário do Google atingido (100 buscas grátis por dia). Tente amanhã.' };
-            return { items: [], error: 'Google: ' + msg };
-          }
-          for (const d of j.items || []) {
-            const im = d.image || {}, w = +im.width || 0, h = +im.height || 0, ra = h ? w / h : 0;
-            if (w >= sp.w && ra >= sp.r[0] && ra <= sp.r[1]) items.push({ id: d.link, thumb: im.thumbnailLink || d.link, url: d.link, res: `${w}x${h}` });
-          }
-          if (!(j.items || []).length) break;
-        }
-        return { items, page, pages: 5, total: items.length };
-      } catch (e) { return { items: [], error: 'Sem conexão com o Google.' }; }
-    }
-    case 'wall_set': {
+    case 'wall_open': {
       if (!g) return { error: 'Salve o jogo primeiro.' };
-      let u; try { u = new URL(b.url); } catch { return { error: 'Link inválido.' }; }
-      const hn = u.hostname.toLowerCase();
-      if (u.protocol !== 'https:' || hn === 'localhost' || /^(10\.|127\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/.test(hn) || hn.includes(':')) return { error: 'Link não permitido.' };
-      try {
-        const r = await fetch(u.href, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36', Referer: u.origin + '/', Accept: 'image/*' }, signal: AbortSignal.timeout(45000) });
-        if (!r.ok) return { error: 'Esse site não deixou baixar a imagem (' + r.status + '). Tente outra.' };
-        const ct = (r.headers.get('content-type') || '').toLowerCase(); if (!ct.startsWith('image/')) return { error: 'Esse link não é uma imagem. Tente outra.' };
-        const buf = Buffer.from(await r.arrayBuffer()); if (buf.length < 5000 || buf.length > 60e6) return { error: 'Imagem inválida ou grande demais.' };
-        fs.mkdirSync(COVERS(), { recursive: true }); rmWall(g);
-        g.wall = `${g.id}-wp-${Date.now()}${ct.includes('png') ? '.png' : ct.includes('webp') ? '.webp' : '.jpg'}`;
-        fs.writeFileSync(path.join(COVERS(), g.wall), buf); save(); return { ok: true };
-      } catch { return { error: 'Não consegui baixar essa imagem. Tente outra.' }; }
+      const R = { '1080': '1920x1080', '1440': '2560x1440', '2160': '3840x2160', 'uw1080': '2560x1080', 'uw1440': '3440x1440', 'uw2160': '5120x2160' };
+      const q = String(b.q || g.name || '').trim() + ' wallpaper imagesize:' + (R[b.res] || R['1080']);
+      wpGame = g.id;
+      if (!wpWin || wpWin.isDestroyed()) {
+        wpWin = new BrowserWindow({ width: 1280, height: 860, title: 'Google Imagens - escolha o wallpaper', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'wallpre.js'), contextIsolation: false, sandbox: false, partition: 'persist:google' } });
+        wpWin.webContents.setUserAgent(wpWin.webContents.getUserAgent().replace(/\s?(Electron|registrando-games)\/\S+/gi, ''));
+        wpWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+        wpWin.on('closed', () => { wpWin = null; });
+      }
+      wpWin.loadURL('https://www.google.com/search?tbm=isch&hl=pt-BR&q=' + encodeURIComponent(q));
+      wpWin.show(); wpWin.focus(); return { ok: true };
     }
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
     case 'cover_clear': if (g) { rmCover(g); save(); } return { ok: true };
