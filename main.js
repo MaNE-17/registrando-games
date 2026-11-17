@@ -594,7 +594,7 @@ ipcMain.on('wall-pick', async (e, p) => {
 ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
-    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(),
+    case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
       config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
@@ -652,6 +652,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (old && (JSON.stringify(old) !== JSON.stringify(c.flags) || oldPos !== c.pos)) for (const g of data.games) if (g.rom && g.emu === c.id && g.args === emuArgs(g.rom, old, oldPos)) g.args = emuArgs(g.rom, c.flags, c.pos);
       save(); return { ok: true, id: c.id };
     }
+    case 'top5_set': { const ok = new Set(data.games.map(g => g.id)); data.top5 = [...new Set((b.ids || []).filter(id => ok.has(id)))].slice(0, 5); save(); return { ok: true }; }
     case 'emu_del': { data.emus = (data.emus || []).filter(x => x.id !== b.id); save(); return { ok: true }; }
     case 'emu_import': { if (emuBusy) return { ok: true }; const c = emuOf(b.id); msg = (c ? c.name : 'Emulador') + ': procurando ROMs...'; emuImport(b.id); return { ok: true }; }
     case 'pick_rom': { const c = emuOf(b.id) || {}; const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: c.roms && isDirP(c.roms) ? c.roms : undefined, filters: [{ name: 'ROM', extensions: (c.exts && c.exts.length ? c.exts : EMU_DEF_EXTS).map(x => x.slice(1)) }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }

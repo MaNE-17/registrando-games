@@ -337,6 +337,20 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #c .ecb .acts{margin-top:8px}
 #c .ecb{padding:0 16px 16px}#c .ecb .g2 label{margin-top:2px}#c .dng:hover{color:#e5484d!important;border-color:#e5484d!important;background:color-mix(in srgb,#e5484d 12%,var(--sf))!important}
 #c .ecb .acts{gap:10px}#tp_emu #emu_msg{margin:8px 0 0;min-height:0}
+
+/* Top 5 */
+#grid .t5{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 0 26px;border-bottom:1px solid var(--ln);margin-bottom:6px}
+.t5h{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f5c542}.t5sub{font-size:12.5px;color:var(--mu);margin-bottom:6px}
+.t5r{display:flex;justify-content:center;gap:var(--gx,18px);flex-wrap:nowrap;width:100%;padding-top:34px}
+.t5s{position:relative;flex:0 0 min(var(--w,150px),calc((100% - 4*var(--gx,18px))/5));min-width:0}.t5s .card:hover{transform:none}
+.t5s img{-webkit-user-drag:none;user-select:none}.t5s[draggable=true]{cursor:grab}.t5s.drag{opacity:.35}
+.t5s.over::before{content:"";position:absolute;left:-11px;top:0;bottom:0;width:4px;border-radius:3px;background:var(--ac)}
+.t5s.gold .cv,.t5s.gold .card:hover .cv{outline:3px solid #f5c542;outline-offset:0;box-shadow:0 0 22px #f5c54299}
+.t5s .crown{position:absolute;left:50%;top:-31px;transform:translateX(-50%);filter:drop-shadow(0 2px 4px #0008);pointer-events:none}
+.t5n{position:absolute;left:8px;top:8px;z-index:2;min-width:24px;height:24px;border-radius:12px;background:#000b;color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center;pointer-events:none}.t5s.gold .t5n{background:#f5c542;color:#2a2000}
+.t5x{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:50%;background:#000a;color:#fff;border:0;padding:0;font-size:16px;line-height:1;display:grid;place-items:center;opacity:0;transition:opacity .15s;cursor:pointer}.t5s:hover .t5x,.t5x:focus-visible{opacity:1}.t5x:hover{background:#e5484d}
+.t5e{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:2/3;border:2px dashed var(--ln);border-radius:10px;background:none;color:var(--mu);cursor:pointer;font-size:13px}.t5e span{font-size:30px;line-height:1}.t5e:hover{border-color:#f5c542;color:#f5c542}
+#grid .t5o{grid-column:1/-1;padding:14px 2px 0;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);border-bottom:1px solid var(--ln);padding-bottom:8px;margin-bottom:-4px}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
 
@@ -386,6 +400,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="acts2"><button class="p" id="f_exeb" onclick="pickExe()">Adicionar .exe</button><button onclick="playFrom()">▶ Jogar</button><span class="sp"></span><button id="del" onclick="delG()">Excluir</button><button onclick="D.close()">Cancelar</button><button class="p" onclick="saveG()">Salvar</button></div>
 <div class="pdl" id="f_pl" role="listbox" hidden></div>
 </dialog>
+<dialog id="t5d"><div class="sgh"><b>Escolher jogo para o Top 5</b><input id="t5_q" placeholder="Buscar jogo" aria-label="Buscar jogo"><span class="sp"></span><button type="button" onclick="T5D.close()">Cancelar</button></div><div class="lg" id="t5_g"></div></dialog>
 <dialog id="pd"><div class="dh" id="pd_h"><b id="pd_t">Adicionar launcher</b><button type="button" class="xb" id="pd_x" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="pdbody"><p class="mu" id="pd_p" style="margin:0 0 12px"></p><div class="pgrid" id="pd_l"></div></div>
 <div class="acts2"><span class="mu" id="pd_n"></span><span class="sp"></span></div></dialog>
@@ -660,14 +675,16 @@ function renderIn(){
  grid.classList.toggle('groups',F.smart==='lists');grid.classList.toggle('bylist',BYL());grid.classList.toggle('lvw',VIEW==='list'&&F.smart!=='lists');
  if(F.smart==='lists')renderGroups(grid);
  else if(VIEW==='list')renderLv(l,grid);
- else if(!l.length)grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;
+ else if(!l.length&&!t5on())grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;
  else{
-  const gp=BYL()?groupsByList(l):null,seq=gp?gp.flatMap(x=>[{hd:x},...x.games.map(g=>({g,k:g.id+'@'+x.id}))]):l.map(g=>({g,k:g.id}));
+  const T5=t5on()?top5():[],lo=t5on()?l.filter(g=>!T5.includes(g.id)):l;
+  const gp=BYL()?groupsByList(lo):null,seq=gp?gp.flatMap(x=>[{hd:x},...x.games.map(g=>({g,k:g.id+'@'+x.id}))]):lo.map(g=>({g,k:g.id}));
   const els=seq.map(it=>{if(it.hd){const h=lghH(it.hd),o=CC.get('h:'+it.hd.id);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;el.classList.add('gh');CC.set('h:'+it.hd.id,{el,h});return el}
    const g=it.g,h=card(g),o=CC.get(it.k);if(o&&o.h===h)return o.el;
    const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;
    if(o){const a=o.el.querySelector('.cv img'),b=el.querySelector('.cv img');if(a&&b&&a.getAttribute('src')===b.getAttribute('src'))b.replaceWith(a)}
    CC.set(it.k,{el,h});return el});
+  if(t5on())els.unshift(...t5Els(T5,lo.length));
   const cur=[...grid.children];
   if(cur.length!==els.length||cur.some((c,i)=>c!==els[i])){const st=grid.scrollTop;grid.replaceChildren(...els);grid.scrollTop=st}}
  fbUi();if(!$('#fp').hidden)fpUi();yrBtn();if(!$('#yp').hidden)yrUi();qlUi(l);const n=$('#nl');if(n)n.focus()}
@@ -783,7 +800,6 @@ function xdSet(p){const prev=XAUTO;p=unq(p);$('#xd_t').value=p;const d=dirOf(p);
 async function pickExe(){
  $('#xd_t').value=$('#f_exe').value;$('#xd_c').value=$('#f_cwd').value||dirOf($('#f_exe').value);XAUTO=dirOf($('#f_exe').value);$('#xd_a').value=$('#f_args').value;$('#xd_p').value=$('#f_proc').value;XROM=$('#f_rom').value;
  const EM=emuFor();XEMU=EM?EM.id:'';$('#xd_rom').hidden=!EM;
- if(EM&&!$('#f_exe').value&&EM.exe){$('#xd_t').value=EM.exe;$('#xd_c').value=dirOf(EM.exe);XAUTO=dirOf(EM.exe);$('#xd_a').value=(EM.flags||[]).join(' ')}
  xdUi();$('#xd_rm').hidden=!$('#f_exe').value;
  XD.showModal();$('#xd_t').focus()}
 $('#xd_tb').onclick=async()=>{const r=await api('pick');if(r.path)xdSet(r.path)};
@@ -1064,6 +1080,35 @@ $('#ad_ok').onclick=async()=>{const ids=[...ADS];AD.close();
  if(LDL.id){await api('list_add',{id:LDL.id,ids});await load()}else{LDL.ids.push(...ids.filter(i=>!LDL.ids.includes(i)));listUi()}};
 $('#ld_add').onclick=openPicker;
 let NEWFORLIST=false;$('#ad_new').onclick=()=>{AD.close();NEWFORLIST=true;openG()};D.addEventListener('close',()=>setTimeout(()=>{NEWFORLIST=false},50));
+
+// ---- Top 5 jogos da vida ----
+const t5on=()=>FAV&&VIEW!=='list'&&F.smart!=='lists'&&!BYL()&&!$('#q').value.trim();
+const top5=()=>{const ok=new Set(S.games.map(g=>g.id));return (S.top5||[]).filter(id=>ok.has(id)).slice(0,5)};
+const CROWN='<svg class="crown" viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path d="M2.5 18.5h19L23 6.5l-5.2 4.3L12 3 6.2 10.8 1 6.5z" fill="#f5c542" stroke="#b8860b" stroke-width="1.2" stroke-linejoin="round"/><rect x="2.5" y="19.6" width="19" height="2.6" rx="1.2" fill="#f5c542" stroke="#b8860b" stroke-width="1.2"/></svg>';
+function t5Els(ids,nOther){
+ const mk=(key,h)=>{const o=CC.get(key);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;CC.set(key,{el,h});return el};
+ const slots=[0,1,2,3,4].map(i=>{const g=S.games.find(x=>x.id===ids[i]);
+  if(!g)return `<button type="button" class="t5s t5e" data-t5add="${i}" aria-label="Escolher jogo para a posição ${i+1}"><span>+</span>Escolher jogo</button>`;
+  return `<div class="t5s${i===0?' gold':''}" draggable="true" data-t5="${g.id}" data-pos="${i}">${i===0?CROWN:''}${card(g)}<span class="t5n">${i+1}</span><button type="button" class="t5x" data-t5x="${g.id}" title="Tirar do top 5" aria-label="Tirar do top 5">×</button></div>`}).join('');
+ const out=[mk('h:t5',`<div class="t5"><div class="t5h">Top 5 jogos da vida</div><div class="t5sub">Arraste as capas para mudar a ordem</div><div class="t5r">${slots}</div></div>`)];
+ if(nOther)out.push(mk('h:t5o','<div class="t5o">Outros favoritos</div>'));return out}
+async function t5Save(ids){S.top5=ids;render();await api('top5_set',{ids});await load()}
+const T5D=$('#t5d');let T5POS=0;
+function t5Ui(){const q=nz($('#t5_q').value).split(/\s+/).filter(Boolean),have=new Set(top5());
+ const l=S.games.filter(g=>!g.hidden&&q.every(t=>(nz(g.name)+' '+nz(g.sortname)).includes(t))).sort(NC);
+ $('#t5_g').innerHTML=l.map(g=>{const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base,inl=have.has(g.id);
+  return `<div class="ai${inl?' dim':''}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}"><div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${inl?'<span class="run">No top 5</span>':''}</div><div class="n">${esc(g.name)}</div></div>`}).join('')||'<div class="empty">Nenhum jogo encontrado.</div>'}
+$('#t5_q').oninput=t5Ui;
+$('#t5_g').onclick=e=>{const it=e.target.closest('.ai');if(!it||it.classList.contains('dim'))return;T5D.close();t5Save([...top5(),it.dataset.id].slice(0,5))};
+let T5DRAG=null;
+const t5Slot=e=>e.target.closest&&e.target.closest('.t5s');
+$('#grid').addEventListener('click',e=>{const x=e.target.closest('[data-t5x]');if(x){e.stopPropagation();t5Save(top5().filter(id=>id!==x.dataset.t5x));return}
+ const a=e.target.closest('[data-t5add]');if(a){e.stopPropagation();T5POS=+a.dataset.t5add;$('#t5_q').value='';t5Ui();T5D.showModal();$('#t5_q').focus()}},true);
+$('#grid').addEventListener('dragstart',e=>{const s=t5Slot(e);if(!s||!s.dataset.t5)return;T5DRAG=s.dataset.t5;s.classList.add('drag');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',T5DRAG)}catch{}});
+$('#grid').addEventListener('dragover',e=>{if(!T5DRAG)return;const s=t5Slot(e);if(!s)return;e.preventDefault();e.dataTransfer.dropEffect='move';document.querySelectorAll('.t5s.over').forEach(n=>n!==s&&n.classList.remove('over'));s.classList.add('over')});
+$('#grid').addEventListener('dragend',()=>{T5DRAG=null;document.querySelectorAll('.t5s.over,.t5s.drag').forEach(n=>n.classList.remove('over','drag'))});
+$('#grid').addEventListener('drop',e=>{if(!T5DRAG)return;const s=t5Slot(e);if(!s)return;e.preventDefault();
+ const ids=top5().filter(id=>id!==T5DRAG),pos=Math.min(+s.dataset.pos,ids.length);ids.splice(pos,0,T5DRAG);T5DRAG=null;t5Save(ids)});
 function renderGroups(grid){
  grid.innerHTML=S.lists.map(l=>{const gs=l.ids.map(id=>S.games.find(g=>g.id===id)).filter(Boolean).slice(0,4);
   const cells=gs.map((g,i)=>{const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
