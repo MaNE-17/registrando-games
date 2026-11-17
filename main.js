@@ -585,7 +585,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(),
-      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emu: data.emu || {}, emuBusy, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emu: data.emu || {}, emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
@@ -623,6 +623,11 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'emu_save': { data.emu = { ...(data.emu || {}), pcsx2: String(b.pcsx2 || '').replace(/^"+|"+$/g, '').trim(), roms: String(b.roms || '').replace(/^"+|"+$/g, '').trim() }; save(); return { ok: true }; }
     case 'emu_import': { if (emuBusy) return { ok: true }; msg = 'PS2: procurando ROMs...'; emuImport(); return { ok: true }; }
     case 'pick_rom': { const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: data.emu && data.emu.roms && isDirP(data.emu.roms) ? data.emu.roms : undefined, filters: [{ name: 'ROM de PS2', extensions: ['iso', 'chd'] }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
+    case 'startup_set': {
+      data.startMin = b.min !== false; save();
+      try { app.setLoginItemSettings({ openAtLogin: !!b.on, args: ['--startup'] }); } catch {}
+      return { ok: true };
+    }
     case 'pick_dir': {
       const r = await dialog.showOpenDialog(win, { properties: ['openDirectory'], defaultPath: b.start && fs.existsSync(b.start) ? b.start : undefined });
       return { path: r.canceled ? '' : r.filePaths[0] };
@@ -788,18 +793,20 @@ ipcMain.handle('api', async (_e, p, b) => {
   }
 });
 
-function show() { if (win) { win.show(); win.focus(); } }
+function show() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', show);
 app.whenReady().then(() => {
   load();
   win = new BrowserWindow({ width: 1240, height: 800, minWidth: 760, minHeight: 520, title: 'Registrando Games',
-    icon: path.join(__dirname, 'icon.png'), autoHideMenuBar: true,
+    icon: path.join(__dirname, 'icon.png'), autoHideMenuBar: true, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
   win.setMenu(null);
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.loadFile(path.join(__dirname, 'index.html'));
-  win.on('close', e => { if (!quitting) { e.preventDefault(); win.hide(); } });
+  const fromStartup = process.argv.includes('--startup');
+  win.once('ready-to-show', () => { if (fromStartup && data.startMin !== false) { win.showInactive(); win.minimize(); } else win.show(); });
+  win.on('close', e => { if (!quitting) { e.preventDefault(); win.minimize(); } });
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 16, height: 16 }));
   tray.setToolTip('Registrando Games');
   tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Abrir', click: show }, { label: 'Sair', click: () => { quitting = true; save(); app.quit(); } }]));

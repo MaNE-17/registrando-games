@@ -388,7 +388,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="cb"><nav class="tabs" id="tabs" role="tablist" aria-label="Seções">
 <span class="tg2">Contas</span><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button>
 <span class="tg2">Biblioteca</span><button class="tab" role="tab" aria-selected="false" data-t="lch">Launchers</button><button class="tab" role="tab" aria-selected="false" data-t="emu">Emuladores</button>
-<span class="tg2">Aplicativo</span><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></nav>
+<span class="tg2">Aplicativo</span><button class="tab" role="tab" aria-selected="false" data-t="gen">Geral</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></nav>
 <div class="tpw">
 <section class="tp" id="tp_steam"><div class="th"><h3>Steam</h3><p class="mu">Importa sua biblioteca com as horas jogadas. Seu perfil precisa ter os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p></div>
 <div class="g2"><div><label for="c_key">Chave da API</label><input id="c_key" type="password" autocomplete="off"><p class="mu hn"><a href="https://steamcommunity.com/dev/apikey" target="_blank">Obter minha chave</a>. Em "Domain Name" escreva <i>localhost</i>.</p></div>
@@ -414,6 +414,10 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <label for="emu_roms">Pasta das ROMs</label><div class="row"><input id="emu_roms" placeholder="Ex.: E:\Roms\PS2" spellcheck="false"><button type="button" id="emu_romsb">Procurar...</button></div>
 <div class="note">Cada jogo abre com <code>"arquivo da ROM" -batch -fullscreen -nogui</code>. O nome vem do arquivo. Jogos já importados não são repetidos. Capa e logo precisam da chave do SteamGridDB.</div>
 <p class="mu" id="emu_msg"></p><div class="acts"><button class="p" id="emu_go">Importar jogos do PS2</button></div></div></section>
+<section class="tp" id="tp_gen" hidden><div class="th"><h3>Geral</h3><p class="mu">Como o Registrando Games se comporta no Windows.</p></div>
+<label class="ck"><input type="checkbox" id="g_start">Iniciar com o Windows</label>
+<label class="ck"><input type="checkbox" id="g_min">Abrir minimizado na barra de tarefas ao iniciar com o Windows</label>
+<div class="note">Ao clicar no X, o app fica minimizado na barra de tarefas e continua contando o tempo de jogo. Para fechar de vez, use o ícone da bandeja (perto do relógio) → <b>Sair</b>.</div></section>
 <section class="tp" id="tp_upd" hidden><div class="th"><h3>Atualizações</h3><p class="mu">Versão instalada: <b id="u_ver"></b>. Procure uma versão nova quando quiser.</p></div>
 <p class="mu" id="u_msg"></p><div id="u_notes" class="mu"></div>
 <div class="acts"><button onclick="updCheck()">Verificar atualizações</button><button class="p" id="u_go" hidden onclick="updGo()">Baixar e instalar</button></div></section>
@@ -716,6 +720,7 @@ function nameFromPath(p){const parts=p.split(/[\\/]/).filter(Boolean),file=parts
 
 
 function emuBadge(){const b=$('#emu_st');if(!b)return;const ok=$('#emu_exe').value.trim()&&$('#emu_roms').value.trim();b.textContent=ok?'Configurado':'Falta configurar';b.classList.toggle('ok',!!ok)}
+$('#g_start').onchange=$('#g_min').onchange=()=>api('startup_set',{on:$('#g_start').checked,min:$('#g_min').checked});
 // ---- Emuladores ----
 const unq2=v=>String(v||'').trim().replace(/^"+|"+$/g,'').trim();
 let EMT=null;const emuSave=()=>{emuBadge();return api('emu_save',{pcsx2:$('#emu_exe').value,roms:$('#emu_roms').value})};
@@ -793,7 +798,7 @@ async function metaGet(){const r=await api('meta',{id:cur,name:$('#f_name').valu
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';emuBadge();C.showModal()}
+function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;const em=c.emu||{};$('#emu_exe').value=em.pcsx2||'';$('#emu_roms').value=em.roms||'';emuBadge();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function sync(){await saveCfg();await api('sync');$('#c_msg').textContent='Sincronizando...'}
 async function lchScan(){$('#l_go').disabled=true;$('#l_msg').textContent='Procurando...';const r=await api('launch_scan',{force:true});await load();$('#l_go').disabled=false;$('#l_msg').textContent=r.msg||'';$('#l_list').innerHTML=Object.entries(r.counts||{}).map(([n,c])=>`<div>${esc(n)}: ${c.total} instalado(s)${c.novos?`, ${c.novos} novo(s)`:''}</div>`).join('');await load()}
