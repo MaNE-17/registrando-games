@@ -484,7 +484,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'logoSize']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }

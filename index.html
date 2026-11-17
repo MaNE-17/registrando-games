@@ -238,7 +238,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 .rp{flex:1;position:relative;overflow:hidden;min-width:0}
 .wp{position:absolute;inset:0;background:var(--ln)}.wpi{width:100%;height:100%;object-fit:cover;display:block}.wpi.blur{filter:blur(28px) brightness(.7);transform:scale(1.15)}
 .wpg{position:absolute;inset:0;background:linear-gradient(to top,color-mix(in srgb,var(--bg) 96%,transparent) 0%,color-mix(in srgb,var(--bg) 70%,transparent) 32%,transparent 62%),linear-gradient(to right,color-mix(in srgb,var(--bg) 55%,transparent),transparent 45%)}
-.rpc{position:absolute;left:0;right:0;bottom:0;padding:32px 40px 34px;display:flex;flex-direction:column;gap:16px;max-height:100%;overflow:auto}
+.rpc{position:absolute;left:0;right:0;bottom:0;padding:32px 40px 34px;display:flex;flex-direction:column;gap:16px}
 .rpt h2{margin:0;font-size:40px;line-height:1.1;letter-spacing:-.01em;text-shadow:0 2px 18px #0008}.rps{margin-top:6px;color:var(--mu);font-size:15px}
 .rpg{display:flex;flex-wrap:wrap;gap:12px 34px}.ri>span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:3px}.ri b{font-size:17px;font-weight:600}.ri small{color:var(--mu);font-size:13px;font-weight:500}
 .stv{display:inline-flex;gap:1px;vertical-align:middle}.stv i{font-style:normal;font-size:20px;line-height:1;background:linear-gradient(90deg,#f5b301 var(--p),color-mix(in srgb,var(--mu) 45%,transparent) var(--p));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -255,8 +255,12 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 #d_wpbtn{width:100%}
 
 .rpt h2.hl{margin:0;line-height:0}.rlogo{display:block;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 4px 18px #000a)}
-.lsz{display:inline-flex;align-items:center;gap:8px;margin-left:auto;color:var(--mu);font-size:13px;background:color-mix(in srgb,var(--sf) 70%,transparent);border:1px solid var(--ln);border-radius:10px;padding:8px 12px}.lsz input{width:130px;accent-color:var(--ac)}.lsz b{color:var(--tx);min-width:38px;text-align:right}
+.lszx{display:inline-flex;align-items:center;gap:8px;margin-left:auto;color:var(--mu);font-size:13px;background:color-mix(in srgb,var(--sf) 70%,transparent);border:1px solid var(--ln);border-radius:10px;padding:8px 12px}.lsz input{width:130px;accent-color:var(--ac)}.lsz b{color:var(--tx);min-width:38px;text-align:right}
 .sgb.logos{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.sgb.logos img{aspect-ratio:16/9;object-fit:contain;padding:12px;background:repeating-conic-gradient(#2a3040 0 25%,#222836 0 50%) 50%/20px 20px}
+
+.lmb{position:absolute;top:18px;right:20px;z-index:3;width:44px;height:44px;border-radius:12px;font-size:20px;line-height:1;opacity:.5;background:color-mix(in srgb,var(--sf) 60%,transparent);backdrop-filter:blur(6px);transition:opacity .15s}.rp:hover .lmb,.lmb:focus-visible,.lmb[aria-expanded=true]{opacity:1}
+.lmn{position:absolute;top:70px;right:20px;z-index:4;width:300px;background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px 16px;box-shadow:0 14px 36px #0008;display:flex;flex-direction:column;gap:12px}.lmn[hidden]{display:none}
+.lmn b{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}.lmn label{display:grid;grid-template-columns:100px 1fr 44px;align-items:center;gap:10px;font-size:13px}.lmn label.lck{display:flex;gap:8px}.lmn input[type=range]{width:100%;accent-color:var(--ac)}.lmn em{font-style:normal;text-align:right;color:var(--mu)}
 .tpw{display:grid}.tpw>.tp{grid-area:1/1}#c .tp[hidden]{display:block!important;visibility:hidden}
 </style>
 <header><div class="brand"><img class="blg blg-l" src="assets/logo-black.png" alt=""><img class="blg blg-d" src="assets/logo-white.png" alt=""><div class="wm" aria-label="Registrando Games"><span class="w1">REGISTRANDO</span><span class="w2">GAMES</span></div></div>
@@ -493,17 +497,29 @@ function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base
 function rpHtml(g){if(!g)return'<div class="rpe">Nenhum jogo nesse filtro.</div>';
  const ws=wallSrc(g),cv=coverSrc(g),run=S.running.includes(g.id),ins=(S.inst||[]).includes(g.id);
  const row=(k,v)=>v?`<div class="ri"><span>${k}</span><b>${v}</b></div>`:'';
- const t=secs(g),lg=logoSrc(g),ls=g.logoSize||100;
+ const t=secs(g),lg=logoSrc(g),ls=g.logoSize||120,lx=g.logoX||0,ly=g.logoY||0,lh=!!g.logoHide,lgv=lg&&!lh;
  return `<div class="wp">${ws?`<img class="wpi" src="${esc(ws)}" alt="" onerror="rpFb(this)" data-cv="${esc(cv)}">`:cv?`<img class="wpi blur" src="${esc(cv)}" alt="">`:''}<div class="wpg"></div></div>
- <div class="rpc"><div class="rpt">${lg?`<h2 class="hl"><img class="rlogo" id="rlogo" src="${esc(lg)}" alt="${esc(g.name)}" style="${logoStyle(ls)}" onerror="this.parentElement.innerHTML=this.alt"></h2>`:`<h2>${esc(g.name)}</h2>`}<div class="rps">${esc(canonP(g.platform)||'')}${g.released?(g.platform?' · ':'')+new Date(g.released*1000).getFullYear():''}${ins?' · Instalado':''}</div></div>
+ <div class="rpc"><div class="rpt">${lgv?`<h2 class="hl"><img class="rlogo" id="rlogo" src="${esc(lg)}" alt="${esc(g.name)}" style="${logoStyle(ls,lx,ly)}" onerror="this.parentElement.innerHTML=this.alt"></h2>`:`<h2>${esc(g.name)}</h2>`}<div class="rps">${esc(canonP(g.platform)||'')}${g.released?(g.platform?' · ':'')+new Date(g.released*1000).getFullYear():''}${ins?' · Instalado':''}</div></div>
  <div class="rpg">${row('Lançamento',g.released?dpt(g.released):'')}${row('Nota',g.rating?starsH(g.rating)+` <small>${g.rating.toString().replace('.',',')}</small>`:'')}${row('Metacritic',g.meta?`<span class="mcv ${mcl(g.meta)}">${g.meta}</span>`:'')}${row('Status',esc(g.status||'Backlog'))}${row('Zerado em',g.status==='Zerado'&&g.finished?dpt(g.finished):'')}${row('Tempo de jogo',t?fmt(t):'')}${row('Último jogo',g.last_played?dpt(g.last_played):'')}</div>
  ${(g.genres||[]).length?`<div class="rpq">${g.genres.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div>`:''}
  ${g.review?`<p class="rpr">${esc(g.review)}</p>`:''}
- <div class="rpb"><button class="p" data-rp="play">${run?'Em execução':'▶ Jogar'}</button><button data-rp="edit">Editar</button><button data-rp="fav">${g.fav?'♥ Favorito':'♡ Favoritar'}</button>${lg?`<label class="lsz" title="Tamanho da logo">Logo <input type="range" id="lsz" min="40" max="220" step="5" value="${ls}" aria-label="Tamanho da logo"><b id="lszv">${ls}%</b></label>`:''}</div></div>`}
+ <div class="rpb"><button class="p" data-rp="play">${run?'Em execução':'▶ Jogar'}</button><button data-rp="edit">Editar</button><button data-rp="fav">${g.fav?'♥ Favorito':'♡ Favoritar'}</button></div></div>${lg?`<button type="button" class="lmb" id="lmb" title="Ajustes da logo" aria-label="Ajustes da logo" aria-expanded="${LMO}">⋯</button><div class="lmn" id="lmn"${LMO?'':' hidden'}><b>Logo</b>
+<label>Tamanho<input type="range" id="lsz" min="40" max="260" step="5" value="${ls}"><em id="lszv">${ls}%</em></label>
+<label>Altura<input type="range" id="lyz" min="-40" max="420" step="5" value="${ly}"><em id="lyzv">${ly}</em></label>
+<label>Posição lateral<input type="range" id="lxz" min="0" max="100" step="1" value="${lx}"><em id="lxzv">${lx}%</em></label>
+<label class="lck"><input type="checkbox" id="lhd"${lh?' checked':''}>Ocultar a logo (mostrar o nome)</label>
+<button type="button" id="lrs">Restaurar padrão</button></div>`:''}`}
 const logoSrc=g=>g.logo?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.logo):'';
-const logoStyle=s=>`max-height:${Math.round(220*s/100)}px;max-width:min(${Math.round(560*s/100)}px,92%)`;
-let LSZT=null;
-document.addEventListener('input',e=>{if(e.target.id!=='lsz')return;const v=+e.target.value,im=$('#rlogo'),g=S.games.find(x=>x.id===LSEL);if(!g)return;$('#lszv').textContent=v+'%';if(im)im.style.cssText=logoStyle(v);g.logoSize=v;clearTimeout(LSZT);LSZT=setTimeout(()=>api('save',{id:g.id,logoSize:v}),400)});
+const logoStyle=(s,x,y)=>`max-height:${Math.round(220*s/100)}px;max-width:min(${Math.round(560*s/100)}px,92%);position:relative;left:${x}%;transform:translateX(-${x}%);top:${-y}px`;
+let LSZT=null,LMO=false;
+function logoSave(g){clearTimeout(LSZT);LSZT=setTimeout(()=>api('save',{id:g.id,logoSize:g.logoSize,logoX:g.logoX,logoY:g.logoY,logoHide:!!g.logoHide}),400)}
+function logoLive(g){const im=$('#rlogo');if(im)im.style.cssText=logoStyle(g.logoSize||120,g.logoX||0,g.logoY||0);$('#lszv').textContent=(g.logoSize||120)+'%';$('#lyzv').textContent=g.logoY||0;$('#lxzv').textContent=(g.logoX||0)+'%'}
+document.addEventListener('input',e=>{const id=e.target.id;if(id!=='lsz'&&id!=='lxz'&&id!=='lyz')return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;const v=+e.target.value;if(id==='lsz')g.logoSize=v;else if(id==='lxz')g.logoX=v;else g.logoY=v;logoLive(g);logoSave(g)});
+document.addEventListener('change',e=>{if(e.target.id!=='lhd')return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;g.logoHide=e.target.checked;logoSave(g);LMO=true;lvPick(g.id)});
+document.addEventListener('click',e=>{const g=S.games.find(x=>x.id===LSEL);
+ if(e.target.closest('#lmb')){LMO=!LMO;$('#lmn').hidden=!LMO;$('#lmb').setAttribute('aria-expanded',LMO);return}
+ if(e.target.closest('#lrs')&&g){g.logoSize=120;g.logoX=0;g.logoY=0;g.logoHide=false;logoSave(g);LMO=true;lvPick(g.id);return}
+ if(LMO&&!e.target.closest('#lmn')){LMO=false;const m=$('#lmn');if(m)m.hidden=true}});
 function rpFb(i){const c=i.dataset.cv;i.onerror=null;if(c){i.src=c;i.classList.add('blur')}else i.remove()}
 function renderLv(l,grid){
  if(!l.length){grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;return}
