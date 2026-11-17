@@ -231,9 +231,10 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 .lv{width:340px;flex:none;overflow:auto;padding:14px 10px;border-right:1px solid var(--ln);display:flex;flex-direction:column;gap:4px}
 .lr{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:10px;cursor:pointer;border:1px solid transparent}
 .lr:hover{background:color-mix(in srgb,var(--ac) 8%,var(--sf))}
+.lr.sel{background:color-mix(in srgb,var(--ac) 22%,var(--sf));border-color:var(--ac)}.lr.sel .ln b::before{content:'✓ ';color:var(--ac)}
 .lr.on{background:color-mix(in srgb,var(--ac) 14%,var(--sf));border-color:color-mix(in srgb,var(--ac) 55%,transparent)}
 .lt{width:38px;height:56px;border-radius:6px;overflow:hidden;background:var(--ln);flex:none}.lt img{width:100%;height:100%;object-fit:cover;display:block}
-.ln{min-width:0;flex:1}.ln b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ln em{display:block;font-style:normal;font-size:12px;color:var(--mu);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ln{min-width:0;flex:1;display:flex;align-items:center}.ln b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ln em{display:block;font-style:normal;font-size:12px;color:var(--mu);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lf{color:var(--ac);font-size:13px}
 .rp{flex:1;position:relative;overflow:hidden;min-width:0}
 .wp{position:absolute;inset:0;background:var(--ln)}.wpi{width:100%;height:100%;object-fit:cover;display:block}.wpi.blur{filter:blur(28px) brightness(.7);transform:scale(1.15)}
@@ -493,7 +494,7 @@ const wallSrc=g=>g.wall?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+
 const dpt=ts=>new Date(ts*1000).toLocaleDateString('pt-BR');
 const starsH=r=>`<span class="stv" aria-label="${r} de 5">${[1,2,3,4,5].map(n=>`<i style="--p:${Math.max(0,Math.min(1,r-(n-1)))*100}%">★</i>`).join('')}</span>`;
 function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
- return `<div class="lr${g.id===LSEL?' on':''}" tabindex="0" data-lid="${g.id}" title="${esc(g.name)}"><div class="lt${src?'':' noimg'}">${src?`<img src="${esc(src)}" loading="lazy" onerror="this.remove()" alt="">`:''}</div><div class="ln"><b>${esc(g.name)}</b><em>${esc(canonP(g.platform)||'—')}${g.status?' · '+esc(g.status):''}</em></div>${g.fav?'<span class="lf">♥</span>':''}</div>`}
+ return `<div class="lr${g.id===LSEL?' on':''}${SEL&&SEL.has(g.id)?' sel':''}" tabindex="0" data-lid="${g.id}" title="${esc(g.name)}"><div class="lt${src?'':' noimg'}">${src?`<img src="${esc(src)}" loading="lazy" onerror="this.remove()" alt="">`:''}</div><div class="ln"><b>${esc(g.name)}</b></div>${g.fav?'<span class="lf">♥</span>':''}</div>`}
 function rpHtml(g){if(!g)return'<div class="rpe">Nenhum jogo nesse filtro.</div>';
  const ws=wallSrc(g),cv=coverSrc(g),run=S.running.includes(g.id),ins=(S.inst||[]).includes(g.id);
  const row=(k,v)=>v?`<div class="ri"><span>${k}</span><b>${v}</b></div>`:'';
@@ -547,13 +548,13 @@ function render(){
  fbUi();if(!$('#fp').hidden)fpUi();yrBtn();if(!$('#yp').hidden)yrUi();qlUi(l);const n=$('#nl');if(n)n.focus()}
 let SEL=null,SELSIG='';
 const filterActive=()=>!!($('#q').value.trim()||F.status||F.platform||F.genre||F.list||INST||FAV||YR);
-function qlUi(l){const n=SEL?SEL.size:l.length,show=($('#q').value.trim()||SEL)&&F.smart!=='lists'&&n>0;$('#ql').hidden=!show;if(show)$('#ql').textContent=SEL?`+ Criar lista rápida (${SEL.size})`:'+ Criar lista rápida'}
+function qlUi(l){const n=SEL?SEL.size:l.length,show=!!SEL&&F.smart!=='lists'&&n>0;$('#ql').hidden=!show;if(show)$('#ql').textContent=SEL?`+ Criar lista rápida (${SEL.size})`:'+ Criar lista rápida'}
 function selToggle(id,kb){
  if(!SEL)SEL=new Set([id]);
  else{SEL.has(id)?SEL.delete(id):SEL.add(id);if(!SEL.size)SEL=null}
  render();if(kb){const el=document.querySelector(`.card[data-id="${id}"]`);el&&el.focus()}}
 $('#ql').onclick=()=>{const ids=SEL?[...SEL]:S.games.filter(filt).map(g=>g.id);if(ids.length)openListDraft(ids)};
-$('#grid').addEventListener('click',e=>{const r=e.target.closest('.lr');if(r){lvPick(r.dataset.lid);return}const b=e.target.closest('[data-rp]');if(!b)return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;const a=b.dataset.rp;if(a==='play')play(g.id);else if(a==='edit')openG(g.id);else if(a==='fav')api('save',{id:g.id,fav:!g.fav}).then(load)});
+$('#grid').addEventListener('click',e=>{const r=e.target.closest('.lr');if(r){if(e.ctrlKey||e.metaKey){selToggle(r.dataset.lid);return}lvPick(r.dataset.lid);return}const b=e.target.closest('[data-rp]');if(!b)return;const g=S.games.find(x=>x.id===LSEL);if(!g)return;const a=b.dataset.rp;if(a==='play')play(g.id);else if(a==='edit')openG(g.id);else if(a==='fav')api('save',{id:g.id,fav:!g.fav}).then(load)});
 $('#grid').addEventListener('dblclick',e=>{const r=e.target.closest('.lr');if(r)openG(r.dataset.lid)});
 $('#grid').addEventListener('keydown',e=>{const r=e.target.closest('.lr');if(!r)return;if(e.key==='Enter'){openG(r.dataset.lid);return}if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const s=e.key==='ArrowDown'?r.nextElementSibling:r.previousElementSibling;if(s&&s.dataset.lid)lvPick(s.dataset.lid,1)}});
 $('#grid').onclick=e=>{if(e.target.closest('.lv,.rp'))return;const gl=e.target.closest('[data-list]');if(gl){openList(gl.dataset.list);return}if(e.target.closest('#newg')){openListDraft([]);return}const fv=e.target.closest('[data-fav]');if(fv){const g=S.games.find(x=>x.id===fv.dataset.fav)||{};api('save',{id:g.id,fav:!g.fav}).then(load);return}const hb=e.target.closest('[data-hide]');if(hb){const g=S.games.find(x=>x.id===hb.dataset.hide)||{};api('save',{id:g.id,hidden:!g.hidden}).then(load);return}const p=e.target.closest('[data-play]');if(p){play(p.dataset.play);return}const c=e.target.closest('.card');if(!c)return;if(e.ctrlKey||e.metaKey){selToggle(c.dataset.id);return}openG(c.dataset.id)};
