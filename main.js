@@ -859,7 +859,7 @@ app.whenReady().then(() => {
   win.setMenu(null);
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
   win.loadFile(path.join(__dirname, 'index.html'));
-  setTimeout(updWatch, 8000); setInterval(updWatch, 6 * 3600 * 1000);
+  setTimeout(updWatch, 8000); setInterval(updWatch, 30 * 60 * 1000);
   const fromStartup = process.argv.includes('--startup');
   win.once('ready-to-show', () => { if (fromStartup && data.startMin !== false) { win.showInactive(); win.minimize(); } else win.show(); });
   win.on('close', e => { if (!quitting) { e.preventDefault(); win.minimize(); } });
