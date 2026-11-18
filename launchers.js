@@ -120,14 +120,59 @@ function epicDiag() {
   try { fs.writeFileSync(f, L.join('\n')); } catch {}
 }
 
+// Biblioteca completa da Ubisoft (cache local do Ubisoft Connect: ownership + configurations, ambos protobuf)
+function pbParse(b) {
+  const out = []; let i = 0;
+  const vi = () => { let r = 0, m = 1, c; do { c = b[i++]; if (c === undefined) throw new Error('eof'); r += (c & 127) * m; m *= 128; } while (c & 128); return r; };
+  while (i < b.length) {
+    const k = vi(), f = Math.floor(k / 8), w = k & 7; let v;
+    if (w === 0) v = vi(); else if (w === 2) { const l = vi(); if (i + l > b.length) throw new Error('len'); v = b.subarray(i, i + l); i += l; } else if (w === 5) { v = b.subarray(i, i + 4); i += 4; } else if (w === 1) { v = b.subarray(i, i + 8); i += 8; } else throw new Error('wire');
+    out.push([f, v]);
+  }
+  return out;
+}
+function ubiName(y) {
+  const g = re => (y.match(re) || [])[1];
+  let n = (g(/^  name:\s*"?(.*?)"?\s*$/m) || '').trim();
+  if (n && /^[A-Za-z_0-9]+$/.test(n) && /localizations/.test(y)) { const m = y.match(new RegExp('^\\s+' + n.replace(/[^\w]/g, '') + ':\\s*"?(.*?)"?\\s*$', 'm')); if (m) n = m[1]; }
+  return n.replace(/^'(.*)'$/, '$1');
+}
+async function ubisoftLibrary() {
+  const base = process.env.RG_UBI_DIR || path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Game Launcher', 'cache');
+  const od = path.join(base, 'ownership'), cf = path.join(base, 'configuration', 'configurations');
+  if (!isDir(od) || !fs.existsSync(cf)) return [];
+  const files = fs.readdirSync(od).map(f => path.join(od, f)).filter(f => fs.statSync(f).isFile()).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  if (!files.length) return [];
+  const own = fs.readFileSync(files[0]), cfg = new Map();
+  for (const [f, v] of pbParse(fs.readFileSync(cf))) { if (f !== 1 || typeof v === 'number') continue; try { const m = new Map(pbParse(v)); cfg.set(m.get(1), Buffer.from(m.get(3) || []).toString('utf8')); } catch {} }
+  let items; for (const off of [260, 4 + (own.readUInt32BE(0) || 0), 0]) { try { items = pbParse(own.subarray(off)); if (items.length) break; } catch { items = null; } }
+  if (!items) return [];
+  const out = [], seen = new Map(), skip = /\b(demo|trial|beta|test)\b/i;
+  for (const [f, v] of items) {
+    if (f !== 1 || typeof v === 'number') continue;
+    let m; try { m = new Map(pbParse(v)); } catch { continue; }
+    const id = m.get(1); if (!id || (m.get(6) || 0) !== 0) continue;
+    const y = cfg.get(id) || ''; if (!y || (y.length < 300 && /is_visible:\s*no/.test(y))) continue;
+    const name = clean(ubiName(y)); if (!name || skip.test(name)) continue;
+    const th = (y.match(/^\s*thumb_image:\s*(\S+)/m) || [])[1];
+    const item = { launcher: 'Ubisoft Connect', key: 'ubi:' + id, name, exe: '', uri: `uplay://launch/${id}/0`, owned: true, installed: false, cover: th && /^[\w.]+$/.test(th) ? 'https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/' + th : '', genres: [] };
+    const nk = name.toLowerCase().replace(/[^a-z0-9]/g, ''); if (seen.has(nk)) { const p = seen.get(nk); (p.alt = p.alt || []).push(item.key); continue; } seen.set(nk, item); out.push(item);
+  }
+  return out;
+}
+
 async function ubisoft() {
   const out = [];
   const txt = process.env.RG_UBI_TEXT !== undefined ? process.env.RG_UBI_TEXT : await reg(['HKLM\\SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher\\Installs', '/s']);
   for (const b of regBlocks(txt)) {
     const dir = (b.v['installdir'] || '').replace(/\//g, SEP).replace(/[\\/]+$/, ''), id = b.key.split('\\').pop();
     if (!dir || !/^\d+$/.test(id) || !isDir(dir)) continue;
-    out.push({ launcher: 'Ubisoft Connect', key: 'ubi:' + id, name: clean(PB(dir)), exe: guessExe(dir), uri: `uplay://launch/${id}/0` });
+    out.push({ launcher: 'Ubisoft Connect', key: 'ubi:' + id, name: clean(PB(dir)), exe: guessExe(dir), uri: `uplay://launch/${id}/0`, installed: true });
   }
+  try {
+    const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const l of await ubisoftLibrary()) { const i = out.find(o => o.key === l.key || (l.alt || []).includes(o.key) || nm(o.name) === nm(l.name)); if (i) { if (!i.cover) i.cover = l.cover; } else out.push(l); }
+  } catch (e) { out.err = e.message; }
   return out;
 }
 

@@ -461,7 +461,7 @@ async function launchersImport(opt = {}) {
       counts[n] = { total: (found[n] || []).length, novos };
     }
     launcherInst = inst; save();
-    (async () => { while (coverQ.length) { const [id, u] = coverQ.shift(), g = data.games.find(x => x.id === id); if (g && !g.cover) { try { await wallSave(g, u, 'cover'); g.sgc = 1; save(); } catch {} } } })();
+    (async () => { while (coverQ.length) { const [id, u] = coverQ.shift(), g = data.games.find(x => x.id === id); if (g && !g.cover) { try { await wallSave(g, u, 'cover'); if (g.cover) g.sgc = 1; save(); } catch {} } } })();
     const novos = Object.values(counts).reduce((a, c) => a + c.novos, 0), total = Object.values(counts).reduce((a, c) => a + c.total, 0);
     return { counts, msg: total ? `Encontrei ${total} jogo(s) nos launchers (instalados ou não); ${novos} novo(s) na biblioteca.` : 'Não encontrei jogos instalados nesses launchers.' };
   } finally { lchBusy = false; }
