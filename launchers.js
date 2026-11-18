@@ -161,7 +161,7 @@ async function ubisoftLibrary() {
   return out;
 }
 
-async function ubisoft() {
+async function ubisoft(opt = {}) {
   const out = [];
   const txt = process.env.RG_UBI_TEXT !== undefined ? process.env.RG_UBI_TEXT : await reg(['HKLM\\SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher\\Installs', '/s']);
   for (const b of regBlocks(txt)) {
@@ -171,7 +171,7 @@ async function ubisoft() {
   }
   try {
     const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-    for (const l of await ubisoftLibrary()) { const i = out.find(o => o.key === l.key || (l.alt || []).includes(o.key) || nm(o.name) === nm(l.name)); if (i) { if (!i.cover) i.cover = l.cover; } else out.push(l); }
+    for (const l of (opt.light ? [] : await ubisoftLibrary())) { const i = out.find(o => o.key === l.key || (l.alt || []).includes(o.key) || nm(o.name) === nm(l.name)); if (i) { if (!i.cover) i.cover = l.cover; } else out.push(l); }
   } catch (e) { out.err = e.message; }
   return out;
 }
@@ -238,7 +238,7 @@ async function eaLibrary() {
   return [...groups.values()];
 }
 
-async function ea() {
+async function ea(opt = {}) {
   const out = [], seen = new Set();
   const add = (name, dir) => {
     name = clean(name); if (!name || !dir || !isDir(dir) || seen.has(name.toLowerCase())) return;
@@ -260,7 +260,7 @@ async function ea() {
   for (const o of out) o.installed = true;
   try {
     const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-    for (const l of await eaLibrary()) { const i = out.find(o => nm(o.name) === nm(l.name)); if (!i) out.push(l); else if (!i.uri) i.uri = ''; }
+    for (const l of (opt.light ? [] : await eaLibrary())) { const i = out.find(o => nm(o.name) === nm(l.name)); if (!i) out.push(l); else if (!i.uri) i.uri = ''; }
   } catch (e) { out.err = e.message; }
   return out;
 }
@@ -297,7 +297,7 @@ async function battlenetLibrary() {
   return want.filter(c => names.has(c)).map(c => ({ launcher: 'Battle.net', key: 'bnet:' + names.get(c), bnet: c, name: names.get(c), exe: '', uri: 'battlenet://' + c, owned: true, installed: false, cover: '', genres: [] }));
 }
 
-async function battlenet() {
+async function battlenet(opt = {}) {
   const out = [];
   const roots = ['HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', 'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall'];
   for (const r of roots) {
@@ -314,7 +314,7 @@ async function battlenet() {
   }
   try {
     const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-    for (const l of await battlenetLibrary()) if (!out.some(o => nm(o.name) === nm(l.name))) out.push(l);
+    for (const l of (opt.light ? [] : await battlenetLibrary())) if (!out.some(o => nm(o.name) === nm(l.name))) out.push(l);
   } catch (e) { out.err = e.message; }
   return out;
 }
@@ -348,7 +348,7 @@ async function gamepass() {
   return out;
 }
 
-async function gog() {
+async function gog(opt = {}) {
   const out = [], txt = process.env.RG_GOG_TEXT !== undefined ? process.env.RG_GOG_TEXT : await reg(['HKLM\\SOFTWARE\\WOW6432Node\\GOG.com\\Games', '/s']);
   for (const b of regBlocks(txt)) {
     const id = b.key.split('\\').pop(), name = b.v['gamename'], dir = (b.v['path'] || '').replace(/\//g, SEP).replace(/[\\/]+$/, '');
@@ -358,7 +358,7 @@ async function gog() {
   }
   try {
     const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-    for (const l of await gogLibrary()) { const i = out.find(o => o.key === l.key || nm(o.name) === nm(l.name)); if (i) Object.assign(i, { minutes: l.minutes, last: l.last, cover: l.cover, genres: l.genres, year: l.year }); else out.push(l); }
+    for (const l of (opt.light ? [] : await gogLibrary())) { const i = out.find(o => o.key === l.key || nm(o.name) === nm(l.name)); if (i) Object.assign(i, { minutes: l.minutes, last: l.last, cover: l.cover, genres: l.genres, year: l.year }); else out.push(l); }
   } catch (e) { out.err = e.message; }
   return out;
 }
@@ -393,11 +393,12 @@ async function gogLibrary() {
   return out;
 }
 
-async function scanAll(only) {
+async function scanAll(only, opt = {}) {
   const res = {};
   for (const [n, f] of [['Epic Games', async () => epic()], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass]]) {
     if (only && !only.includes(n)) continue;
-    try { res[n] = await f(); } catch (e) { res[n] = []; res[n + '_err'] = e.message; }
+    if (opt.light && n === 'Game Pass') continue;
+    try { res[n] = await f(opt); } catch (e) { res[n] = []; res[n + '_err'] = e.message; }
   }
   return res;
 }

@@ -469,6 +469,29 @@ async function launchersImport(opt = {}) {
   } finally { lchBusy = false; }
 }
 
+// Verificacao leve (a cada 90 s): so atualiza quais jogos ja cadastrados estao instalados. Sem biblioteca, sem PowerShell,
+// sem Game Pass; so salva/avisa a tela quando algo realmente mudou.
+async function launcherInstCheck() {
+  if (lchBusy || refreshing) return;
+  lchBusy = true;
+  try {
+    const want = (data.sidePlats || LCH.SIDE_DEF).filter(n => LCH.NAMES.includes(n) && n !== 'Game Pass');
+    const found = await LCH.scanAll(want, { light: true }), inst = new Set([...launcherInst].filter(k => /^xbox:/.test(k)));
+    let changed = false;
+    for (const n of want) for (const f of found[n] || []) {
+      if (f.installed === false) continue;
+      const g = data.games.find(x => x.lkey === f.key); if (!g) continue;
+      inst.add(f.key);
+      if (f.exe && (!g.exe || !fs.existsSync(g.exe))) { g.exe = f.exe; changed = true; }
+      if (f.uri && !g.uri) { g.uri = f.uri; changed = true; }
+      if (g.cat) { delete g.cat; changed = true; }
+    }
+    const same = inst.size === launcherInst.size && [...inst].every(k => launcherInst.has(k));
+    if (!same) launcherInst = inst;
+    if (changed) save();
+  } catch {} finally { lchBusy = false; }
+}
+
 const sgRaw = async p => {
   const r = await fetch('https://www.steamgriddb.com/api/v2' + p, { headers: { Authorization: 'Bearer ' + data.config.sgdb } });
   if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -879,7 +902,7 @@ app.whenReady().then(() => {
   tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Abrir', click: show }, { label: 'Sair', click: () => { quitting = true; save(); app.quit(); } }]));
   tray.on('click', show);
   setInterval(track, 5000);
-  scanSteam(); setInterval(scanSteam, 60000);
+  scanSteam(); setInterval(scanSteam, 60000); setInterval(launcherInstCheck, 90000);
 
   fillInfo();
 });
