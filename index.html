@@ -228,7 +228,7 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 #side .sh{display:flex;align-items:center;gap:8px;cursor:pointer}#side .sh:hover{color:var(--tx)}#side .sh .tx{flex:1}#side .sh em{font-style:normal;font-weight:600;letter-spacing:0}
 #side .sh .chv{transition:transform .15s;flex:none}#side .sh .chv.c{transform:rotate(-90deg)}
 .nosb #side .sh{display:block;height:0;padding:0;margin:10px 14px;overflow:hidden;pointer-events:none}
-#side .sg{display:flex;flex-direction:column;gap:inherit}#side .sh{touch-action:none}
+#side .sg{display:flex;flex-direction:column;flex-wrap:nowrap;gap:inherit;min-width:0}#side .sg>.it{min-width:0;align-self:stretch}#side .it,#side .sg{flex-shrink:0}#side{min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}#side .sh{touch-action:none}
 aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 
 /* ---- 1.4.0: modo lista ---- */
