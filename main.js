@@ -692,7 +692,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (!g) return {};
       if (g.lkey && !g.appid && !launcherInst.has(g.lkey) && !(g.exe && fs.existsSync(g.exe)) && !g.uri) {
         const id = g.lkey.split(':')[1] || '';
-        if (g.platform === 'GOG' && /^\d+$/.test(id)) { try { await shell.openExternal('goggalaxy://openGameView/' + id); } catch {} return { error: 'Instale o jogo antes de jogar. Abri o GOG Galaxy nele para você instalar.' }; }
+        if (g.platform === 'GOG' && /^\d+$/.test(id)) { try { await shell.openExternal('goggalaxy://openGameView/' + id); } catch {} return { ok: true }; }
         return { error: 'Instale o jogo antes de jogar (ele ainda não está instalado no launcher).' };
       }
       if (g.uri && g.lkey && (launcherInst.has(g.lkey) || !g.exe || !fs.existsSync(g.exe))) {
