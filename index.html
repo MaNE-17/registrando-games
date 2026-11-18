@@ -1185,10 +1185,11 @@ function fOpts(k){const vis=S.games.filter(g=>!g.hidden);
  return genList().map(x=>[x,vis.filter(g=>(g.genres||[]).includes(x)).length,''])}
 function fpUi(){const k=FPK;if(!k)return;
  const on=v=>k==='sort'?$('#sort').value===v:F[k]===v;
- $('#fp_l').innerHTML=(k==='platform'?'<div class="it add" tabindex="0" data-fadd="p"><i style="font-style:normal">Adicionar Plataforma</i></div>':'')+(k==='sort'?'':`<div class="it ${F[k]?'':'on'}" tabindex="0" data-fv=""><i style="font-style:normal">Todos</i></div>`)+fOpts(k).map(([v,n,ic,lab])=>`<div class="it ${on(v)?'on':''}" tabindex="0" data-fv="${esc(v)}"><i style="font-style:normal">${ic}${esc(lab||v)}</i><span>${n}</span></div>`).join('')}
+ $('#fp_l').innerHTML=(k==='platform'?'<div class="it add" tabindex="0" data-fadd="p"><i style="font-style:normal">Adicionar Plataforma</i></div>':k==='genre'?'<div class="it add" tabindex="0" data-fadd="g"><i style="font-style:normal">Adicionar Gênero</i></div>':'')+(k==='sort'?'':`<div class="it ${F[k]?'':'on'}" tabindex="0" data-fv=""><i style="font-style:normal">Todos</i></div>`)+fOpts(k).map(([v,n,ic,lab])=>`<div class="it ${on(v)?'on':''}" tabindex="0" data-fv="${esc(v)}"><i style="font-style:normal">${ic}${esc(lab||v)}</i><span>${n}</span></div>`).join('')}
+async function genreNew(){const v=await ask('Novo gênero','Nome do gênero','Ex.: Ritmo');if(!v)return;await api('genre_add',{name:v});await load();if(D.open)genreUi()}
 function togF(e,k){e.stopPropagation();$('#vp').hidden=true;$('#yp').hidden=true;const p=$('#fp');
  if(!p.hidden&&FPK===k){p.hidden=true;return}FPK=k;fpUi();p.hidden=false;placePop(p,e.currentTarget)}
-$('#fp').onclick=e=>{e.stopPropagation();{const fa=e.target.closest('[data-fadd]');if(fa){$('#fp').hidden=true;return platOpen(fa.dataset.fadd)}}const t=e.target.closest('[data-fv]');if(!t)return;const k=FPK,v=t.dataset.fv;
+$('#fp').onclick=e=>{e.stopPropagation();{const fa=e.target.closest('[data-fadd]');if(fa){$('#fp').hidden=true;if(fa.dataset.fadd==='g')return genreNew();return platOpen(fa.dataset.fadd)}}const t=e.target.closest('[data-fv]');if(!t)return;const k=FPK,v=t.dataset.fv;
  if(k==='sort')$('#sort').value=v||'name';else{F[k]=v&&F[k]!==v?v:null;if(F.smart==='lists')F.smart='all'}
  $('#fp').hidden=true;render()};
 $('#fp').onkeydown=e=>{if(e.key==='Enter'&&(e.target.dataset.fv!==undefined||e.target.dataset.fadd!==undefined))e.target.click()};
