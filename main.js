@@ -92,6 +92,59 @@ const rid = () => crypto.randomBytes(5).toString('hex');
 const isDirP = p => { try { return fs.statSync(p).isDirectory(); } catch { return false; } };
 const parseArgs = s => { const o = []; String(s || '').replace(/"([^"]*)"|(\S+)/g, (_, a, b) => { o.push(a !== undefined ? a : b); return ''; }); return o; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// SteamID: aceita o SteamID64, o link do perfil (/profiles/... ou /id/...) ou o nome personalizado
+async function steamId64(key, raw) {
+  const s = String(raw || '').trim().replace(/\/+$/, '');
+  let m = s.match(/(?:^|\/profiles\/)(7656\d{13})$/); if (m) return m[1];
+  m = s.match(/\/id\/([^/?#]+)/); const vanity = m ? m[1] : (/^[\w-]{2,32}$/.test(s) ? s : '');
+  if (!vanity || !key) return '';
+  const r = await J('https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?' + new URLSearchParams({ key, vanityurl: vanity }));
+  return r && r.response && r.response.success === 1 ? String(r.response.steamid) : '';
+}
+async function steamTest(key, raw) {
+  key = String(key || '').trim();
+  const out = [];
+  if (!/^[0-9A-Fa-f]{32}$/.test(key)) return { ok: false, lines: ['✗ Chave da API: deve ter 32 caracteres (letras A–F e números). Confira se copiou inteira.'] };
+  let id;
+  try { id = await steamId64(key, raw); }
+  catch (e) { return { ok: false, lines: [/40[13]/.test(e.message) ? '✗ Chave da API recusada pela Steam (inválida ou revogada).' : '✗ Não consegui falar com a Steam (' + e.message + '). Confira a internet.'] }; }
+  if (!id) return { ok: false, lines: ['✗ SteamID: não reconheci. Use o SteamID64 (17 dígitos que começam com 7656), o link do seu perfil ou o nome personalizado do link.'] };
+  let pl;
+  try { pl = ((await J('https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?' + new URLSearchParams({ key, steamids: id }))).response.players || [])[0]; }
+  catch (e) { return { ok: false, lines: [/40[13]/.test(e.message) ? '✗ Chave da API recusada pela Steam (inválida ou revogada).' : '✗ Não consegui falar com a Steam (' + e.message + ').'] }; }
+  out.push('✓ Chave da API aceita pela Steam.');
+  if (!pl) return { ok: false, lines: [...out, '✗ Nenhum perfil encontrado com esse SteamID.'] };
+  out.push(`✓ Perfil encontrado: ${pl.personaname} (${id}).`);
+  if (pl.communityvisibilitystate !== 3) out.push('✗ O perfil está privado. Deixe o perfil e os detalhes dos jogos como Públicos (Steam → Perfil → Editar perfil → Privacidade).');
+  try {
+    const r = (await J('https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?' + new URLSearchParams({ key, steamid: id, include_appinfo: 0 }))).response || {};
+    if (typeof r.game_count !== 'number') out.push('✗ A Steam não devolveu seus jogos: os "Detalhes dos jogos" do perfil estão privados. Mude para Público em Steam → Perfil → Editar perfil → Privacidade.');
+    else out.push(`✓ Biblioteca liberada: ${r.game_count} jogo(s).`);
+  } catch (e) { out.push('✗ Erro ao ler a biblioteca (' + e.message + ').'); }
+  return { ok: !out.some(l => l.startsWith('✗')), id, lines: out };
+}
+// Relatorio para descobrir por que um PC nao achou jogos (sem chaves nem tokens)
+async function diagReport() {
+  const L = [], ex = p => { try { return fs.existsSync(p) ? 'existe' : 'não existe'; } catch { return 'erro'; } };
+  const la = process.env.LOCALAPPDATA || '', pd = process.env.ProgramData || 'C:\\ProgramData', ad = process.env.APPDATA || '';
+  L.push('Registrando Games ' + app.getVersion() + ' | Windows ' + require('os').release() + ' | ' + new Date().toISOString());
+  L.push('Pasta de dados: ' + DATA_DIR + ' | jogos: ' + data.games.length + ' | barra lateral: ' + JSON.stringify(data.sidePlats || 'padrão'));
+  L.push('Auto atualizar ao abrir: ' + (data.autoRefresh !== false) + ' | Steam API: chave ' + (data.config.key ? 'preenchida' : 'vazia') + ', SteamID ' + (data.config.steamid ? 'preenchido' : 'vazio'));
+  L.push('', '== Pastas dos launchers');
+  for (const [n, p] of [['GOG Galaxy', path.join(pd, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')], ['Epic (novo)', path.join(la, 'com.epicgames.eglv2')], ['Epic (antigo)', path.join(pd, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests')], ['Ubisoft cache', path.join(la, 'Ubisoft Game Launcher', 'cache')], ['EA ProgramData', path.join(pd, 'EA Desktop')], ['EA conta', path.join(la, 'Electronic Arts', 'EA Desktop')], ['Battle.net logs', path.join(la, 'Battle.net', 'Logs')], ['Battle.net cache', path.join(la, 'Battle.net', 'Cache')]]) L.push(n + ': ' + ex(p) + '  (' + p + ')');
+  L.push('', '== Steam');
+  try { await scanSteam(); L.push('Steam instalados lidos: ' + steamNames.size); } catch (e) { L.push('Steam: erro ' + e.message); }
+  L.push('', '== Busca nos launchers');
+  for (const n of LCH.NAMES) {
+    const t0 = Date.now();
+    try { const r = await LCH.scanAll([n]), f = r[n] || []; L.push(`${n}: ${f.length} jogo(s), ${f.filter(x => x.installed !== false).length} instalado(s), ${Date.now() - t0} ms` + (f.err || r[n + '_err'] ? ' | aviso: ' + (f.err || r[n + '_err']) : '')); }
+    catch (e) { L.push(`${n}: ERRO ${e.message} (${Date.now() - t0} ms)`); }
+  }
+  L.push('', '== Última mensagem do app', msg || '(nenhuma)');
+  const file = path.join(app.getPath('desktop'), 'registrando-games-diagnostico.txt');
+  fs.writeFileSync(file, L.join('\r\n'), 'utf8');
+  return file;
+}
 const J = async u => { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
@@ -351,7 +404,7 @@ async function fillInfo() {
 
 // Jogos da Familia Steam (API nao oficial; exige o token temporario da loja)
 async function importFamily(c) {
-  const t = encodeURIComponent(c.fam), sid = encodeURIComponent(c.steamid);
+  const t = encodeURIComponent(c.fam), sid = encodeURIComponent((await steamId64(c.key, c.steamid).catch(() => '')) || c.steamid);
   const gid = ((await J(`https://api.steampowered.com/IFamilyGroupsService/GetFamilyGroupForUser/v1/?access_token=${t}&steamid=${sid}`)).response || {}).family_groupid;
   if (!gid) throw new Error('não encontrei uma Família Steam nessa conta');
   const apps = ((await J(`https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/?access_token=${t}&family_groupid=${gid}&steamid=${sid}&include_own=true&include_free=false&include_excluded=false&include_non_games=false`)).response || {}).apps || [];
@@ -378,8 +431,11 @@ async function steamSync() {
   const c = data.config;
   if (!c.key || !c.steamid) return; // sem API: so os instalados (steamLocalImport)
   try {
-    const q = new URLSearchParams({ key: c.key, steamid: c.steamid, include_appinfo: 1, include_played_free_games: 1 });
-    const games = (await J('https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?' + q)).response.games || [];
+    const sid = await steamId64(c.key, c.steamid); if (!sid) throw new Error('SteamID não reconhecido');
+    const q = new URLSearchParams({ key: c.key, steamid: sid, include_appinfo: 1, include_played_free_games: 1 });
+    const rsp = (await J('https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?' + q)).response || {};
+    if (typeof rsp.game_count !== 'number') { msg = 'Steam: a biblioteca veio vazia. Os "Detalhes dos jogos" do seu perfil precisam estar Públicos. Use "Testar chaves" nas Configurações.'; return; }
+    const games = rsp.games || [];
     const by = new Map(data.games.filter(g => g.appid).map(g => [g.appid, g]));
     let added = 0;
     for (const s of games) {
@@ -675,7 +731,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       data.games = data.games.filter(x => !ids.has(x.id)); data.lists.forEach(l => l.ids = l.ids.filter(i => !ids.has(i))); save(); return { ok: true, n: ids.size };
     }
     case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; if (g.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + g.appid])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
-    case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
+    case 'config': data.config = { key: String(b.key || '').trim(), steamid: String(b.steamid || '').trim(), sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': if (!data.config.key || !data.config.steamid) { msg = 'Preencha a chave da API e o SteamID da Steam.'; return { ok: true }; } msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh_stop': if (refreshing || busy) { stopRefresh = true; msg = 'Parando...'; } return { ok: true };
     case 'refresh': { stopRefresh = false; if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { msg = 'Procurando jogos nos launchers...'; const lr = await launchersImport({ discover: true }); if (lr && lr.msg) msg = lr.msg; } catch {} try { const sn = await steamLocalImport(); if (sn) msg += ` Steam: ${sn} jogo(s) instalado(s) novo(s).`; } catch {} try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; if (stopRefresh) msg = 'Atualização interrompida.'; stopRefresh = false; }); return { ok: true }; }
@@ -691,6 +747,8 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'side_set2': {
       data.sideCons = [...new Set((b.list || []).filter(x => typeof x === 'string' && x.length && x.length < 40))]; save(); return { ok: true };
     }
+    case 'steam_test': try { return await steamTest(b.key, b.steamid); } catch (e) { return { ok: false, lines: ['✗ ' + e.message] }; }
+    case 'diag': try { const f = await diagReport(); shell.showItemInFolder(f); return { ok: true, file: f }; } catch (e) { return { error: e.message }; }
     case 'launch_scan': try { return await launchersImport({ force: !!b.force, only: b.only || null }); } catch (e) { return { counts: {}, msg: 'Erro ao procurar: ' + e.message }; }
     case 'upd_check': try { return await updCheck(); } catch (e) { return { ok: false, msg: 'Sem conexão com o GitHub: ' + e.message }; }
     case 'upd_prog': return UPD;
