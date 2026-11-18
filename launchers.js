@@ -63,8 +63,53 @@ function epicDirs() {
   }
   return [...bases];
 }
-function epic() {
+// Novo launcher da Epic (beta "eglv2"): %LOCALAPPDATA%\com.epicgames.eglv2
+//  - installations.jsonl: jogos instalados (ultimo registro de cada installationId)
+//  - cache\prod\account\<conta>\library-cache.json: biblioteca da conta; catalog-cache.json: nomes, categorias e capas
+//  - playtime-cache.json: tempo de jogo (segundos) por appName
+function epicV2(opt = {}) {
+  const base = process.env.RG_EGL2 || path.join(process.env.LOCALAPPDATA || '', 'com.epicgames.eglv2');
+  if (!isDir(base)) return [];
+  const rd = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } };
+  const cat = ((rd(path.join(base, 'cache', 'prod', 'catalog-cache.json')) || {}).items) || {};
+  const uriOf = (ns, item, app) => app ? `com.epicgames.launcher://apps/${[ns, item, app].filter(Boolean).map(encodeURIComponent).join('%3A')}?action=launch&silent=true` : '';
+  const cover = it => { const k = (it && it.keyImages) || []; const t = k.find(x => x.type === 'DieselGameBoxTall') || k.find(x => x.type === 'OfferImageTall'); return t && /^https:/.test(t.url || '') ? t.url : ''; };
+  let lib = [], play = {};
+  const accRoot = path.join(base, 'cache', 'prod', 'account');
+  try {
+    const accs = fs.readdirSync(accRoot).map(a => path.join(accRoot, a)).filter(isDir).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    if (accs[0]) { lib = ((rd(path.join(accs[0], 'library-cache.json')) || {}).items) || []; for (const p of ((rd(path.join(accs[0], 'playtime-cache.json')) || {}).items) || []) if (p.artifactId) play[p.artifactId] = Math.round((+p.totalTime || 0) / 60); }
+  } catch {}
+  const titleOf = (itemId, app) => { const l = lib.find(x => x.appId && (x.appId.itemId === itemId || x.appId.appName === app)); return (l && l.title) || ((cat[itemId] || {}).item || {}).title || ''; };
+  // instalados
+  const inst = new Map();
+  try { for (const line of fs.readFileSync(path.join(base, 'installations.jsonl'), 'utf8').split(/\r?\n/)) { if (!line.trim()) continue; try { const j = JSON.parse(line); if (j.installationId) inst.set(j.installationId, j); } catch {} } } catch {}
   const out = [], keys = new Set();
+  for (const j of inst.values()) {
+    if (!j.complete || !j.dir || !isDir(j.dir)) continue;
+    const app = j.artifactId || PB(j.dir), key = 'epic:' + app; if (keys.has(key)) continue; keys.add(key);
+    let exe = j.launchExecutable ? path.join(j.dir, j.launchExecutable) : ''; if (!exe || !fs.existsSync(exe)) exe = guessExe(j.dir);
+    const it = (cat[j.itemId] || {}).item;
+    out.push({ launcher: 'Epic Games', key, name: clean(titleOf(j.itemId, app) || PB(j.dir)), exe, uri: uriOf(j.namespace, j.itemId, app), installed: true, minutes: play[app] || 0, cover: cover(it) });
+  }
+  if (opt.light) return out;
+  // biblioteca (instalada ou nao)
+  for (const l of lib) {
+    const a = l.appId || {}; if (l.owned === false || !a.appName) continue;
+    const key = 'epic:' + a.appName; if (keys.has(key)) continue;
+    const it = (cat[a.itemId] || {}).item; if (!it) continue;
+    const cats = (it.categories || []).map(c => c.path);
+    if (!cats.includes('games') || it.mainGameItem || /^ue$/i.test(a.namespaceId || '')) continue;
+    const name = clean(l.title || it.title); if (!name) continue;
+    keys.add(key);
+    out.push({ launcher: 'Epic Games', key, name, exe: '', uri: uriOf(a.namespaceId, a.itemId, a.appName), owned: true, installed: false, minutes: play[a.appName] || 0, cover: cover(it), genres: [] });
+  }
+  return out;
+}
+
+function epic(opt = {}) {
+  const out = [], keys = new Set();
+  for (const v of epicV2(opt)) { keys.add(v.key); out.push(v); }
   for (const f of epicItems()) {
     try {
       const j = JSON.parse(fs.readFileSync(f, 'utf8'));
@@ -395,7 +440,7 @@ async function gogLibrary() {
 
 async function scanAll(only, opt = {}) {
   const res = {};
-  for (const [n, f] of [['Epic Games', async () => epic()], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass]]) {
+  for (const [n, f] of [['Epic Games', async o => epic(o)], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass]]) {
     if (only && !only.includes(n)) continue;
     if (opt.light && n === 'Game Pass') continue;
     try { res[n] = await f(opt); } catch (e) { res[n] = []; res[n + '_err'] = e.message; }
