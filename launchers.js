@@ -180,7 +180,27 @@ async function ubisoft() {
 // Chave: SHA3-256 de (usuario + categoria + sufixo); IV: primeiros 16 bytes de SHA3-256(usuario + categoria); AES-256-CBC.
 // O catalogo usa um usuario generico; o NS usa o id da conta (user_*.ini) e o hash do hardware deste PC (o mesmo que o app da EA calcula).
 const EA_ALL = 'allUsersGenericId', EA_SUFFIX = 'l)%ge7fomILhfj*Qfi+,';
-const sha3 = s => require('crypto').createHash('sha3-256').update(Buffer.from(s, 'ascii')).digest();
+// SHA3-256 em JS puro (o Electron usa BoringSSL, que nao tem SHA3)
+const KRC = [1n, 0x8082n, 0x800000000000808an, 0x8000000080008000n, 0x808bn, 0x80000001n, 0x8000000080008081n, 0x8000000000008009n, 0x8an, 0x88n, 0x80008009n, 0x8000000an, 0x8000808bn, 0x800000000000008bn, 0x8000000000008089n, 0x8000000000008003n, 0x8000000000008002n, 0x8000000000000080n, 0x800an, 0x800000008000000an, 0x8000000080008081n, 0x8000000000008080n, 0x80000001n, 0x8000000080008008n];
+const KRO = [0, 1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14], M64 = (1n << 64n) - 1n;
+const rotl = (x, n) => n ? ((x << BigInt(n)) | (x >> BigInt(64 - n))) & M64 : x;
+function keccakF(A) {
+  for (let r = 0; r < 24; r++) {
+    const C = [0, 1, 2, 3, 4].map(x => A[x] ^ A[x + 5] ^ A[x + 10] ^ A[x + 15] ^ A[x + 20]);
+    for (let x = 0; x < 5; x++) { const D = C[(x + 4) % 5] ^ rotl(C[(x + 1) % 5], 1); for (let y = 0; y < 25; y += 5) A[x + y] ^= D; }
+    const B = new Array(25);
+    for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) B[y + 5 * ((2 * x + 3 * y) % 5)] = rotl(A[x + 5 * y], KRO[x + 5 * y]);
+    for (let x = 0; x < 5; x++) for (let y = 0; y < 25; y += 5) A[x + y] = B[x + y] ^ ((~B[(x + 1) % 5 + y] & M64) & B[(x + 2) % 5 + y]);
+    A[0] ^= KRC[r];
+  }
+}
+function sha3(s) {
+  const rate = 136, msg = Buffer.from(s, 'ascii'), len = Math.ceil((msg.length + 1) / rate) * rate, p = Buffer.alloc(len);
+  msg.copy(p); p[msg.length] ^= 0x06; p[len - 1] ^= 0x80;
+  const A = new Array(25).fill(0n);
+  for (let o = 0; o < len; o += rate) { for (let i = 0; i < rate / 8; i++) A[i] ^= p.readBigUInt64LE(o + i * 8); keccakF(A); }
+  const out = Buffer.alloc(32); for (let i = 0; i < 4; i++) out.writeBigUInt64LE(A[i], i * 8); return out;
+}
 function eaDecrypt(buf, user, cat, suffix) {
   const head = buf.subarray(0, 64).toString('ascii'), enc = buf.subarray(64);
   if (!/^[a-f0-9]{64}$/i.test(head) || !enc.length || enc.length % 16) throw new Error('formato');
@@ -189,7 +209,7 @@ function eaDecrypt(buf, user, cat, suffix) {
 }
 const EA_HW_PS = "$ErrorActionPreference='Stop';function V($c,$p){[string]((Get-CimInstance -ClassName $c|Select-Object -First 1).$p)};$sd=if($env:SystemDrive){$env:SystemDrive}else{'C:'};$d=Get-CimInstance -ClassName Win32_LogicalDisk -Filter \"DeviceID='$sd'\"|Select-Object -First 1;$s=(V Win32_BaseBoard Manufacturer)+';'+(V Win32_BaseBoard SerialNumber)+';'+(V Win32_BIOS Manufacturer)+';'+(V Win32_BIOS SerialNumber)+';'+([string]$d.VolumeSerialNumber).Replace('-','')+';'+(V Win32_VideoController PNPDeviceID)+';'+(V Win32_Processor Manufacturer)+';'+(V Win32_Processor ProcessorId)+';'+(V Win32_Processor Name)+';';$h=[Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::ASCII.GetBytes($s));[Console]::Write(([BitConverter]::ToString($h)).Replace('-','').ToLower())";
 let eaHw = null;
-const eaHardware = () => process.env.RG_EA_HW ? Promise.resolve(process.env.RG_EA_HW) : eaHw || (eaHw = new Promise(res => cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', EA_HW_PS], { windowsHide: true, timeout: 20000, maxBuffer: 1 << 16 }, (e, out) => { const h = String(out || '').trim().toLowerCase(); res(!e && /^[a-f0-9]{40}$/.test(h) ? h : ''); })));
+const eaHardware = () => process.env.RG_EA_HW ? Promise.resolve(process.env.RG_EA_HW) : eaHw || (eaHw = new Promise(res => cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(EA_HW_PS, 'utf16le').toString('base64')], { windowsHide: true, timeout: 20000, maxBuffer: 1 << 16 }, (e, out) => { const h = String(out || '').trim().toLowerCase(); res(!e && /^[a-f0-9]{40}$/.test(h) ? h : ''); })));
 async function eaLibrary() {
   const pd = process.env.RG_EA_PD || path.join(process.env.ProgramData || 'C:\\ProgramData', 'EA Desktop');
   const loc = process.env.RG_EA_LOCAL || path.join(process.env.LOCALAPPDATA || '', 'Electronic Arts', 'EA Desktop');
@@ -200,10 +220,10 @@ async function eaLibrary() {
   if (!ns.length) return [];
   const cats = path.join(pd, sha3(EA_ALL).toString('hex'), 'CATS2');
   const cat = fs.existsSync(cats) ? (eaDecrypt(fs.readFileSync(cats), EA_ALL, 'CATS2', EA_SUFFIX).data || {}) : {};
-  const hw = await eaHardware(); if (!hw) throw new Error('Não consegui ler o hash de hardware da EA.');
+  const hw = await eaHardware(); if (!hw) throw new Error('EA app: não consegui ler a identificação do hardware deste PC.');
   const now = Date.now(), groups = new Map();
   for (const [u, f] of ns) {
-    const store = eaDecrypt(fs.readFileSync(f), u, 'NS', hw);
+    let store; try { store = eaDecrypt(fs.readFileSync(f), u, 'NS', hw); } catch { throw new Error('EA app: não consegui abrir a lista de jogos da conta (abra o EA app logado e tente de novo).'); }
     for (const e of store.entitlements || []) {
       if (Number(e.status) !== 1 || e.isEntitledFromSubscription === true) continue;
       const t = e.terminationDate; if (t !== undefined && t !== null && t !== '' && /^\d+$/.test(String(t)) && +t > 0) { const ms = +t < 1e10 ? +t * 1000 : +t; if (ms < 8.64e15 && ms <= now) continue; }
@@ -262,7 +282,8 @@ async function battlenetLibrary() {
     const hs = [...pre.matchAll(/\[CatalogManager\][^\r\n]*\bhash=([a-f0-9]{32})\b/gi)], hc = [...pre.matchAll(/Context\((?:Local|Remote)CAS:\s*([a-f0-9]{32})\b/gi)];
     hash = ((hs.pop() || hc.pop() || [])[1] || '').toLowerCase(); codes = set; break;
   }
-  if (!codes || !codes.size || !hash) return [];
+  if (!codes) throw new Error('Battle.net: abra o app da Battle.net (logado) uma vez para a lista de jogos aparecer.');
+  if (!codes.size || !hash) return [];
   const obj = h => { h = String(h || '').toLowerCase(); if (!/^[a-f0-9]{32}$/.test(h)) return null; try { return JSON.parse(fs.readFileSync(path.join(cache, h.slice(0, 2), h.slice(2, 4), h), 'utf8')); } catch { return null; } };
   const root = obj(hash); if (!root || !Array.isArray(root.fragments)) return [];
   const virt = new Set();

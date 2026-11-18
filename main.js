@@ -459,12 +459,13 @@ async function launchersImport(opt = {}) {
         g.lkey = f.key; if (f.uri) g.uri = f.uri;
         if (f.exe && (!g.exe || !fs.existsSync(g.exe))) g.exe = f.exe;
       }
-      counts[n] = { total: (found[n] || []).length, novos };
+      counts[n] = { total: (found[n] || []).length, novos, err: (found[n] && found[n].err) || found[n + '_err'] || '' };
     }
     launcherInst = inst; save();
     (async () => { while (coverQ.length) { const [id, u] = coverQ.shift(), g = data.games.find(x => x.id === id); if (g && !g.cover) { try { await wallSave(g, u, 'cover'); if (g.cover) g.sgc = 1; save(); } catch {} } } })();
     const novos = Object.values(counts).reduce((a, c) => a + c.novos, 0), total = Object.values(counts).reduce((a, c) => a + c.total, 0);
-    return { counts, msg: total ? `Encontrei ${total} jogo(s) nos launchers (instalados ou não); ${novos} novo(s) na biblioteca.` : 'Não encontrei jogos instalados nesses launchers.' };
+    const errs = Object.values(counts).map(c => c.err).filter(Boolean).join(' ');
+    return { counts, msg: (total ? `Encontrei ${total} jogo(s) nos launchers (instalados ou não); ${novos} novo(s) na biblioteca.` : 'Não encontrei jogos nesses launchers.') + (errs ? ' ' + errs : '') };
   } finally { lchBusy = false; }
 }
 
