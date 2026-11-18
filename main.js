@@ -456,6 +456,7 @@ async function launchersImport(opt = {}) {
         if (f.minutes && f.minutes > (g.steam_min || 0)) g.steam_min = f.minutes;
         if (f.last && f.last > (g.last_played || 0)) g.last_played = f.last;
         g.lkey = f.key; if (f.uri) g.uri = f.uri;
+        if (f.installed !== false && g.cat) delete g.cat; // reinstalou: volta para a barra lateral
         if (f.exe && (!g.exe || !fs.existsSync(g.exe))) g.exe = f.exe;
       }
       counts[n] = { total: (found[n] || []).length, novos, err: (found[n] && found[n].err) || found[n + '_err'] || '' };
@@ -623,7 +624,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'save': {
       let x = g;
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'cat', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.meta == null) { delete x.meta; delete x.meta_url; }
