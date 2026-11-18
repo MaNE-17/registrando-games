@@ -397,7 +397,7 @@ async function steamSync() {
   } catch (e) { msg = 'Erro: confira a chave, o SteamID e se o perfil está público (' + e.message + ')'; return; }
   if (c.famOn && c.fam) {
     try { msg += ` Família Steam: ${await importFamily(c)} novos.`; }
-    catch (e) { msg += ` Família Steam falhou: ${e.message}. O token vale ~24 h, gere outro se precisar.`; }
+    catch {} // token da Familia Steam vence em ~24 h: ignora em silencio
   }
   msg += ' Gêneros, notas e datas chegam aos poucos.';
   fillInfo();
@@ -436,13 +436,13 @@ async function launchersImport(opt = {}) {
   lchBusy = true;
   try {
     const force = !!opt.force, side = data.sidePlats || LCH.SIDE_DEF;
-    const want = opt.only ? LCH.NAMES.filter(x => x === opt.only) : force ? LCH.NAMES : side;
+    const want = opt.only ? LCH.NAMES.filter(x => x === opt.only) : (force || opt.discover) ? LCH.NAMES : side;
     const found = await LCH.scanAll(want), counts = {}, inst = new Set();
     if (force) { const ks = new Set(); for (const n of want) for (const f of found[n] || []) ks.add(f.key); data.lIgnored = (data.lIgnored || []).filter(k => !ks.has(k)); }
     const ign = new Set(data.lIgnored || []);
     const nzk = s => nzn(s);
     for (const n of LCH.NAMES.filter(x => want.includes(x))) {
-      if (force && (found[n] || []).length && !(data.sidePlats || LCH.SIDE_DEF).includes(n)) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), n];
+      if ((force || opt.discover) && (found[n] || []).length && !(data.sidePlats || LCH.SIDE_DEF).includes(n)) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), n];
       let novos = 0;
       for (const f of found[n] || []) {
         if (f.installed !== false) inst.add(f.key);
@@ -640,7 +640,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh_stop': if (refreshing || busy) { stopRefresh = true; msg = 'Parando...'; } return { ok: true };
-    case 'refresh': { stopRefresh = false; if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; if (stopRefresh) msg = 'Atualização interrompida.'; stopRefresh = false; }); return { ok: true }; }
+    case 'refresh': { stopRefresh = false; if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { msg = 'Procurando jogos nos launchers...'; const lr = await launchersImport({ discover: true }); if (lr && lr.msg) msg = lr.msg; } catch {} try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; if (stopRefresh) msg = 'Atualização interrompida.'; stopRefresh = false; }); return { ok: true }; }
     case 'side_set': {
       const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
     }
@@ -880,7 +880,7 @@ app.whenReady().then(() => {
   tray.on('click', show);
   setInterval(track, 5000);
   scanSteam(); setInterval(scanSteam, 60000);
-  launchersImport().catch(() => {}); setInterval(() => launchersImport().catch(() => {}), 120000);
+
   fillInfo();
 });
 app.on('before-quit', () => { quitting = true; try { save(); } catch {} });
