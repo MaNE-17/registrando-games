@@ -653,6 +653,9 @@ const BYL=()=>$('#sort').value==='bylist'&&F.smart!=='lists';
 function groupsByList(l){const ok=new Set(l.map(g=>g.id)),by=new Map(l.map(g=>[g.id,g])),used=new Set(),out=[];
  for(const L of [...S.lists].sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt'))){const gs=L.ids.filter(id=>ok.has(id)).map(id=>by.get(id));if(gs.length){out.push({id:L.id,name:L.name||'Sem nome',games:gs});gs.forEach(g=>used.add(g.id))}}
  return out}
+function groupsByYear(l){const by=new Map();for(const g of l){const y=g.finished?String(new Date(g.finished*1000).getFullYear()):'';if(!by.has(y))by.set(y,[]);by.get(y).push(g)}
+ return [...by.keys()].sort((a,b)=>a===''?1:b===''?-1:b-a).map(y=>({key:'y'+(y||'0'),name:y?`Zerados em ${y}`:'Zerados sem data',games:by.get(y)}))}
+const BYY=()=>F.status==='Zerado'&&!BYL();
 const lghH=x=>`<div class="lgh${x.id?' k':''}" ${x.id?`data-lgf="${esc(x.id)}" role="button" tabindex="0" title="${F.list===x.id?'Mostrar todas as listas':'Mostrar só esta lista'}"`:''}><b>${esc(x.name)}</b><em>${x.games.length}</em></div>`;
 function lvHtml(l){return BYL()?groupsByList(l).map(x=>lghH(x)+x.games.map(lvRow).join('')).join(''):l.map(lvRow).join('')}
 function lvRow(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base;
@@ -703,14 +706,14 @@ function renderIn(){
  const sig=JSON.stringify([F.smart,F.sp,F.status,F.platform,F.genre,F.list,$('#q').value,INST,YR,FAV]);if(sig!==SELSIG){SEL=null;SELSIG=sig}
  side();const l=S.games.filter(filt).sort(SORT[$('#sort').value]),grid=$('#grid');
  const ids=new Set(S.games.map(g=>g.id));for(const k of CC.keys())if(!k.startsWith('h:')&&!ids.has(k.split('@')[0]))CC.delete(k);
- grid.classList.toggle('groups',F.smart==='lists');grid.classList.toggle('bylist',BYL());grid.classList.toggle('lvw',VIEW==='list'&&F.smart!=='lists');
+ grid.classList.toggle('groups',F.smart==='lists');grid.classList.toggle('bylist',BYL()||BYY());grid.classList.toggle('lvw',VIEW==='list'&&F.smart!=='lists');
  if(F.smart==='lists')renderGroups(grid);
  else if(VIEW==='list')renderLv(l,grid);
  else if(!l.length&&!t5on())grid.innerHTML=`<div class="empty">${S.games.length?'Nenhum jogo nesse filtro.':'Nada por aqui ainda. Importe da Steam em Configurações ou adicione um jogo.'}</div>`;
  else{
   const T5=t5on()?top5():[],lo=t5on()?l.filter(g=>!T5.includes(g.id)):l;
-  const gp=BYL()?groupsByList(lo):null,seq=gp?gp.flatMap(x=>[{hd:x},...x.games.map(g=>({g,k:g.id+'@'+x.id}))]):lo.map(g=>({g,k:g.id}));
-  const els=seq.map(it=>{if(it.hd){const h=lghH(it.hd),o=CC.get('h:'+it.hd.id);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;el.classList.add('gh');CC.set('h:'+it.hd.id,{el,h});return el}
+  const gp=BYL()?groupsByList(lo):BYY()?groupsByYear(lo):null,seq=gp?gp.flatMap(x=>[{hd:x},...x.games.map(g=>({g,k:g.id+'@'+(x.id||x.key)}))]):lo.map(g=>({g,k:g.id}));
+  const els=seq.map(it=>{if(it.hd){const hk='h:'+(it.hd.id||it.hd.key),h=lghH(it.hd),o=CC.get(hk);if(o&&o.h===h)return o.el;const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;el.classList.add('gh');CC.set(hk,{el,h});return el}
    const g=it.g,h=card(g),o=CC.get(it.k);if(o&&o.h===h)return o.el;
    const t=document.createElement('template');t.innerHTML=h;const el=t.content.firstElementChild;
    if(o){const a=o.el.querySelector('.cv img'),b=el.querySelector('.cv img');if(a&&b&&a.getAttribute('src')===b.getAttribute('src'))b.replaceWith(a)}
@@ -1195,7 +1198,7 @@ $('#fp').onclick=e=>{e.stopPropagation();{const fa=e.target.closest('[data-fadd]
  if(k==='sort')$('#sort').value=v||'name';else{F[k]=v&&F[k]!==v?v:null;if(F.smart==='lists')F.smart='all'}
  $('#fp').hidden=true;render()};
 $('#fp').onkeydown=e=>{if(e.key==='Enter'&&(e.target.dataset.fv!==undefined||e.target.dataset.fadd!==undefined))e.target.click()};
-function fbUi(){for(const k of['status','platform','genre']){const b=$('#fb_'+k),v=F[k];b.classList.toggle('on',!!v);const vv=v&&k==='platform'?dispP(v):v;b.textContent=v?`${FLAB[k]}: ${vv.length>16?vv.slice(0,15)+'…':vv}`:FLAB[k]}
+function fbUi(){for(const k of['status','platform','genre']){const b=$('#fb_'+k),v=F[k];b.classList.toggle('on',!!v);const vv=v&&k==='platform'?dispP(v):v;b.textContent=v?(vv.length>18?vv.slice(0,17)+'…':vv):FLAB[k];b.title=v?`${FLAB[k]}: ${vv}`:''}
  $('#fb_sort').textContent=(SORTS.find(s=>s[0]===$('#sort').value)||SORTS[0])[1];
  const hid=F.smart==='hidden',nh=S.games.filter(g=>g.hidden).length,b=$('#fb_hidden');
  b.classList.toggle('on',hid);b.innerHTML=hid?EYE_OFF:EYE;b.title=hid?'Voltar para todos os jogos':`Mostrar só os jogos ocultos (${nh})`;b.setAttribute('aria-label',b.title);$('#fb_clear').hidden=!filtActive()}
