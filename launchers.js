@@ -176,6 +176,48 @@ async function ubisoft() {
   return out;
 }
 
+// Biblioteca completa do EA app: le os caches criptografados do proprio app (CATS2 = catalogo, NS = direitos da conta).
+// Chave: SHA3-256 de (usuario + categoria + sufixo); IV: primeiros 16 bytes de SHA3-256(usuario + categoria); AES-256-CBC.
+// O catalogo usa um usuario generico; o NS usa o id da conta (user_*.ini) e o hash do hardware deste PC (o mesmo que o app da EA calcula).
+const EA_ALL = 'allUsersGenericId', EA_SUFFIX = 'l)%ge7fomILhfj*Qfi+,';
+const sha3 = s => require('crypto').createHash('sha3-256').update(Buffer.from(s, 'ascii')).digest();
+function eaDecrypt(buf, user, cat, suffix) {
+  const head = buf.subarray(0, 64).toString('ascii'), enc = buf.subarray(64);
+  if (!/^[a-f0-9]{64}$/i.test(head) || !enc.length || enc.length % 16) throw new Error('formato');
+  const d = require('crypto').createDecipheriv('aes-256-cbc', sha3(user + cat + suffix), sha3(user + cat).subarray(0, 16));
+  return JSON.parse(Buffer.concat([d.update(enc), d.final()]).toString('utf8'));
+}
+const EA_HW_PS = "$ErrorActionPreference='Stop';function V($c,$p){[string]((Get-CimInstance -ClassName $c|Select-Object -First 1).$p)};$sd=if($env:SystemDrive){$env:SystemDrive}else{'C:'};$d=Get-CimInstance -ClassName Win32_LogicalDisk -Filter \"DeviceID='$sd'\"|Select-Object -First 1;$s=(V Win32_BaseBoard Manufacturer)+';'+(V Win32_BaseBoard SerialNumber)+';'+(V Win32_BIOS Manufacturer)+';'+(V Win32_BIOS SerialNumber)+';'+([string]$d.VolumeSerialNumber).Replace('-','')+';'+(V Win32_VideoController PNPDeviceID)+';'+(V Win32_Processor Manufacturer)+';'+(V Win32_Processor ProcessorId)+';'+(V Win32_Processor Name)+';';$h=[Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::ASCII.GetBytes($s));[Console]::Write(([BitConverter]::ToString($h)).Replace('-','').ToLower())";
+let eaHw = null;
+const eaHardware = () => process.env.RG_EA_HW ? Promise.resolve(process.env.RG_EA_HW) : eaHw || (eaHw = new Promise(res => cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', EA_HW_PS], { windowsHide: true, timeout: 20000, maxBuffer: 1 << 16 }, (e, out) => { const h = String(out || '').trim().toLowerCase(); res(!e && /^[a-f0-9]{40}$/.test(h) ? h : ''); })));
+async function eaLibrary() {
+  const pd = process.env.RG_EA_PD || path.join(process.env.ProgramData || 'C:\\ProgramData', 'EA Desktop');
+  const loc = process.env.RG_EA_LOCAL || path.join(process.env.LOCALAPPDATA || '', 'Electronic Arts', 'EA Desktop');
+  let ids = new Set();
+  try { for (const f of fs.readdirSync(loc)) if (/^user(?:_.+)?\.ini$/i.test(f)) { let t = fs.readFileSync(path.join(loc, f)); t = t[0] === 0xff && t[1] === 0xfe ? t.subarray(2).toString('utf16le') : t.toString('utf8'); for (const m of t.matchAll(/^\s*user\.userid\s*=\s*"?(\d{1,32})"?/gmi)) ids.add(m[1]); } } catch {}
+  if (process.env.RG_EA_USER) ids = new Set([process.env.RG_EA_USER]);
+  const ns = [...ids].map(u => [u, path.join(pd, sha3(u).toString('hex'), 'NS')]).filter(x => fs.existsSync(x[1]));
+  if (!ns.length) return [];
+  const cats = path.join(pd, sha3(EA_ALL).toString('hex'), 'CATS2');
+  const cat = fs.existsSync(cats) ? (eaDecrypt(fs.readFileSync(cats), EA_ALL, 'CATS2', EA_SUFFIX).data || {}) : {};
+  const hw = await eaHardware(); if (!hw) throw new Error('Não consegui ler o hash de hardware da EA.');
+  const now = Date.now(), groups = new Map();
+  for (const [u, f] of ns) {
+    const store = eaDecrypt(fs.readFileSync(f), u, 'NS', hw);
+    for (const e of store.entitlements || []) {
+      if (Number(e.status) !== 1 || e.isEntitledFromSubscription === true) continue;
+      const t = e.terminationDate; if (t !== undefined && t !== null && t !== '' && /^\d+$/.test(String(t)) && +t > 0) { const ms = +t < 1e10 ? +t * 1000 : +t; if (ms < 8.64e15 && ms <= now) continue; }
+      const c = cat[e.offerId]; if (!c) continue;
+      const d = c.catalogDef || {}, ci = c.catalogIds || {};
+      if (d.isBaseGame !== true || d.isPDLC === true || d.isPULC === true || d.isFreeTrial === true || d.isTimedTrial === true || Number(d.itemSubType) !== 0 || !ci.softwareId) continue;
+      const mt = String(ci.masterTitleId || ''), title = clean(d.gameTitle || d.displayName || d.unmaskedDisplayName || '');
+      if (!/^\d+$/.test(mt) || !title || groups.has(mt)) continue;
+      groups.set(mt, { launcher: 'EA app', key: 'ea:' + title, eaid: mt, name: title, exe: '', uri: e.offerId ? 'origin2://game/launch?offerIds=' + encodeURIComponent(e.offerId) : '', owned: true, installed: false, cover: '', genres: [] });
+    }
+  }
+  return [...groups.values()];
+}
+
 async function ea() {
   const out = [], seen = new Set();
   const add = (name, dir) => {
@@ -195,7 +237,43 @@ async function ea() {
     let ents = []; try { ents = fs.readdirSync(base, { withFileTypes: true }); } catch {}
     for (const e of ents) if (e.isDirectory()) add(e.name, path.join(base, e.name));
   }
+  for (const o of out) o.installed = true;
+  try {
+    const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const l of await eaLibrary()) { const i = out.find(o => nm(o.name) === nm(l.name)); if (!i) out.push(l); else if (!i.uri) i.uri = ''; }
+  } catch (e) { out.err = e.message; }
   return out;
+}
+
+// Biblioteca completa da Battle.net: o app grava nos logs os produtos "retail" ligados a conta (ciclo GameProvider)
+// e guarda o catalogo (nomes) em %LOCALAPPDATA%\Battle.net\Cache\xx\yy\<hash>. Produtos so do Game Pass ficam de fora.
+async function battlenetLibrary() {
+  const base = process.env.RG_BNET_LOCAL || path.join(process.env.LOCALAPPDATA || '', 'Battle.net');
+  const logs = path.join(base, 'Logs'), cache = path.join(base, 'Cache');
+  let files = []; try { files = fs.readdirSync(logs).filter(f => /^battle\.net-.*\.log$/i.test(f)).map(f => path.join(logs, f)).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs).slice(0, 8); } catch { return []; }
+  const S = 'Beginning GameProvider initialization.', E = 'Game provider is now initialized';
+  let codes = null, hash = null;
+  for (const f of files) {
+    let t; try { t = fs.readFileSync(f, 'utf8'); } catch { continue; }
+    const st = t.lastIndexOf(S); if (st < 0) continue; const en = t.indexOf(E, st); if (en < 0) continue;
+    const cyc = t.slice(st, en), pre = t.slice(0, st), set = new Set();
+    for (const m of cyc.matchAll(/Binding account info to available unbound entity\.\s+productCode=([a-z0-9]+)_retail\b[^\r\n]*accountInfo=\[[^\]\r\n]*:retail\]/gi)) set.add(m[1].toUpperCase());
+    for (const m of cyc.matchAll(/Inserting new bound entity because no suitable match was found\.\s+accountInfo=\[[^\]\r\n]*:retail\][^\r\n]*productId=([a-z0-9]+)\s+productType=retail\b/gi)) set.add(m[1].toUpperCase());
+    const hs = [...pre.matchAll(/\[CatalogManager\][^\r\n]*\bhash=([a-f0-9]{32})\b/gi)], hc = [...pre.matchAll(/Context\((?:Local|Remote)CAS:\s*([a-f0-9]{32})\b/gi)];
+    hash = ((hs.pop() || hc.pop() || [])[1] || '').toLowerCase(); codes = set; break;
+  }
+  if (!codes || !codes.size || !hash) return [];
+  const obj = h => { h = String(h || '').toLowerCase(); if (!/^[a-f0-9]{32}$/.test(h)) return null; try { return JSON.parse(fs.readFileSync(path.join(cache, h.slice(0, 2), h.slice(2, 4), h), 'utf8')); } catch { return null; } };
+  const root = obj(hash); if (!root || !Array.isArray(root.fragments)) return [];
+  const virt = new Set();
+  for (const r of root.fragments) if (/_gamepass$/i.test(r.name || '')) for (const p of (obj(r.hash) || {}).products || []) { const c = String(p.id || p.uid || '').toUpperCase(); if (c) virt.add(c); }
+  const want = [...codes].filter(c => !virt.has(c)), names = new Map();
+  for (const r of root.fragments) {
+    if (/_gamepass$/i.test(r.name || '') || want.every(c => names.has(c))) continue;
+    const fr = obj(r.hash); if (!fr) continue;
+    for (const p of fr.products || []) { const c = String(p.id || '').toUpperCase(), n = ((fr.strings || {}).default || {})[(p.base || {}).name]; if (want.includes(c) && n && !names.has(c)) names.set(c, clean(n)); }
+  }
+  return want.filter(c => names.has(c)).map(c => ({ launcher: 'Battle.net', key: 'bnet:' + names.get(c), bnet: c, name: names.get(c), exe: '', uri: 'battlenet://' + c, owned: true, installed: false, cover: '', genres: [] }));
 }
 
 async function battlenet() {
@@ -210,9 +288,13 @@ async function battlenet() {
       if (!dir || !isDir(dir)) continue;
       let exe = (b.v['displayicon'] || '').replace(/^"|"$/g, '').replace(/,\d+$/, '');
       if (!/\.exe$/i.test(exe) || !fs.existsSync(exe) || SKIP_EXE.test(path.basename(exe))) exe = guessExe(dir);
-      if (!out.some(x => x.key === 'bnet:' + name)) out.push({ launcher: 'Battle.net', key: 'bnet:' + name, name: clean(name), exe, uri: '' });
+      if (!out.some(x => x.key === 'bnet:' + name)) out.push({ launcher: 'Battle.net', key: 'bnet:' + name, name: clean(name), exe, uri: '', installed: true });
     }
   }
+  try {
+    const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const l of await battlenetLibrary()) if (!out.some(o => nm(o.name) === nm(l.name))) out.push(l);
+  } catch (e) { out.err = e.message; }
   return out;
 }
 
