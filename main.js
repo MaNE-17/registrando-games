@@ -429,7 +429,7 @@ function scanSteam() {
 }
 
 // Outros launchers: importa os jogos instalados (sem duplicar) e guarda quais estao instalados agora
-let launcherInst = new Set(), lchBusy = false;
+let launcherInst = new Set(), lchBusy = false; const coverQ = [];
 async function launchersImport(opt = {}) {
   if (lchBusy) return { counts: {}, msg: 'Já estou procurando...' };
   lchBusy = true;
@@ -444,21 +444,26 @@ async function launchersImport(opt = {}) {
       if (force && (found[n] || []).length && !(data.sidePlats || LCH.SIDE_DEF).includes(n)) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), n];
       let novos = 0;
       for (const f of found[n] || []) {
-        inst.add(f.key);
+        if (f.installed !== false) inst.add(f.key);
         let g = data.games.find(x => x.lkey === f.key) || data.games.find(x => !x.lkey && !x.appid && x.platform === n && nzk(x.name) === nzk(f.name));
         if (!g) {
           if (ign.has(f.key)) continue;
           g = { id: rid(), name: f.name, platform: n, genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+          if (f.genres && f.genres.length) g.genres = f.genres.slice(0, 4);
+          if (f.cover) coverQ.push([g.id, f.cover]);
           data.games.push(g); novos++;
         }
+        if (f.minutes && f.minutes > (g.steam_min || 0)) g.steam_min = f.minutes;
+        if (f.last && f.last > (g.last_played || 0)) g.last_played = f.last;
         g.lkey = f.key; if (f.uri) g.uri = f.uri;
         if (f.exe && (!g.exe || !fs.existsSync(g.exe))) g.exe = f.exe;
       }
       counts[n] = { total: (found[n] || []).length, novos };
     }
     launcherInst = inst; save();
+    (async () => { while (coverQ.length) { const [id, u] = coverQ.shift(), g = data.games.find(x => x.id === id); if (g && !g.cover) { try { await wallSave(g, u, 'cover'); g.sgc = 1; save(); } catch {} } } })();
     const novos = Object.values(counts).reduce((a, c) => a + c.novos, 0), total = Object.values(counts).reduce((a, c) => a + c.total, 0);
-    return { counts, msg: total ? `Encontrei ${total} jogo(s) instalado(s) nos launchers; ${novos} novo(s) na biblioteca.` : 'Não encontrei jogos instalados nesses launchers.' };
+    return { counts, msg: total ? `Encontrei ${total} jogo(s) nos launchers (instalados ou não); ${novos} novo(s) na biblioteca.` : 'Não encontrei jogos instalados nesses launchers.' };
   } finally { lchBusy = false; }
 }
 

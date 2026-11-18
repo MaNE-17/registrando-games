@@ -206,8 +206,42 @@ async function gog() {
     const id = b.key.split('\\').pop(), name = b.v['gamename'], dir = (b.v['path'] || '').replace(/\//g, SEP).replace(/[\\/]+$/, '');
     if (!/^\d+$/.test(id) || !name || !dir || !isDir(dir)) continue;
     let exe = (b.v['exe'] || '').replace(/\//g, SEP); if (!exe || !fs.existsSync(exe)) exe = guessExe(dir);
-    out.push({ launcher: 'GOG', key: 'gog:' + id, name: clean(name), exe, uri: '' });
+    out.push({ launcher: 'GOG', key: 'gog:' + id, name: clean(name), exe, uri: '', installed: true });
   }
+  try {
+    const nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    for (const l of await gogLibrary()) { const i = out.find(o => o.key === l.key || nm(o.name) === nm(l.name)); if (i) Object.assign(i, { minutes: l.minutes, last: l.last, cover: l.cover, genres: l.genres, year: l.year }); else out.push(l); }
+  } catch (e) { out.err = e.message; }
+  return out;
+}
+
+// Biblioteca completa do GOG (instalada ou nao), lida do banco local do GOG Galaxy
+let _sql = null;
+async function sqlOpen(file) {
+  if (!_sql) { const init = require('sql.js'); _sql = await init({ wasmBinary: fs.readFileSync(require.resolve('sql.js/dist/sql-wasm.wasm')) }); }
+  return new _sql.Database(fs.readFileSync(file));
+}
+async function gogLibrary() {
+  const file = process.env.RG_GOG_DB || path.join(process.env.ProgramData || 'C:\\ProgramData', 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db');
+  if (!fs.existsSync(file)) return [];
+  const db = await sqlOpen(file), all = (q) => { const r = db.exec(q); return r.length ? r[0].values : []; }, out = [];
+  try {
+    const hid = new Set(all("SELECT releaseKey FROM UserReleaseProperties WHERE isHidden=1").map(r => r[0]));
+    const mins = {}; for (const [k, m] of all("SELECT releaseKey,minutesInGame FROM GameTimes WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\'")) mins[k] = m || 0;
+    const last = {}; for (const [k, d] of all("SELECT gameReleaseKey,lastPlayedDate FROM LastPlayedDates WHERE gameReleaseKey LIKE 'gog\\_%' ESCAPE '\\'")) { const t = Date.parse(String(d).replace(' ', 'T') + 'Z'); if (t) last[k] = Math.floor(t / 1000); }
+    const pc = {};
+    for (const [k, t, v] of all("SELECT releaseKey,gamePieceTypeId,value FROM GamePieces WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\' AND gamePieceTypeId IN (708,1114,1115)")) { try { (pc[k] = pc[k] || {})[t] = JSON.parse(v); } catch {} }
+    const skip = /game overlay|welcome gift|digital goodies|soundtrack|artbook|wallpaper|manual$/i, byName = new Map();
+    for (const [k, p] of Object.entries(pc)) {
+      if (hid.has(k) || !p[708] || !p[708].title) continue;
+      const name = clean(String(p[708].title).replace(/\s*-?\s*Amazon Prime$/i, '').trim());
+      if (!name || skip.test(name)) continue;
+      const id = k.slice(4), item = { launcher: 'GOG', key: 'gog:' + id, name, exe: '', uri: '', owned: true, minutes: mins[k] || 0, last: last[k] || 0, cover: (p[1114] && p[1114].verticalCover) || '', genres: (p[1115] && p[1115].genres) || [], year: p[1115] && p[1115].releaseDate ? new Date(p[1115].releaseDate * 1000).getUTCFullYear() : 0 };
+      const nk = name.toLowerCase(), prev = byName.get(nk);
+      if (prev) { prev.minutes = Math.max(prev.minutes, item.minutes); prev.last = Math.max(prev.last, item.last); prev.cover = prev.cover || item.cover; if (!prev.genres.length) prev.genres = item.genres; continue; }
+      byName.set(nk, item); out.push(item);
+    }
+  } finally { db.close(); }
   return out;
 }
 
