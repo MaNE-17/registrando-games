@@ -236,7 +236,7 @@ async function gogLibrary() {
       if (hid.has(k) || !p[708] || !p[708].title) continue;
       const name = clean(String(p[708].title).replace(/\s*-?\s*Amazon Prime$/i, '').trim());
       if (!name || skip.test(name)) continue;
-      const id = k.slice(4), item = { launcher: 'GOG', key: 'gog:' + id, name, exe: '', uri: '', owned: true, minutes: mins[k] || 0, last: last[k] || 0, cover: (p[1114] && p[1114].verticalCover) || '', genres: (p[1115] && p[1115].genres) || [], year: p[1115] && p[1115].releaseDate ? new Date(p[1115].releaseDate * 1000).getUTCFullYear() : 0 };
+      const id = k.slice(4), item = { launcher: 'GOG', key: 'gog:' + id, name, exe: '', uri: '', owned: true, installed: false, minutes: mins[k] || 0, last: last[k] || 0, cover: (p[1114] && p[1114].verticalCover) || '', genres: (p[1115] && p[1115].genres) || [], year: p[1115] && p[1115].releaseDate ? new Date(p[1115].releaseDate * 1000).getUTCFullYear() : 0 };
       const nk = name.toLowerCase(), prev = byName.get(nk);
       if (prev) { prev.minutes = Math.max(prev.minutes, item.minutes); prev.last = Math.max(prev.last, item.last); prev.cover = prev.cover || item.cover; if (!prev.genres.length) prev.genres = item.genres; continue; }
       byName.set(nk, item); out.push(item);
