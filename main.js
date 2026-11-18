@@ -376,6 +376,7 @@ async function importFamily(c) {
 
 async function steamSync() {
   const c = data.config;
+  if (!c.key || !c.steamid) return; // sem API: so os instalados (steamLocalImport)
   try {
     const q = new URLSearchParams({ key: c.key, steamid: c.steamid, include_appinfo: 1, include_played_free_games: 1 });
     const games = (await J('https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?' + q)).response.games || [];
@@ -404,10 +405,10 @@ async function steamSync() {
 }
 
 // Jogos da Steam instalados: le libraryfolders.vdf e os appmanifest (StateFlags com bit 4 = instalado)
-let steamApps = new Set();
+let steamApps = new Set(), steamNames = new Map();
 function scanSteam() {
-  if (process.platform !== 'win32') return;
-  cp.exec('reg query "HKCU\\Software\\Valve\\Steam" /v SteamPath', { windowsHide: true }, (err, out) => {
+  if (process.platform !== 'win32') return Promise.resolve();
+  return new Promise(done => cp.exec('reg query "HKCU\\Software\\Valve\\Steam" /v SteamPath', { windowsHide: true }, (err, out) => {
     const m = !err && out.match(/SteamPath\s+REG_SZ\s+(.+)/);
     const root = m ? m[1].trim() : 'C:\\Program Files (x86)\\Steam';
     const libs = new Set([root]);
@@ -416,17 +417,31 @@ function scanSteam() {
       for (const x of v.matchAll(/"path"\s+"([^"]+)"/g)) libs.add(x[1].replace(/\\\\/g, '\\'));
       for (const x of v.matchAll(/"\d+"\s+"([A-Za-z]:[^"]+)"/g)) libs.add(x[1].replace(/\\\\/g, '\\'));
     } catch {}
-    const s = new Set();
+    const s = new Set(), names = new Map();
     for (const l of libs) {
       const dir = path.join(l, 'steamapps');
       let files = []; try { files = fs.readdirSync(dir); } catch {}
       for (const f of files) {
         const a = f.match(/^appmanifest_(\d+)\.acf$/); if (!a) continue;
-        try { const fl = fs.readFileSync(path.join(dir, f), 'utf8').match(/"StateFlags"\s+"(\d+)"/); if (fl && (+fl[1] & 4)) s.add(+a[1]); } catch {}
+        try { const t = fs.readFileSync(path.join(dir, f), 'utf8'), fl = t.match(/"StateFlags"\s+"(\d+)"/), nm = t.match(/"name"\s+"([^"]+)"/); if (fl && (+fl[1] & 4)) { s.add(+a[1]); if (nm) names.set(+a[1], nm[1]); } } catch {}
       }
     }
-    steamApps = s;
-  });
+    steamApps = s; steamNames = names; done();
+  }));
+}
+// Steam sem chave da API: importa os jogos instalados (lidos dos appmanifest). Com a API configurada, o steamSync completa o resto.
+async function steamLocalImport() {
+  await scanSteam();
+  const have = new Set(data.games.filter(g => g.appid).map(g => g.appid)), ign = new Set(data.lIgnored || []);
+  let novos = 0;
+  for (const [appid, name] of steamNames) {
+    if (have.has(appid) || ign.has('steam:' + appid) || appid === 228980 || /redistributable|steamworks common|steamvr|proton|steam linux runtime|dedicated server|sdk$/i.test(name)) continue;
+    data.games.push({ id: rid(), name, appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() });
+    novos++;
+  }
+  if (steamNames.size && !(data.sidePlats || LCH.SIDE_DEF).includes('Steam')) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), 'Steam'];
+  if (novos) save();
+  return novos;
 }
 
 // Outros launchers: importa os jogos instalados (sem duplicar) e guarda quais estao instalados agora
@@ -656,14 +671,14 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'games_del': {
       const ids = new Set((b.ids || []).map(String));
-      for (const x of data.games) if (ids.has(x.id)) { rmCover(x); rmWall(x); rmLogo(x); if (x.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), x.lkey])]; }
+      for (const x of data.games) if (ids.has(x.id)) { rmCover(x); rmWall(x); rmLogo(x); if (x.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), x.lkey])]; if (x.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + x.appid])]; }
       data.games = data.games.filter(x => !ids.has(x.id)); data.lists.forEach(l => l.ids = l.ids.filter(i => !ids.has(i))); save(); return { ok: true, n: ids.size };
     }
-    case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
+    case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; if (g.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + g.appid])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: b.key || '', steamid: b.steamid || '', sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
-    case 'sync': msg = 'Sincronizando...'; steamSync(); return { ok: true };
+    case 'sync': if (!data.config.key || !data.config.steamid) { msg = 'Preencha a chave da API e o SteamID da Steam.'; return { ok: true }; } msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh_stop': if (refreshing || busy) { stopRefresh = true; msg = 'Parando...'; } return { ok: true };
-    case 'refresh': { stopRefresh = false; if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { msg = 'Procurando jogos nos launchers...'; const lr = await launchersImport({ discover: true }); if (lr && lr.msg) msg = lr.msg; } catch {} try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; if (stopRefresh) msg = 'Atualização interrompida.'; stopRefresh = false; }); return { ok: true }; }
+    case 'refresh': { stopRefresh = false; if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { msg = 'Procurando jogos nos launchers...'; const lr = await launchersImport({ discover: true }); if (lr && lr.msg) msg = lr.msg; } catch {} try { const sn = await steamLocalImport(); if (sn) msg += ` Steam: ${sn} jogo(s) instalado(s) novo(s).`; } catch {} try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; if (stopRefresh) msg = 'Atualização interrompida.'; stopRefresh = false; }); return { ok: true }; }
     case 'side_set': {
       const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
     }
