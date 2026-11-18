@@ -740,7 +740,7 @@ function paintD(){
  $('#d_cv').innerHTML=pendCover?`<img src="${pendCover}" alt="">`:src?`<img src="${esc(src)}" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:'';
  $('#f_status').innerHTML=ST.map(s=>`<option${s===status?' selected':''}>${s}</option>`).join('');
  $('#f_stars').innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="sb" data-r="${n}" aria-label="${n} estrelas"><i class="bg">★</i><i class="fg" style="width:${Math.max(0,Math.min(1,rating-(n-1)))*100}%"><b>★</b></i></button>`).join('')+`<span class="mu" id="rtxt" style="margin-left:8px">${rating?String(rating).replace('.',','):'Sem nota'}</span>`;
- $('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_cat').textContent=catv?'Catalogado: clique para voltar à barra lateral':'Catalogar';$('#f_cat').classList.toggle('on',catv);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
+ $('#f_hid').textContent=hid?'Oculto: clique para reexibir':'Ocultar este jogo';$('#f_hid').classList.toggle('on',hid);$('#f_cat').textContent=catv?'✓ Catalogado':'Catalogar';$('#f_cat').title=catv?'Clique para voltar o jogo para a barra lateral':'Tira o jogo da barra lateral. Ele aparece na busca, nos filtros de Status e Ano, nas listas e nos favoritos.';$('#f_cat').classList.toggle('on',catv);$('#f_fav').textContent=favv?'♥ Favorito':'♡ Favoritar';$('#f_fav').classList.toggle('on',favv);$('#f_fin').disabled=status!=='Zerado';$('#del').hidden=!cur;
  exeUi();genreUi();dropHint()}
 function openG(id,pre){
  const g=S.games.find(x=>x.id===id)||pre||{};cur=g.id||null;G=g;status=g.status||'Backlog';rating=g.rating||0;murl=g.meta_url||null;hid=!!g.hidden;catv=!!g.cat;favv=!!g.fav;$('#d_title').textContent=cur?'Editar jogo':'Adicionar jogo';$('#d_url').value='';
@@ -760,6 +760,11 @@ async function sidePrune(p,exceptId){if(!p||S.games.some(x=>x.id!==exceptId&&lin
  if((S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
  if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
  if(F.sp===p)F={smart:'all'}}
+// Catalogado: tira a plataforma da barra lateral quando nao sobra nenhum jogo visivel dela
+async function catPrune(p){
+ if((S.sideCons||[]).includes(p)){S.sideCons=S.sideCons.filter(x=>x!==p);await api('side_set2',{list:S.sideCons})}
+ if(CATALOG.includes(p)&&(S.sidePlats||SIDE_DEF).includes(p)){S.sidePlats=(S.sidePlats||SIDE_DEF).filter(x=>x!==p);await api('side_set',{list:S.sidePlats})}
+ if(F.sp===p)F={smart:'all'}}
 async function sideEnsure(p,changed){if(!p||!changed)return;
  if(CATALOG.includes(p)){const l=S.sidePlats||SIDE_DEF;if(!l.includes(p)){S.sidePlats=[...l,p];await api('side_set',{list:S.sidePlats})}}
  else if(CONSOLES.some(c=>c.n===p)){const l=S.sideCons||[];if(!l.includes(p)){S.sideCons=[...l,p];await api('side_set2',{list:S.sideCons})}}}
@@ -771,7 +776,7 @@ async function saveG(){
  if(status==='Zerado'){const v=$('#f_fin').value;b.finished=v?Math.floor(new Date(v+'T12:00:00').getTime()/1000):null}
  if(getHM('tk')!==orig.tk)b.tracked_s=getHM('tk');if(getHM('mn')!==orig.mn)b.manual_s=getHM('mn');
  const prev=S.games.find(g=>g.id===cur),pn=canonP(b.platform);
- const r=await api('save',b);const lk=!!(b.exe||(prev&&(prev.appid||prev.lkey)));if(lk&&!b.cat)await sideEnsure(pn,true);else if(prev&&linkedG(prev)&&canonP(prev.platform)===pn)await sidePrune(pn,prev.id);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur,n5=NEWFORT5&&!cur;NEWFORLIST=false;NEWFORT5=false;D.close();if(n5)await api('top5_set',{ids:[...top5(),r.id].slice(0,5)});if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
+ const r=await api('save',b);if(b.cat&&pn&&!S.games.some(x=>x.id!==(cur||r.id)&&!x.cat&&!x.hidden&&canonP(x.platform)===pn))await catPrune(pn);const lk=!!(b.exe||(prev&&(prev.appid||prev.lkey)));if(lk&&!b.cat)await sideEnsure(pn,true);else if(prev&&linkedG(prev)&&canonP(prev.platform)===pn)await sidePrune(pn,prev.id);if(prev&&canonP(prev.platform)!==pn)await sidePrune(canonP(prev.platform),prev.id);if(pendCover)await api('cover_data',{id:r.id,data:pendCover});if(pendLogo)await api('logo_set',{id:r.id,url:pendLogo});if(pendWall)await api('wall_attach',{id:r.id,file:pendWall});pendWall=null;pendLogo=null;pendCover=null;const nl=NEWFORLIST&&LDL&&!cur,n5=NEWFORT5&&!cur;NEWFORLIST=false;NEWFORT5=false;D.close();if(n5)await api('top5_set',{ids:[...top5(),r.id].slice(0,5)});if(nl){if(LDL.id)await api('list_add',{id:LDL.id,ids:[r.id]});else if(!LDL.ids.includes(r.id))LDL.ids.push(r.id)}await load();if(nl)listUi()}
 async function delG(){if(!await confirmX('Excluir este jogo?','Excluir'))return;const g=S.games.find(x=>x.id===cur),p=g&&canonP(g.platform);
  await api('delete',{id:cur});D.close();
  await sidePrune(p,cur);
