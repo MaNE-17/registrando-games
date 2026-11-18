@@ -1185,8 +1185,8 @@ function fbUi(){for(const k of['status','platform','genre']){const b=$('#fb_'+k)
  $('#fb_sort').textContent=(SORTS.find(s=>s[0]===$('#sort').value)||SORTS[0])[1];
  const hid=F.smart==='hidden',nh=S.games.filter(g=>g.hidden).length,b=$('#fb_hidden');
  b.classList.toggle('on',hid);b.innerHTML=hid?EYE_OFF:EYE;b.title=hid?'Voltar para todos os jogos':`Mostrar só os jogos ocultos (${nh})`;b.setAttribute('aria-label',b.title);$('#fb_clear').hidden=!filtActive()}
-const filtActive=()=>!!(F.list||F.status||F.platform||F.sp||F.genre||F.smart==='hidden'||INST||FAV||YR||$('#q').value.trim());
-function clearFilters(){F={smart:'all'};INST=false;FAV=false;YR=0;try{localStorage.setItem('inst','0')}catch{}$('#q').value='';$('#qx').hidden=true;SEL=null;render()}
+const filtActive=()=>!!(F.list||F.status||F.platform||F.genre||F.smart==='hidden'||YR||$('#q').value.trim());
+function clearFilters(){F={smart:F.smart==='lists'?'lists':'all',...(F.sp?{sp:F.sp}:{})};YR=0;$('#q').value='';$('#qx').hidden=true;SEL=null;render()}
 let PREV=null;
 function openLists(){if(F.smart==='lists'){F=PREV||{smart:'all'};PREV=null}else{PREV={...F};F={smart:'lists'}}render()}
 function togHidden(){F={...F,smart:F.smart==='hidden'?'all':'hidden'};render()}
