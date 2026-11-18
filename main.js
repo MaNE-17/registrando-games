@@ -450,7 +450,6 @@ async function launchersImport(opt = {}) {
         if (!g) {
           if (ign.has(f.key)) continue;
           g = { id: rid(), name: f.name, platform: n, genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
-          if (f.genres && f.genres.length) g.genres = f.genres.slice(0, 4);
           if (f.cover) coverQ.push([g.id, f.cover]);
           data.games.push(g); novos++;
         }
@@ -562,7 +561,7 @@ function walkRoms(dir, depth, out, exts) {
   return out;
 }
 async function emuEnrich(g) {
-  try { const r = await mcInfo(g); if (r) { if (r.score != null) { g.meta = r.score; g.meta_url = r.url; } if (r.released && !g.rel_manual) g.released = r.released; if (r.genres && r.genres.length && !(g.genres || []).length) g.genres = r.genres; } } catch {}
+  try { const r = await mcInfo(g); if (r) { if (r.score != null) { g.meta = r.score; g.meta_url = r.url; } if (r.released && !g.rel_manual) g.released = r.released; } } catch {}
   if (data.config.sgdb) {
     try { if (!g.cover) { const p = await sgPage(g, 0, 'cover'); if (p.items[0]) await wallSave(g, p.items[0].url, 'cover'); g.sgc = 1; } } catch {}
     try { if (!g.logo) { const p = await sgPage(g, 0, 'logo'); if (p.items[0]) await wallSave(g, p.items[0].url, 'logo'); g.sgl = 1; } } catch {}
