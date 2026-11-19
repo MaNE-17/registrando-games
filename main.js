@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell } = require('electron');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
-const LCH = require('./launchers');
+const LCH = require('./launchers'), STL = require('./steamlib');
 process.env.RG_DIAG = ''; app.whenReady().then(() => { process.env.RG_DIAG = path.join(app.getPath('userData'), 'epic-diagnostico.txt'); });
 
 // ---------- Pastas ----------
@@ -133,7 +133,8 @@ async function diagReport() {
   L.push('', '== Pastas dos launchers');
   for (const [n, p] of [['GOG Galaxy', path.join(pd, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')], ['Epic (novo)', path.join(la, 'com.epicgames.eglv2')], ['Epic (antigo)', path.join(pd, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests')], ['Ubisoft cache', path.join(la, 'Ubisoft Game Launcher', 'cache')], ['EA ProgramData', path.join(pd, 'EA Desktop')], ['EA conta', path.join(la, 'Electronic Arts', 'EA Desktop')], ['Battle.net logs', path.join(la, 'Battle.net', 'Logs')], ['Battle.net cache', path.join(la, 'Battle.net', 'Cache')]]) L.push(n + ': ' + ex(p) + '  (' + p + ')');
   L.push('', '== Steam');
-  try { await scanSteam(); L.push('Steam instalados lidos: ' + steamNames.size); } catch (e) { L.push('Steam: erro ' + e.message); }
+  try { await scanSteam(); L.push('Pasta da Steam: ' + steamRoot + ' (' + (fs.existsSync(steamRoot) ? 'existe' : 'não existe') + ') | instalados lidos: ' + steamNames.size); } catch (e) { L.push('Steam: erro ' + e.message); }
+  try { const r = STL.steamOwnedLocal(steamRoot); L.push('Biblioteca pelo cache local: ' + (r.why || r.games.length + ' jogo(s), ' + r.packages + ' licença(s)')); } catch (e) { L.push('Biblioteca pelo cache local: ERRO ' + e.message); }
   L.push('', '== Busca nos launchers');
   for (const n of LCH.NAMES) {
     const t0 = Date.now();
@@ -434,7 +435,7 @@ async function steamSync() {
     const sid = await steamId64(c.key, c.steamid); if (!sid) throw new Error('SteamID não reconhecido');
     const q = new URLSearchParams({ key: c.key, steamid: sid, include_appinfo: 1, include_played_free_games: 1 });
     const rsp = (await J('https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?' + q)).response || {};
-    if (typeof rsp.game_count !== 'number') { msg = 'Steam: a biblioteca veio vazia. Os "Detalhes dos jogos" do seu perfil precisam estar Públicos. Use "Testar chaves" nas Configurações.'; return; }
+    if (typeof rsp.game_count !== 'number') { msg = 'Steam API: a biblioteca veio vazia ("Detalhes dos jogos" do perfil não estão Públicos). Os jogos vêm do cache local da Steam; as horas da API ficam de fora até liberar.'; return; }
     const games = rsp.games || [];
     const by = new Map(data.games.filter(g => g.appid).map(g => [g.appid, g]));
     let added = 0;
@@ -461,12 +462,12 @@ async function steamSync() {
 }
 
 // Jogos da Steam instalados: le libraryfolders.vdf e os appmanifest (StateFlags com bit 4 = instalado)
-let steamApps = new Set(), steamNames = new Map();
+let steamApps = new Set(), steamNames = new Map(), steamRoot = '';
 function scanSteam() {
   if (process.platform !== 'win32') return Promise.resolve();
   return new Promise(done => cp.exec('reg query "HKCU\\Software\\Valve\\Steam" /v SteamPath', { windowsHide: true }, (err, out) => {
     const m = !err && out.match(/SteamPath\s+REG_SZ\s+(.+)/);
-    const root = m ? m[1].trim() : 'C:\\Program Files (x86)\\Steam';
+    const root = m ? m[1].trim().replace(/\//g, '\\') : 'C:\\Program Files (x86)\\Steam'; steamRoot = root;
     const libs = new Set([root]);
     try {
       const v = fs.readFileSync(path.join(root, 'steamapps', 'libraryfolders.vdf'), 'utf8');
@@ -486,6 +487,7 @@ function scanSteam() {
   }));
 }
 // Steam sem chave da API: importa os jogos instalados (lidos dos appmanifest). Com a API configurada, o steamSync completa o resto.
+let steamLocalInfo = '';
 async function steamLocalImport() {
   await scanSteam();
   const have = new Set(data.games.filter(g => g.appid).map(g => g.appid)), ign = new Set(data.lIgnored || []);
@@ -495,6 +497,20 @@ async function steamLocalImport() {
     data.games.push({ id: rid(), name, appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() });
     novos++;
   }
+  // biblioteca completa (instalada ou nao) pelo cache local da Steam: nao depende da API nem da privacidade do perfil
+  try {
+    const r = STL.steamOwnedLocal(steamRoot); steamLocalInfo = r.why || `${r.games.length} jogo(s) na conta ${r.sid || ''}`;
+    const by = new Map(data.games.filter(g => g.appid).map(g => [g.appid, g]));
+    for (const s of r.games) {
+      const g = by.get(s.appid);
+      if (g) { if (!data.config.key && s.minutes > (g.steam_min || 0)) g.steam_min = s.minutes; if (s.last > (g.last_played || 0)) g.last_played = s.last; continue; }
+      if (ign.has('steam:' + s.appid)) continue;
+      const ng = { id: rid(), name: s.name, appid: s.appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: s.minutes || 0, tracked_s: 0, manual_s: 0, last_played: s.last || 0, finished: null, added: now() };
+      data.games.push(ng); by.set(s.appid, ng); novos++;
+    }
+    if (r.games.length && !(data.sidePlats || LCH.SIDE_DEF).includes('Steam')) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), 'Steam'];
+    save();
+  } catch (e) { steamLocalInfo = 'erro ao ler o cache da Steam: ' + e.message; }
   if (steamNames.size && !(data.sidePlats || LCH.SIDE_DEF).includes('Steam')) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), 'Steam'];
   if (novos) save();
   return novos;

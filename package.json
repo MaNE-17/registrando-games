@@ -1,6 +1,6 @@
 {
   "name": "registrando-games",
-  "version": "1.11.7",
+  "version": "1.12.0",
   "description": "Registrando Games",
   "author": "Registrando Games",
   "main": "main.js",
@@ -24,6 +24,7 @@
       "index.html",
       "main.js",
       "launchers.js",
+      "steamlib.js",
       "wallpre.js",
       "preload.js"
     ],
