@@ -432,14 +432,21 @@ async function gogLibrary() {
     const hid = new Set(all("SELECT releaseKey FROM UserReleaseProperties WHERE isHidden=1").map(r => r[0]));
     const mins = {}; for (const [k, m] of all("SELECT releaseKey,minutesInGame FROM GameTimes WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\'")) mins[k] = m || 0;
     const last = {}; for (const [k, d] of all("SELECT gameReleaseKey,lastPlayedDate FROM LastPlayedDates WHERE gameReleaseKey LIKE 'gog\\_%' ESCAPE '\\'")) { const t = Date.parse(String(d).replace(' ', 'T') + 'Z'); if (t) last[k] = Math.floor(t / 1000); }
+    // os ids de GamePieceTypes mudam de um PC para outro: busca pelo nome do tipo
+    const T = {}; for (const [id, ty] of all("SELECT id,type FROM GamePieceTypes")) T[ty] = id;
+    const tTitle = T.title ?? T.originalTitle, tImg = T.originalImages, tMeta = T.originalMeta ?? T.meta;
+    if (tTitle === undefined) return [];
+    const ids = [tTitle, T.originalTitle, tImg, tMeta].filter(x => Number.isInteger(x)).join(',');
     const pc = {};
-    for (const [k, t, v] of all("SELECT releaseKey,gamePieceTypeId,value FROM GamePieces WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\' AND gamePieceTypeId IN (708,1114,1115)")) { try { (pc[k] = pc[k] || {})[t] = JSON.parse(v); } catch {} }
+    for (const [k, t, v] of all("SELECT releaseKey,gamePieceTypeId,value FROM GamePieces WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\' AND gamePieceTypeId IN (" + ids + ")")) { try { (pc[k] = pc[k] || {})[t] = JSON.parse(v); } catch {} }
     const skip = /game overlay|welcome gift|digital goodies|soundtrack|artbook|wallpaper|manual$/i, byName = new Map();
     for (const [k, p] of Object.entries(pc)) {
-      if (hid.has(k) || !p[708] || !p[708].title) continue;
-      const name = clean(String(p[708].title).replace(/\s*-?\s*Amazon Prime$/i, '').trim());
+      const tt = (p[tTitle] && p[tTitle].title) || (p[T.originalTitle] && p[T.originalTitle].title);
+      if (hid.has(k) || !tt) continue;
+      const name = clean(String(tt).replace(/\s*-?\s*Amazon Prime$/i, '').trim());
       if (!name || skip.test(name)) continue;
-      const id = k.slice(4), item = { launcher: 'GOG', key: 'gog:' + id, name, exe: '', uri: '', owned: true, installed: false, minutes: mins[k] || 0, last: last[k] || 0, cover: (p[1114] && p[1114].verticalCover) || '', genres: (p[1115] && p[1115].genres) || [], year: p[1115] && p[1115].releaseDate ? new Date(p[1115].releaseDate * 1000).getUTCFullYear() : 0 };
+      const im = p[tImg] || {}, me = p[tMeta] || {};
+      const id = k.slice(4), item = { launcher: 'GOG', key: 'gog:' + id, name, exe: '', uri: '', owned: true, installed: false, minutes: mins[k] || 0, last: last[k] || 0, cover: im.verticalCover || '', genres: me.genres || [], year: me.releaseDate ? new Date(me.releaseDate * 1000).getUTCFullYear() : 0 };
       const nk = name.toLowerCase(), prev = byName.get(nk);
       if (prev) { prev.minutes = Math.max(prev.minutes, item.minutes); prev.last = Math.max(prev.last, item.last); prev.cover = prev.cover || item.cover; if (!prev.genres.length) prev.genres = item.genres; continue; }
       byName.set(nk, item); out.push(item);
