@@ -252,9 +252,17 @@ function eaDecrypt(buf, user, cat, suffix) {
   const d = require('crypto').createDecipheriv('aes-256-cbc', sha3(user + cat + suffix), sha3(user + cat).subarray(0, 16));
   return JSON.parse(Buffer.concat([d.update(enc), d.final()]).toString('utf8'));
 }
-const EA_HW_PS = "$ErrorActionPreference='Stop';function V($c,$p){[string]((Get-CimInstance -ClassName $c|Select-Object -First 1).$p)};$sd=if($env:SystemDrive){$env:SystemDrive}else{'C:'};$d=Get-CimInstance -ClassName Win32_LogicalDisk -Filter \"DeviceID='$sd'\"|Select-Object -First 1;$s=(V Win32_BaseBoard Manufacturer)+';'+(V Win32_BaseBoard SerialNumber)+';'+(V Win32_BIOS Manufacturer)+';'+(V Win32_BIOS SerialNumber)+';'+([string]$d.VolumeSerialNumber).Replace('-','')+';'+(V Win32_VideoController PNPDeviceID)+';'+(V Win32_Processor Manufacturer)+';'+(V Win32_Processor ProcessorId)+';'+(V Win32_Processor Name)+';';$h=[Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::ASCII.GetBytes($s));[Console]::Write(([BitConverter]::ToString($h)).Replace('-','').ToLower())";
+// Identificacao de hardware usada pela EA: SHA1 de "placa-mae fab;serie;BIOS fab;serie;volume;GPU PNPDeviceID;CPU fab;id;nome;".
+// O PowerShell so le os valores (todas as placas de video); o hash e as tentativas ficam no JS (PCs com mais de uma GPU/adaptador virtual).
+const EA_HW_PS = "$ErrorActionPreference='SilentlyContinue';function A($c){@(Get-CimInstance -ClassName $c)};$b=A Win32_BaseBoard|Select-Object -First 1;$i=A Win32_BIOS|Select-Object -First 1;$p=A Win32_Processor|Select-Object -First 1;$sd=if($env:SystemDrive){$env:SystemDrive}else{'C:'};$d=Get-CimInstance -ClassName Win32_LogicalDisk -Filter \"DeviceID='$sd'\"|Select-Object -First 1;$o=[ordered]@{bm=[string]$b.Manufacturer;bs=[string]$b.SerialNumber;im=[string]$i.Manufacturer;is=[string]$i.SerialNumber;vol=([string]$d.VolumeSerialNumber).Replace('-','');gpus=@(A Win32_VideoController|ForEach-Object{[string]$_.PNPDeviceID});cm=[string]$p.Manufacturer;cid=[string]$p.ProcessorId;cn=[string]$p.Name};[Console]::Write(($o|ConvertTo-Json -Compress))";
 let eaHw = null;
-const eaHardware = () => process.env.RG_EA_HW ? Promise.resolve(process.env.RG_EA_HW) : eaHw || (eaHw = new Promise(res => cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(EA_HW_PS, 'utf16le').toString('base64')], { windowsHide: true, timeout: 20000, maxBuffer: 1 << 16 }, (e, out) => { const h = String(out || '').trim().toLowerCase(); res(!e && /^[a-f0-9]{40}$/.test(h) ? h : ''); })));
+const eaHardware = () => process.env.RG_EA_HW ? Promise.resolve([process.env.RG_EA_HW]) : eaHw || (eaHw = new Promise(res => cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(EA_HW_PS, 'utf16le').toString('base64')], { windowsHide: true, timeout: 30000, maxBuffer: 1 << 20 }, (e, out) => {
+  let j; try { j = JSON.parse(String(out || '').trim()); } catch { eaHw = null; return res([]); }
+  const gpus = [...new Set([].concat(j.gpus || []).map(String))]; if (!gpus.length) gpus.push('');
+  const base = [j.bm, j.bs, j.im, j.is, j.vol].map(x => x == null ? '' : String(x)), tail = [j.cm, j.cid, j.cn].map(x => x == null ? '' : String(x));
+  const sha1 = t => require('crypto').createHash('sha1').update(Buffer.from(t, 'latin1')).digest('hex');
+  res(gpus.map(g => sha1([...base, g, ...tail].join(';') + ';')));
+})));
 async function eaLibrary() {
   const pd = process.env.RG_EA_PD || path.join(process.env.ProgramData || 'C:\\ProgramData', 'EA Desktop');
   const loc = process.env.RG_EA_LOCAL || path.join(process.env.LOCALAPPDATA || '', 'Electronic Arts', 'EA Desktop');
@@ -265,10 +273,12 @@ async function eaLibrary() {
   if (!ns.length) return [];
   const cats = path.join(pd, sha3(EA_ALL).toString('hex'), 'CATS2');
   const cat = fs.existsSync(cats) ? (eaDecrypt(fs.readFileSync(cats), EA_ALL, 'CATS2', EA_SUFFIX).data || {}) : {};
-  const hw = await eaHardware(); if (!hw) throw new Error('EA app: não consegui ler a identificação do hardware deste PC.');
+  const hws = await eaHardware(); if (!hws.length) throw new Error('EA app: não consegui ler a identificação do hardware deste PC.');
   const now = Date.now(), groups = new Map();
   for (const [u, f] of ns) {
-    let store; try { store = eaDecrypt(fs.readFileSync(f), u, 'NS', hw); } catch { throw new Error('EA app: não consegui abrir a lista de jogos da conta (abra o EA app logado e tente de novo).'); }
+    const buf = fs.readFileSync(f); let store = null;
+    for (const hw of hws) { try { store = eaDecrypt(buf, u, 'NS', hw); break; } catch {} }
+    if (!store) throw new Error(`EA app: não consegui abrir a lista de jogos da conta (testei ${hws.length} identificação(ões) de hardware).`);
     for (const e of store.entitlements || []) {
       if (Number(e.status) !== 1 || e.isEntitledFromSubscription === true) continue;
       const t = e.terminationDate; if (t !== undefined && t !== null && t !== '' && /^\d+$/.test(String(t)) && +t > 0) { const ms = +t < 1e10 ? +t * 1000 : +t; if (ms < 8.64e15 && ms <= now) continue; }
