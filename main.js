@@ -69,7 +69,8 @@ async function updInstall() {
   const a = updInfo.asset;
   UPD = { phase: 'down', got: 0, total: a.size || 0 };
   try {
-    const r = await fetch(`https://api.github.com/repos/${ghRepo()}/releases/assets/${a.id}`, { headers: ghHead('application/octet-stream'), redirect: 'follow' });
+    const url = `https://api.github.com/repos/${ghRepo()}/releases/assets/${a.id}`, opt = { headers: ghHead('application/octet-stream'), redirect: 'follow' };
+    let r; try { r = await require('electron').net.fetch(url, opt); } catch { r = await fetch(url, opt); } // net.fetch usa a rede do Chromium (HTTP/2, proxy do sistema): bem mais rapido
     if (!r.ok) { UPD.phase = ''; return { ok: false, msg: 'Falha ao baixar a atualização (HTTP ' + r.status + ').' }; }
     const dir = path.join(app.getPath('temp'), 'RegistrandoGamesUpdate'); fs.mkdirSync(dir, { recursive: true });
     const exe = path.join(dir, a.name.replace(/[^\w.\- ]/g, '_'));
@@ -149,6 +150,15 @@ async function diagReport() {
 const J = async u => { const r = await fetch(u); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
 const find = id => data.games.find(x => x.id === id);
 function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backlog_data.json'), 'utf8')) }; } catch {} data.lists = data.lists || [];
+  // Barra lateral: instalacao nova comeca sem launchers (eles entram quando algum jogo for encontrado).
+  // Uma vez so: tira os launchers padrao que nunca tiveram jogo.
+  if (!data.sideMig1) {
+    if (data.sidePlats === undefined) data.sidePlats = data.games.length ? [...LCH.SIDE_DEF] : [];
+    const has = new Set(data.games.map(g => String(g.platform || '').toLowerCase()));
+    data.sidePlats = data.sidePlats.filter(n => has.has(n.toLowerCase()));
+    data.sideMig1 = 1;
+  }
+  data.sideOff = data.sideOff || [];
   try { emuMigrate(); } catch {}
   if (!data.clearLP1) { data.clearLP1 = 1; for (const g of data.games || []) g.last_played = 0; }
   if (!data.fixRomTrack) { data.fixRomTrack = 1; for (const g of data.games || []) if (g.rom) { g.last_played = 0; g.tracked_s = 0; if (g.status === 'Jogando') g.status = 'Backlog'; } }
@@ -450,6 +460,7 @@ async function steamSync() {
           exe: '', steam_min: s.playtime_forever || 0, tracked_s: 0, manual_s: 0, last_played: s.rtime_last_played || 0, finished: null, added: now() });
       }
     }
+    if (games.length && !(data.sidePlats || []).includes('Steam') && !(data.sideOff || []).includes('Steam')) data.sidePlats = [...(data.sidePlats || []), 'Steam'];
     save();
     msg = `Biblioteca: ${games.length} jogos, ${added} novos.`;
   } catch (e) { msg = 'Erro: confira a chave, o SteamID e se o perfil está público (' + e.message + ')'; return; }
@@ -508,10 +519,10 @@ async function steamLocalImport() {
       const ng = { id: rid(), name: s.name, appid: s.appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: s.minutes || 0, tracked_s: 0, manual_s: 0, last_played: s.last || 0, finished: null, added: now() };
       data.games.push(ng); by.set(s.appid, ng); novos++;
     }
-    if (r.games.length && !(data.sidePlats || LCH.SIDE_DEF).includes('Steam')) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), 'Steam'];
+    if (r.games.length && !(data.sidePlats || []).includes('Steam') && !(data.sideOff || []).includes('Steam')) data.sidePlats = [...(data.sidePlats || []), 'Steam'];
     save();
   } catch (e) { steamLocalInfo = 'erro ao ler o cache da Steam: ' + e.message; }
-  if (steamNames.size && !(data.sidePlats || LCH.SIDE_DEF).includes('Steam')) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), 'Steam'];
+  if (steamNames.size && !(data.sidePlats || []).includes('Steam') && !(data.sideOff || []).includes('Steam')) data.sidePlats = [...(data.sidePlats || []), 'Steam'];
   if (novos) save();
   return novos;
 }
@@ -529,7 +540,7 @@ async function launchersImport(opt = {}) {
     const ign = new Set(data.lIgnored || []);
     const nzk = s => nzn(s);
     for (const n of LCH.NAMES.filter(x => want.includes(x))) {
-      if ((force || opt.discover) && (found[n] || []).length && !(data.sidePlats || LCH.SIDE_DEF).includes(n)) data.sidePlats = [...(data.sidePlats || LCH.SIDE_DEF), n];
+      if ((force || (opt.discover && !(data.sideOff || []).includes(n))) && (found[n] || []).length && !(data.sidePlats || []).includes(n)) data.sidePlats = [...(data.sidePlats || []), n];
       let novos = 0;
       for (const f of found[n] || []) {
         if (f.installed !== false) inst.add(f.key);
@@ -752,7 +763,8 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'refresh_stop': if (refreshing || busy) { stopRefresh = true; msg = 'Parando...'; } return { ok: true };
     case 'refresh': { stopRefresh = false; if (b.full) for (const x of data.games) x.info4 = false; save(); msg = 'Atualizando...'; refreshing = true; steamSync().finally(async () => { try { msg = 'Procurando jogos nos launchers...'; const lr = await launchersImport({ discover: true }); if (lr && lr.msg) msg = lr.msg; } catch {} try { const sn = await steamLocalImport(); if (sn) msg += ` Steam: ${sn} jogo(s) instalado(s) novo(s).`; } catch {} try { await sgFill(); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; if (stopRefresh) msg = 'Atualização interrompida.'; stopRefresh = false; }); return { ok: true }; }
     case 'side_set': {
-      const ok = new Set(LCH.CATALOG); data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))]; save(); return { ok: true };
+      const ok = new Set(LCH.CATALOG), prev = data.sidePlats || []; data.sidePlats = [...new Set((b.list || []).filter(x => ok.has(x)))];
+      const off = new Set(data.sideOff || []); for (const x of prev) if (!data.sidePlats.includes(x)) off.add(x); for (const x of data.sidePlats) off.delete(x); data.sideOff = [...off]; save(); return { ok: true };
     }
     case 'pl_rename': {
       const n = String(b.name || '').slice(0, 60), l = String(b.label || '').trim().slice(0, 40); if (!n) return { ok: false };
