@@ -27,7 +27,7 @@ button{cursor:pointer}button.p{background:var(--acb);color:var(--on);border-colo
 .run{position:absolute;left:8px;bottom:8px;background:#000a;color:#7dffb0;font-size:12px;padding:2px 8px;border-radius:99px}
 .play{position:absolute;right:16px;bottom:18px;width:52px;height:52px;border-radius:50%;font-size:20px;background:var(--acb);color:var(--on);border:0;padding:0;opacity:0;transition:opacity .15s}
 .card:hover .play,.play:focus-visible{opacity:1}
-.n{font-weight:600;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.m{display:flex;justify-content:space-between;color:var(--mu);font-size:13px}
+.n{font-weight:600;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.m{display:flex;justify-content:space-between;align-items:center;color:var(--mu);font-size:13px}.m .ti{color:var(--ac);font-weight:700;font-size:14.5px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}.empty{grid-column:1/-1;text-align:center;color:var(--mu);padding:60px 0}
 dialog{border:1px solid var(--ln);border-radius:12px;background:var(--bg);color:var(--tx);padding:22px;width:min(780px,94vw);max-height:92vh}
 dialog::backdrop{background:#0007}#c{width:min(440px,92vw)}
@@ -49,7 +49,7 @@ label{display:block;font-size:13px;color:var(--mu);margin:14px 0 5px}label b{col
 .pop{position:fixed;top:62px;right:22px;z-index:5;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:2px 16px 14px;width:250px;box-shadow:0 8px 24px #0004}.pop input{width:100%}
 .qx{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;padding:2px 9px;font-size:20px;line-height:1;color:var(--mu)}.qx:hover{color:var(--tx)}
 .nomc .mc{display:none}.pop input[type=checkbox]{width:auto;margin-right:8px}
-.nonm .n{display:none}.nost .st{display:none}.noti .ti{display:none}.nost .ti{margin-left:auto}
+.nonm .n{display:none}.nost .st{display:none}.noti .ti{display:none}.nopl .pli{display:none!important}.nost .ti{margin-left:auto}
 .pop{width:280px;max-height:82vh;overflow:auto}.ck{margin:6px 0;color:var(--tx)}
 .sws{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.swb{width:26px;height:26px;border-radius:50%;padding:0;border:2px solid transparent}
 .swb.on,#cc.on{outline:2px solid var(--tx);outline-offset:2px}#cc{width:30px;height:28px;padding:0;border:0;background:none;border-radius:4px}#hx{width:92px;padding:5px 8px;font-family:ui-monospace,Consolas,monospace;font-size:13px}#hx.on{outline:2px solid var(--tx);outline-offset:1px}
@@ -171,7 +171,13 @@ aside{overflow-x:hidden}
 #hprog.ind #hpf{width:30%!important;animation:hpi 1.2s ease-in-out infinite}@keyframes hpi{0%{left:-30%}100%{left:100%}}
 .rpb button.p.run{gap:10px}.rdot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none;animation:rdp 1.4s ease-in-out infinite}@keyframes rdp{50%{opacity:.35;transform:scale(.8)}}
 .card{position:relative}.ctag{position:absolute;left:8px;top:8px;z-index:4;padding:3px 8px;border-radius:7px;font-size:11px;font-weight:600;background:color-mix(in srgb,var(--bg) 80%,transparent);color:var(--mu);backdrop-filter:blur(6px);pointer-events:none}
-.pli{position:absolute;right:8px;top:80px;width:30px;height:30px;border-radius:50%;background:#000a;color:#fff;display:grid;place-items:center;opacity:0;transition:opacity .15s;pointer-events:auto}.pli svg{width:16px!important;height:16px!important;color:#fff!important}.card:hover .pli{opacity:1}
+.pli{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:50%;background:#000a;color:#fff;display:grid;place-items:center;opacity:0;transition:opacity .15s;pointer-events:auto}.pli svg{width:16px!important;height:16px!important;color:#fff!important}.card:hover .pli{opacity:1}
+#gcm{position:fixed;z-index:400;min-width:200px;max-width:280px;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008}
+#gcm button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:7px;color:var(--tx);font-size:14px}
+#gcm button:hover{background:color-mix(in srgb,var(--ac) 16%,transparent)!important;border:0!important}
+#gcm button svg{width:16px;height:16px;flex:none;color:var(--ac)}#gcm .dl,#gcm .dl svg{color:#e5484d}#gcm .dl:hover{background:color-mix(in srgb,#e5484d 14%,transparent)!important}
+#gcm hr{border:0;border-top:1px solid var(--ln);margin:4px 6px}#gcm .gls{max-height:240px;overflow:auto;padding-left:8px}#gcm .gls button{font-size:13px;padding:6px 10px}#gcm .gls .ck2{width:16px;color:var(--ac);font-weight:700;text-align:center;flex:none}
+#gcm .arr{margin-left:auto;color:var(--mu);transition:transform .15s}#gcm .open .arr{transform:rotate(90deg)}
 #d{width:min(960px,96vw);padding:0;max-height:94vh;overflow:hidden}#d[open]{display:flex;flex-direction:column}
 #d .dh{margin:0;padding:14px 20px;border-bottom:1px solid var(--ln);cursor:grab;font-size:17px}
 .fld .row button{white-space:nowrap}
@@ -383,7 +389,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div id="sbrs" class="rsz" title="Arraste para mudar a largura da barra lateral"></div>
 <main><div id="grid"></div></main></div>
 <footer id="pgf"><span id="ver" class="ver"></span></footer>
-<div id="vp" class="pop" hidden><label>Tema</label><select id="th_mode" style="width:100%"><option value="auto">Automático (sistema)</option><option value="light">Claro</option><option value="dark">Escuro</option></select><label class="ck" style="margin-top:12px"><input type="checkbox" id="bold">Fonte em negrito (mais legível)</label><label>Cor de destaque</label><div class="sws" id="swa"></div><label>Mostrar nas capas</label><label class="ck"><input type="checkbox" id="in_nm">Nome</label><label class="ck"><input type="checkbox" id="in_st">Status</label><label class="ck"><input type="checkbox" id="in_ti">Tempo de jogo</label><label class="ck"><input type="checkbox" id="mcv">Nota do Metacritic</label><label class="ck"><input type="checkbox" id="fxb">Desfoque no rodapé da página</label><label>Espaço horizontal · <b id="gxv"></b></label><input type="range" id="gx" min="0" max="48"><label>Espaço vertical · <b id="gyv"></b></label><input type="range" id="gy" min="0" max="64"><label for="sb_side">Posição da barra lateral</label><select id="sb_side" style="width:100%"><option value="l">Esquerda</option><option value="r">Direita</option></select><label>Largura da busca · <b id="swv"></b></label><input type="range" id="swr" min="120" max="480"><button id="ord_reset" style="width:100%;margin-top:14px">Restaurar posições dos botões</button><div class="acts" style="justify-content:flex-start"><button onclick="resetSp()">Restaurar espaçamento</button></div></div>
+<div id="vp" class="pop" hidden><label>Tema</label><select id="th_mode" style="width:100%"><option value="auto">Automático (sistema)</option><option value="light">Claro</option><option value="dark">Escuro</option></select><label class="ck" style="margin-top:12px"><input type="checkbox" id="bold">Fonte em negrito (mais legível)</label><label>Cor de destaque</label><div class="sws" id="swa"></div><label>Mostrar nas capas</label><label class="ck"><input type="checkbox" id="in_nm">Nome</label><label class="ck"><input type="checkbox" id="in_st">Status</label><label class="ck"><input type="checkbox" id="in_ti">Tempo de jogo</label><label class="ck"><input type="checkbox" id="in_pl">Plataforma</label><label class="ck"><input type="checkbox" id="mcv">Nota do Metacritic</label><label class="ck"><input type="checkbox" id="fxb">Desfoque no rodapé da página</label><label>Espaço horizontal · <b id="gxv"></b></label><input type="range" id="gx" min="0" max="48"><label>Espaço vertical · <b id="gyv"></b></label><input type="range" id="gy" min="0" max="64"><label for="sb_side">Posição da barra lateral</label><select id="sb_side" style="width:100%"><option value="l">Esquerda</option><option value="r">Direita</option></select><label>Largura da busca · <b id="swv"></b></label><input type="range" id="swr" min="120" max="480"><button id="ord_reset" style="width:100%;margin-top:14px">Restaurar posições dos botões</button><div class="acts" style="justify-content:flex-start"><button onclick="resetSp()">Restaurar espaçamento</button></div></div>
 
 <div id="yp" class="pop" hidden><div class="yh"><button id="y_prev" aria-label="Anos anteriores">‹</button><b id="y_rng"></b><button id="y_next" aria-label="Próximos anos">›</button></div><div class="yg" id="y_g"></div><div class="row"><button id="y_none"></button><button id="y_clr">Todos os anos</button></div></div>
 <div id="fp" class="pop" hidden style="width:260px"><div id="fp_l"></div></div>
@@ -589,6 +595,31 @@ function side(){
 const secCol=()=>{try{return JSON.parse(localStorage.getItem('sbc'))||{}}catch{return{}}};
 $('#side').addEventListener('click',e=>{const s=e.target.closest('[data-sec]');if(!s)return;const c=secCol();c[s.dataset.sec]=!c[s.dataset.sec];try{localStorage.setItem('sbc',JSON.stringify(c))}catch{}side._h=null;side()});
 
+// ---- Botao direito num jogo (capa ou modo lista): favoritar, ocultar, listas, excluir ----
+{const cm=document.createElement('div');cm.id='gcm';cm.hidden=true;cm.setAttribute('role','menu');document.body.appendChild(cm);let GID=null,LOPEN=false;
+ const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+ const I={fav:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',hid:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/>',eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',lst:'<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',del:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>'};
+ const hide=()=>{cm.hidden=true;GID=null;LOPEN=false};
+ const paint=()=>{const g=S.games.find(x=>x.id===GID);if(!g)return hide();const ls=S.lists||[];
+  cm.innerHTML=`<button type="button" data-a="fav">${SV(I.fav)}${g.fav?'Remover dos favoritos':'Favoritar'}</button><button type="button" data-a="hid">${SV(g.hidden?I.eye:I.hid)}${g.hidden?'Reexibir':'Ocultar'}</button><button type="button" data-a="lst" class="${LOPEN?'open':''}" aria-expanded="${LOPEN}">${SV(I.lst)}Adicionar à lista<span class="arr">›</span></button>`+
+   (LOPEN?`<div class="gls">${ls.map(l=>`<button type="button" data-l="${esc(l.id)}"><span class="ck2">${(l.ids||[]).includes(g.id)?'✓':''}</span>${esc(l.name)}</button>`).join('')}<button type="button" data-a="nl"><span class="ck2">+</span>Nova lista…</button></div>`:'')+
+   `<hr><button type="button" data-a="del" class="dl">${SV(I.del)}Excluir</button>`};
+ const place=(x,y)=>{cm.style.left=Math.max(8,Math.min(x,innerWidth-cm.offsetWidth-8))+'px';cm.style.top=Math.max(8,Math.min(y,innerHeight-cm.offsetHeight-8))+'px'};
+ document.addEventListener('contextmenu',e=>{const c=e.target.closest('#grid .card[data-id],#grid .lr[data-lid],#ld_g .li[data-id]');if(!c){hide();return}
+  e.preventDefault();GID=c.dataset.id||c.dataset.lid;LOPEN=false;paint();cm.hidden=false;place(e.clientX,e.clientY);cm._x=e.clientX;cm._y=e.clientY});
+ document.addEventListener('mousedown',e=>{if(!cm.hidden&&!e.target.closest('#gcm'))hide()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!cm.hidden)hide()});window.addEventListener('blur',hide);
+ $('#grid').addEventListener('scroll',hide,{passive:true});
+ cm.onclick=async e=>{const b=e.target.closest('button');if(!b||!GID)return;const id=GID,g=S.games.find(x=>x.id===id)||{};
+  if(b.dataset.l){await api('list_toggle',{list:b.dataset.l,game:id});await load();paint();place(cm._x,cm._y);return}
+  const a=b.dataset.a;
+  if(a==='lst'){LOPEN=!LOPEN;paint();place(cm._x,cm._y);return}
+  if(a==='nl'){hide();const n=await ask('Nova lista','Nome da lista','Ex.: Zerei em 2026');if(!n)return;const before=new Set((S.lists||[]).map(l=>l.id));await api('list_save',{name:n,ids:[id]});await load();return}
+  hide();
+  if(a==='fav'){await api('save',{id,fav:!g.fav});return load()}
+  if(a==='hid'){await api('save',{id,hidden:!g.hidden});return load()}
+  if(a==='del'){if(!await confirmX(`Excluir "${g.name}" da biblioteca? Ele sai também das listas.`,'Excluir'))return;const p=canonP(g.platform);await api('delete',{id});await sidePrune(p,id);return load()}};
+}
+
 // ---- Botao direito numa plataforma da barra lateral: excluir plataforma e jogos ----
 {const cm=document.createElement('div');cm.id='cm';cm.hidden=true;document.body.appendChild(cm);let CMP=null;
  const hide=()=>{cm.hidden=true;CMP=null};
@@ -639,7 +670,7 @@ $('#side').onclick=e=>{const t=e.target.closest('[data-k]');if(!t)return;const k
 $('#side').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('[data-k]'))e.target.click()};
 function nlKey(e){if(e.key==='Escape'){F.nl=0;render()}if(e.key==='Enter'){const n=e.target.value.trim();F.nl=0;if(n)api('list_save',{name:n}).then(load);else render()}}
 function card(g){const base=coverSrc(g),fb=FB[base],src=fb==='none'?'':fb||base,run=S.running.includes(g.id),sc=SEL?(SEL.has(g.id)?' sel':' dim'):'';
- return `<div class="card${sc}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}">${g.cat?'<span class="ctag">Catalogado</span>':''}<div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${g.meta?`<span class="mc ${mcl(g.meta)}" title="Metacritic">${g.meta}</span>`:''}${sc===' sel'?'<span class="chk">✓</span>':''}${run?'<span class="run">● Rodando</span>':''}<button class="play" data-play="${g.id}" title="Jogar" aria-label="Jogar">▶</button><button class="favb${g.fav?' on':''}" data-fav="${g.id}" title="${g.fav?'Remover dos favoritos':'Favoritar'}" aria-label="Favoritar jogo"><svg width="16" height="16" viewBox="0 0 24 24" fill="${g.fav?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></button><button class="hid" data-hide="${g.id}" title="${g.hidden?'Reexibir':'Ocultar'}" aria-label="${g.hidden?'Reexibir':'Ocultar'} jogo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button>${plIco(g)}</div><div class="n">${esc(g.name)}</div><div class="m"><span class="st"><i class="dot" style="background:${COL[g.status]}"></i>${g.status}</span><span class="ti">${fmt(secs(g))}</span></div></div>`}
+ return `<div class="card${sc}" tabindex="0" data-id="${g.id}" title="${esc(g.name)}">${g.cat?'<span class="ctag">Catalogado</span>':''}<div class="cv${src?'':' noimg'}" data-i="${esc(g.name||'?')}">${src?`<img src="${esc(src)}" loading="lazy" data-a="${g.appid||''}" data-k="${esc(base)}" onerror="imgErr(this)" alt="">`:''}${g.meta?`<span class="mc ${mcl(g.meta)}" title="Metacritic">${g.meta}</span>`:''}${sc===' sel'?'<span class="chk">✓</span>':''}${run?'<span class="run">● Rodando</span>':''}<button class="play" data-play="${g.id}" title="Jogar" aria-label="Jogar">▶</button>${plIco(g)}</div><div class="n">${esc(g.name)}</div><div class="m"><span class="st"><i class="dot" style="background:${COL[g.status]}"></i>${g.status}</span><span class="ti">${fmt(secs(g))}</span></div></div>`}
 const CC=new Map();
 
 // ---- Modo lista (wallpaper + informacoes) ----
@@ -969,8 +1000,8 @@ function ask(t,l,ph,v='',hint=''){return new Promise(res=>{const A=$('#ask');let
  $('#ask_i').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#ask_ok').click()}};A.showModal();$('#ask_i').focus();$('#ask_i').select()})}
 
 const IN=(()=>{try{return JSON.parse(localStorage.getItem('info'))||{nm:true,st:true,ti:true}}catch{return{nm:true,st:true,ti:true}}})();
-function paintIn(){for(const[k,c]of[['nm','nonm'],['st','nost'],['ti','noti']]){document.body.classList.toggle(c,!!IN[k]);$('#in_'+k).checked=!IN[k]}}
-['nm','st','ti'].forEach(k=>$('#in_'+k).onchange=()=>{IN[k]=!$('#in_'+k).checked;try{localStorage.setItem('info',JSON.stringify(IN))}catch{}paintIn()});
+function paintIn(){for(const[k,c]of[['nm','nonm'],['st','nost'],['ti','noti'],['pl','nopl']]){document.body.classList.toggle(c,!!IN[k]);$('#in_'+k).checked=!IN[k]}}
+['nm','st','ti','pl'].forEach(k=>$('#in_'+k).onchange=()=>{IN[k]=!$('#in_'+k).checked;try{localStorage.setItem('info',JSON.stringify(IN))}catch{}paintIn()});
 paintIn();
 $('#q').oninput=()=>{$('#qx').hidden=!$('#q').value;render()};
 $('#qx').onclick=()=>{$('#q').value='';$('#qx').hidden=true;render();$('#q').focus()};
