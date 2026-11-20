@@ -182,26 +182,64 @@ function ubiName(y) {
   if (n && /^[A-Za-z_0-9]+$/.test(n) && /localizations/.test(y)) { const m = y.match(new RegExp('^\\s+' + n.replace(/[^\w]/g, '') + ':\\s*"?(.*?)"?\\s*$', 'm')); if (m) n = m[1]; }
   return n.replace(/^'(.*)'$/, '$1');
 }
+// Pastas de cache possiveis: %LOCALAPPDATA% (versoes novas) ou a pasta de instalacao do Ubisoft Connect (versoes antigas)
+async function ubisoftCaches() {
+  const out = [];
+  if (process.env.RG_UBI_DIR) return [process.env.RG_UBI_DIR];
+  out.push(path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Game Launcher', 'cache'));
+  for (const [k, v] of [['HKLM\\SOFTWARE\\WOW6432Node\\Ubisoft\\Launcher', 'InstallDir'], ['HKLM\\SOFTWARE\\Ubisoft\\Launcher', 'InstallDir'], ['HKCU\\SOFTWARE\\Ubisoft\\Launcher', 'InstallDir'], ['HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Uplay', 'InstallLocation']]) {
+    const t = await reg([k, '/v', v]); const m = t.match(new RegExp('^\\s*' + v + '\\s+REG_\\w+\\s+(.+?)\\s*$', 'im'));
+    if (m) out.push(path.join(m[1].trim(), 'cache'));
+  }
+  out.push(path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Ubisoft', 'Ubisoft Game Launcher', 'cache'));
+  const seen = new Set(); return out.filter(x => { const k = x.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+}
+// valor da raiz do YAML do Ubisoft, resolvendo as chaves de traducao (ex.: name: l1 -> localizations.default.l1)
+function ubiRoot(y, key) {
+  const m = y.match(new RegExp('^  ' + key + ':[ \\t]*(.*)$', 'm')); if (!m) return null;
+  let v = m[1].trim().replace(/^["']|["']$/g, '');
+  if (v && /^[A-Za-z_0-9]+$/.test(v)) { const d = y.match(/^localizations:\s*\n\s+default:\s*\n((?:\s{4,}.*\n?)*)/m); if (d) { const r = d[1].match(new RegExp('^\\s+' + v + ':[ \\t]*(.+)$', 'm')); if (r) v = r[1].trim().replace(/^["']|["']$/g, ''); } }
+  return v;
+}
+const ubiBlock = (y, key) => { const m = y.match(new RegExp('^  ' + key + ':[ \\t]*\\n((?:   +.*\\n?)*)', 'm')); return m ? m[1] : ''; };
+const ubiOn = v => v != null && !['', '0', 'false', 'no', 'none', 'null'].includes(String(v).trim().toLowerCase());
 async function ubisoftLibrary() {
-  const base = process.env.RG_UBI_DIR || path.join(process.env.LOCALAPPDATA || '', 'Ubisoft Game Launcher', 'cache');
-  const od = path.join(base, 'ownership'), cf = path.join(base, 'configuration', 'configurations');
-  if (!isDir(od) || !fs.existsSync(cf)) return [];
-  const files = fs.readdirSync(od).map(f => path.join(od, f)).filter(f => fs.statSync(f).isFile()).sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  let od = '', cf = '', files = [];
+  for (const base of await ubisoftCaches()) {
+    const o = path.join(base, 'ownership'), c = path.join(base, 'configuration', 'configurations');
+    if (!isDir(o) || !fs.existsSync(c)) continue;
+    const fl = fs.readdirSync(o).filter(f => /^[a-f0-9-]{32,64}$/i.test(f)).map(f => path.join(o, f)).filter(f => { try { return fs.statSync(f).isFile(); } catch { return false; } });
+    if (fl.length) { od = o; cf = c; files = fl.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs); break; }
+  }
   if (!files.length) return [];
-  const own = fs.readFileSync(files[0]), cfg = new Map();
-  for (const [f, v] of pbParse(fs.readFileSync(cf))) { if (f !== 1 || typeof v === 'number') continue; try { const m = new Map(pbParse(v)); cfg.set(m.get(1), Buffer.from(m.get(3) || []).toString('utf8')); } catch {} }
-  let items; for (const off of [260, 4 + (own.readUInt32BE(0) || 0), 0]) { try { items = pbParse(own.subarray(off)); if (items.length) break; } catch { items = null; } }
-  if (!items) return [];
-  const out = [], seen = new Map(), skip = /\b(demo|trial|beta|test)\b/i;
+  const own = fs.readFileSync(files[0]);
+  // posse: registros no campo 1 (cabecalho de 0x108 bytes). Campo 4 = ativacao (chave), campo 17 = grupo (0 promocional, 3 assinatura Ubisoft+)
+  let items = null; for (const off of [0x108, 260, 4 + own.readUInt32LE(0)]) { try { const it = pbParse(own.subarray(off)); if (it.filter(([f, v]) => f === 1 && typeof v !== 'number').length) { items = it; break; } } catch {} }
+  if (!items) throw new Error('Ubisoft: não consegui ler a lista de jogos da conta.');
+  const ev = new Map();
   for (const [f, v] of items) {
     if (f !== 1 || typeof v === 'number') continue;
-    let m; try { m = new Map(pbParse(v)); } catch { continue; }
-    const id = m.get(1); if (!id || (m.get(6) || 0) !== 0) continue;
-    const y = cfg.get(id) || ''; if (!y || (y.length < 300 && /is_visible:\s*no/.test(y))) continue;
-    const name = clean(ubiName(y)); if (!name || skip.test(name)) continue;
-    const th = (y.match(/^\s*thumb_image:\s*(\S+)/m) || [])[1];
-    const item = { launcher: 'Ubisoft Connect', key: 'ubi:' + id, name, exe: '', uri: `uplay://launch/${id}/0`, owned: true, installed: false, cover: th && /^[\w.]+$/.test(th) ? 'https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/' + th : '', genres: [] };
-    const nk = name.toLowerCase().replace(/[^a-z0-9]/g, ''); if (seen.has(nk)) { const p = seen.get(nk); (p.alt = p.alt || []).push(item.key); continue; } seen.set(nk, item); out.push(item);
+    let m; try { m = pbParse(v); } catch { continue; }
+    const g = k => { const x = m.find(([a, b]) => a === k); return x ? x[1] : undefined; };
+    const act = m.some(([a, b]) => a === 4 && typeof b !== 'number' && b.length > 0), grp = g(17);
+    const e = { activation: act && grp !== 3, promo: grp === 0 };
+    for (const id of [g(1), g(2)]) if (typeof id === 'number' && id > 0) { const c = ev.get(id) || { activation: false, promo: false }; ev.set(id, { activation: c.activation || e.activation, promo: c.promo || e.promo }); }
+  }
+  const games = [];
+  for (const [f, v] of pbParse(fs.readFileSync(cf))) { if (f !== 1 || typeof v === 'number') continue; try { const m = new Map(pbParse(v)); games.push({ up: m.get(1), inst: m.get(2), y: Buffer.from(m.get(3) || []).toString('utf8') }); } catch {} }
+  const addons = new Set(); for (const g of games) for (const x of ubiBlock(g.y, 'addons').matchAll(/id:\s*(\d+)/g)) addons.add(+x[1]);
+  const out = [], seen = new Set(), names = new Set();
+  for (const g of games) {
+    const e1 = ev.get(g.up), e2 = ev.get(g.inst); if (!e1 && !e2) continue;
+    const ok = (e1 && (e1.activation || e1.promo)) || (e2 && (e2.activation || e2.promo)); if (!ok) continue; // so o que e seu (nao Ubisoft+)
+    const y = g.y; if (!/^  start_game:/m.test(y)) continue;
+    if (ubiOn(ubiRoot(y, 'third_party_platform')) || ubiBlock(y, 'third_party_platform') || /^(yes|true|1)$/i.test(ubiRoot(y, 'is_ulc') || '') || addons.has(g.up) || addons.has(g.inst)) continue;
+    let name = ubiRoot(y, 'name'); if (!name || /^(gamename|name|l1|ubisoft game)$/i.test(name)) name = ubiRoot(y, 'game_identifier') || '';
+    name = clean(name); if (!name || /\b(demo|trial|beta|test server)\b/i.test(name)) continue;
+    const id = e1 && (e1.activation || e1.promo) ? g.up : g.inst; if (!id || seen.has(id)) continue; seen.add(id);
+    const nk = name.toLowerCase().replace(/[^a-z0-9]/g, ''); if (names.has(nk)) continue; names.add(nk);
+    const th = ubiRoot(y, 'thumb_image');
+    out.push({ launcher: 'Ubisoft Connect', key: 'ubi:' + id, alt: ['ubi:' + g.up, 'ubi:' + g.inst], name, exe: '', uri: `uplay://launch/${id}/0`, owned: true, installed: false, cover: th && /^[\w-]+\.(jpg|jpeg|png|webp)$/i.test(th) ? 'https://static3.cdn.ubi.com/orbit/uplay_launcher_3_0/assets/' + th : '', genres: [] });
   }
   return out;
 }
@@ -422,7 +460,29 @@ async function gog(opt = {}) {
 let _sql = null;
 async function sqlOpen(file) {
   if (!_sql) { const init = require('sql.js'); _sql = await init({ wasmBinary: fs.readFileSync(require.resolve('sql.js/dist/sql-wasm.wasm')) }); }
-  return new _sql.Database(fs.readFileSync(file));
+  return new _sql.Database(walApply(fs.readFileSync(file), file + '-wal'));
+}
+// O GOG Galaxy (e outros) usam SQLite em modo WAL: com o launcher aberto, as mudancas recentes ficam no arquivo "-wal".
+// O sql.js le so o arquivo principal, entao aplicamos aqui as transacoes ja confirmadas do WAL.
+function walApply(db, walFile) {
+  let w; try { w = fs.readFileSync(walFile); } catch { return db; }
+  if (w.length < 32 || db.length < 100) return db;
+  const magic = w.readUInt32BE(0); if (magic !== 0x377f0682 && magic !== 0x377f0683) return db;
+  const ps = w.readUInt32BE(8), s1 = w.readUInt32BE(16), s2 = w.readUInt32BE(20);
+  if (!ps || ps & (ps - 1)) return db;
+  const committed = new Map(); let pend = new Map(), size = 0;
+  for (let o = 32; o + 24 + ps <= w.length; o += 24 + ps) {
+    if (w.readUInt32BE(o + 8) !== s1 || w.readUInt32BE(o + 12) !== s2) break;
+    const pg = w.readUInt32BE(o), commit = w.readUInt32BE(o + 4);
+    pend.set(pg, w.subarray(o + 24, o + 24 + ps));
+    if (commit) { for (const [k, v] of pend) committed.set(k, v); pend = new Map(); size = commit; }
+  }
+  if (!committed.size) return db;
+  const out = Buffer.alloc(Math.max(size, Math.ceil(db.length / ps)) * ps); db.copy(out, 0, 0, Math.min(db.length, out.length));
+  for (const [pg, data] of committed) if (pg >= 1 && pg <= out.length / ps) data.copy(out, (pg - 1) * ps);
+  const fin = size ? out.subarray(0, size * ps) : out;
+  fin[18] = 1; fin[19] = 1; // marca como "sem WAL" para o leitor em memoria
+  return fin;
 }
 async function gogLibrary() {
   const file = process.env.RG_GOG_DB || path.join(process.env.ProgramData || 'C:\\ProgramData', 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db');
@@ -433,6 +493,8 @@ async function gogLibrary() {
     const mins = {}; for (const [k, m] of all("SELECT releaseKey,minutesInGame FROM GameTimes WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\'")) mins[k] = m || 0;
     const last = {}; for (const [k, d] of all("SELECT gameReleaseKey,lastPlayedDate FROM LastPlayedDates WHERE gameReleaseKey LIKE 'gog\\_%' ESCAPE '\\'")) { const t = Date.parse(String(d).replace(' ', 'T') + 'Z'); if (t) last[k] = Math.floor(t / 1000); }
     // os ids de GamePieceTypes mudam de um PC para outro: busca pelo nome do tipo
+    // jogos que a conta possui (mesma regra do Galaxy: licenca propria, nao DLC, visivel na biblioteca)
+    const owned = new Set(all("SELECT DISTINCT l.releaseKey FROM LibraryReleases l JOIN LicensedReleases lic ON lic.libraryId = l.id AND lic.isOwned = 1 JOIN ReleaseProperties rp ON rp.releaseKey = l.releaseKey AND rp.isDlc = 0 AND rp.isVisibleInLibrary = 1 WHERE substr(l.releaseKey, 1, 4) = 'gog_'").map(r => r[0]));
     const T = {}; for (const [id, ty] of all("SELECT id,type FROM GamePieceTypes")) T[ty] = id;
     const tTitle = T.title ?? T.originalTitle, tImg = T.originalImages, tMeta = T.originalMeta ?? T.meta;
     if (tTitle === undefined) return [];
@@ -442,7 +504,7 @@ async function gogLibrary() {
     const skip = /game overlay|welcome gift|digital goodies|soundtrack|artbook|wallpaper|manual$/i, byName = new Map();
     for (const [k, p] of Object.entries(pc)) {
       const tt = (p[tTitle] && p[tTitle].title) || (p[T.originalTitle] && p[T.originalTitle].title);
-      if (hid.has(k) || !tt) continue;
+      if (hid.has(k) || !tt || (owned.size && !owned.has(k))) continue;
       const name = clean(String(tt).replace(/\s*-?\s*Amazon Prime$/i, '').trim());
       if (!name || skip.test(name)) continue;
       const im = p[tImg] || {}, me = p[tMeta] || {};
