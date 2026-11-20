@@ -531,7 +531,6 @@ function steamPlayRefresh(ids) {
 let steamLocalInfo = '';
 async function steamLocalImport() {
   await scanSteam();
-  steamExeFill();
   const have = new Set(data.games.filter(g => g.appid).map(g => g.appid)), ign = new Set(data.lIgnored || []);
   let novos = 0;
   for (const [appid, name] of steamNames) {
@@ -555,6 +554,7 @@ async function steamLocalImport() {
   } catch (e) { steamLocalInfo = 'erro ao ler o cache da Steam: ' + e.message; }
   if (steamNames.size && !(data.sidePlats || []).includes('Steam') && !(data.sideOff || []).includes('Steam')) data.sidePlats = [...(data.sidePlats || []), 'Steam'];
   if (novos) save();
+  steamExeFill(); // de novo: inclui os jogos que acabaram de entrar (instalacao limpa)
   return novos;
 }
 
