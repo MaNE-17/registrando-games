@@ -181,9 +181,9 @@ aside{overflow-x:hidden}
 #grid.detw{display:flex;padding:0;gap:0;overflow:hidden;height:100%;position:relative}
 .dback{position:absolute;left:18px;top:16px;z-index:6;display:inline-flex;align-items:center;gap:6px;padding:8px 14px 8px 10px;border-radius:10px;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(8px);border:1px solid color-mix(in srgb,var(--tx) 14%,transparent);font-weight:600}
 .dback:hover{background:color-mix(in srgb,var(--ac) 22%,var(--bg))}
-::-webkit-scrollbar{width:8px;height:8px;background:transparent}::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}::-webkit-scrollbar-button{display:none;width:0;height:0}
-::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--ac) 75%,transparent);border-radius:8px;border:2px solid transparent;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background:var(--ac);background-clip:padding-box}
-.nosb #side::-webkit-scrollbar{width:0;height:0}#side::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar{width:12px;height:12px;background:transparent}::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}::-webkit-scrollbar-button{display:none;width:0;height:0}
+::-webkit-scrollbar-thumb{background:var(--ac);border-radius:99px;border:3px solid transparent;background-clip:padding-box;min-height:40px}::-webkit-scrollbar-thumb:hover{border-width:2px}
+.nosb #side::-webkit-scrollbar{width:0;height:0}#side{margin-right:-14px;padding-right:8px}.nosb #side{margin-right:0;padding-right:0}
 #d{width:min(960px,96vw);padding:0;max-height:94vh;overflow:hidden}#d[open]{display:flex;flex-direction:column}
 #d .dh{margin:0;padding:14px 20px;border-bottom:1px solid var(--ln);cursor:grab;font-size:17px}
 .fld .row button{white-space:nowrap}
