@@ -180,12 +180,15 @@ function track() {
       if (pn && names.has(pn)) (g.rom ? emu : hit).push(g.rom ? [g, pn] : g);
     }
     const done = extra => {
-      running.clear();
+      const prev = new Set(running); running.clear();
       for (const g of [...hit, ...extra]) {
-        g.tracked_s = (g.tracked_s || 0) + 5; g.last_played = now(); running.add(g.id);
+        if (!g.appid) g.tracked_s = (g.tracked_s || 0) + 5; // Steam ja conta as horas dela
+        g.last_played = now(); running.add(g.id);
         if (g.status === 'Backlog') g.status = 'Jogando';
       }
       if (running.size && ++tick % 6 === 0) save();
+      const fechou = [...prev].filter(id => !running.has(id) && (data.games.find(x => x.id === id) || {}).appid);
+      if (fechou.length) { setTimeout(() => steamPlayRefresh(fechou), 15000); setTimeout(() => steamPlayRefresh(fechou), 60000); }
     };
     if (!emu.length) return done([]);
     // Jogos de emulador dividem o mesmo .exe: so conta o que tem a ROM na linha de comando do processo aberto
@@ -473,7 +476,7 @@ async function steamSync() {
 }
 
 // Jogos da Steam instalados: le libraryfolders.vdf e os appmanifest (StateFlags com bit 4 = instalado)
-let steamApps = new Set(), steamNames = new Map(), steamRoot = '';
+let steamApps = new Set(), steamNames = new Map(), steamRoot = '', steamDirs = new Map();
 function scanSteam() {
   if (process.platform !== 'win32') return Promise.resolve();
   return new Promise(done => cp.exec('reg query "HKCU\\Software\\Valve\\Steam" /v SteamPath', { windowsHide: true }, (err, out) => {
@@ -485,22 +488,50 @@ function scanSteam() {
       for (const x of v.matchAll(/"path"\s+"([^"]+)"/g)) libs.add(x[1].replace(/\\\\/g, '\\'));
       for (const x of v.matchAll(/"\d+"\s+"([A-Za-z]:[^"]+)"/g)) libs.add(x[1].replace(/\\\\/g, '\\'));
     } catch {}
-    const s = new Set(), names = new Map();
+    const s = new Set(), names = new Map(), dirs = new Map();
     for (const l of libs) {
       const dir = path.join(l, 'steamapps');
       let files = []; try { files = fs.readdirSync(dir); } catch {}
       for (const f of files) {
         const a = f.match(/^appmanifest_(\d+)\.acf$/); if (!a) continue;
-        try { const t = fs.readFileSync(path.join(dir, f), 'utf8'), fl = t.match(/"StateFlags"\s+"(\d+)"/), nm = t.match(/"name"\s+"([^"]+)"/); if (fl && (+fl[1] & 4)) { s.add(+a[1]); if (nm) names.set(+a[1], nm[1]); } } catch {}
+        try { const t = fs.readFileSync(path.join(dir, f), 'utf8'), fl = t.match(/"StateFlags"\s+"(\d+)"/), nm = t.match(/"name"\s+"([^"]+)"/), idr = t.match(/"installdir"\s+"([^"]+)"/); if (fl && (+fl[1] & 4)) { s.add(+a[1]); if (nm) names.set(+a[1], nm[1]); if (idr) dirs.set(+a[1], path.join(dir, 'common', idr[1])); } } catch {}
       }
     }
-    steamApps = s; steamNames = names; done();
+    const novos = [...s].filter(x => !steamApps.has(x)); steamApps = s; steamNames = names; steamDirs = dirs; done();
+    if (novos.length && data.games.some(g => g.appid && novos.includes(g.appid) && !g.exe)) setTimeout(() => steamExeFill(), 3000);
   }));
 }
 // Steam sem chave da API: importa os jogos instalados (lidos dos appmanifest). Com a API configurada, o steamSync completa o resto.
+// Preenche pasta e .exe dos jogos da Steam instalados (a partir das opcoes de inicializacao do cache da Steam).
+// O .exe serve para reconhecer o jogo rodando e para o botao Parar; o jogo continua abrindo pela Steam.
+function steamExeFill() {
+  try {
+    const want = data.games.filter(g => g.appid && steamDirs.has(g.appid) && (!g.exe || g.exeAuto)).map(g => g.appid);
+    if (!want.length || !steamRoot) return 0;
+    const info = STL.steamLaunchInfo(steamRoot, want); let n = 0;
+    for (const g of data.games) {
+      if (!g.appid || !want.includes(g.appid)) continue;
+      const dir = steamDirs.get(g.appid), li = info.get(g.appid); if (!dir || !li) continue;
+      const exe = path.join(dir, li.exe); if (!fs.existsSync(exe)) continue;
+      if (g.exe !== exe) { g.exe = exe; g.exeAuto = 1; g.instDir = dir; n++; }
+    }
+    if (n) save();
+    return n;
+  } catch { return 0; }
+}
+// Depois que um jogo da Steam fecha, a Steam grava o tempo novo no localconfig.vdf: puxa de la (sem contar em dobro)
+function steamPlayRefresh(ids) {
+  try {
+    const pt = STL.steamLocalPlaytime(steamRoot); let ch = 0;
+    for (const g of data.games) { if (!ids.includes(g.id) || !g.appid) continue; const p = pt[String(g.appid)] || {}; const mm = +p.playtime || 0, lp = +p.lastplayed || 0;
+      if (mm > (g.steam_min || 0)) { g.steam_min = mm; ch++; } if (lp > (g.last_played || 0)) { g.last_played = lp; ch++; } }
+    if (ch) save();
+  } catch {}
+}
 let steamLocalInfo = '';
 async function steamLocalImport() {
   await scanSteam();
+  steamExeFill();
   const have = new Set(data.games.filter(g => g.appid).map(g => g.appid)), ign = new Set(data.lIgnored || []);
   let novos = 0;
   for (const [appid, name] of steamNames) {
@@ -744,6 +775,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       config: { updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
+      if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
       for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'cat', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
@@ -828,6 +860,10 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (g.uri && g.lkey && (launcherInst.has(g.lkey) || !g.exe || !fs.existsSync(g.exe))) {
         if (/^shell:/i.test(g.uri)) cp.spawn('explorer.exe', [g.uri], { detached: true, stdio: 'ignore' }).unref(); else await shell.openExternal(g.uri);
       }
+      else if (g.appid && (g.exeAuto || !g.exe)) {
+        const a = String(g.args || '').trim();
+        await shell.openExternal(a ? `steam://run/${g.appid}//${encodeURIComponent(a)}/` : 'steam://rungameid/' + g.appid);
+      }
       else if (g.exe && fs.existsSync(g.exe)) {
         const cwd = g.cwd && isDirP(g.cwd) ? g.cwd : '', args = parseArgs(g.args);
         if (args.length || (cwd && cwd.replace(/[\\/]+$/, '').toLowerCase() !== path.dirname(g.exe).toLowerCase())) {
@@ -846,6 +882,17 @@ ipcMain.handle('api', async (_e, p, b) => {
       else return { error: 'Vincule o executável (.exe) do jogo para poder jogar por aqui.' };
       if (g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando';
       g.last_played = now(); save(); setTimeout(track, 4000); return { ok: true };
+    }
+    case 'stop': {
+      if (!g || !g.exe) return { error: 'Esse jogo não tem .exe vinculado.' };
+      const pn = (g.proc || path.win32.basename(g.exe)).replace(/"/g, '');
+      const vivo = () => new Promise(r => cp.execFile('tasklist', ['/fi', `IMAGENAME eq ${pn}`, '/fo', 'csv', '/nh'], { windowsHide: true }, (e, o) => r(!e && String(o).toLowerCase().includes('"' + pn.toLowerCase() + '"'))));
+      const kill = f => new Promise(r => cp.execFile('taskkill', [...(f ? ['/F'] : []), '/T', '/IM', pn], { windowsHide: true }, () => r()));
+      await kill(false);
+      for (let i = 0; i < 10 && await vivo(); i++) await new Promise(r => setTimeout(r, 500));
+      if (await vivo()) { await kill(true); await new Promise(r => setTimeout(r, 1200)); }
+      if (await vivo()) return { error: 'Não consegui fechar o jogo (ele pode estar protegido por anticheat).' };
+      setTimeout(track, 500); return { ok: true };
     }
     case 'list_save': {
       const l = data.lists.find(x => x.id === b.id);

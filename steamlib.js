@@ -131,7 +131,9 @@ function readApps(file, wanted) {
       try {
         const st = { i: i + 8 + 4 + 4 + 8 + 20 + 4 + (ver >= 40 ? 20 : 0) };
         const d = kvBin(buf, st, table), root = d.appinfo || d, c = root.common || {};
-        out.set(id, { name: String(c.name || '').trim(), type: String(c.type || '').toLowerCase() });
+        const cf = root.config || {}, launch = [];
+        for (const l of Object.values(cf.launch || {})) { if (!l || typeof l !== 'object') continue; const os = String(((l.config || {}).oslist) || ''); launch.push({ exe: String(l.executable || ''), args: String(l.arguments || ''), type: String(l.type || '').toLowerCase(), os, beta: !!(l.config || {}).betakey }); }
+        out.set(id, { name: String(c.name || '').trim(), type: String(c.type || '').toLowerCase(), installdir: String(cf.installdir || ''), launch });
       } catch {}
     }
     i = recEnd;
@@ -168,4 +170,22 @@ function steamOwnedLocal(steamRoot) {
   return { games, sid: a.sid, packages: pkgs.size };
 }
 
-module.exports = { steamOwnedLocal, vdfText, licenseXor, kvBin };
+// .exe principal de cada app instalado (opcao de inicializacao padrao para Windows), relativo a pasta do jogo
+function steamLaunchInfo(steamRoot, appids) {
+  const meta = readApps(path.join(steamRoot, 'appcache', 'appinfo.vdf'), new Set(appids)), out = new Map();
+  for (const [id, m] of meta) {
+    const ok = m.launch.filter(l => /\.exe$/i.test(l.exe) && !l.beta && (!l.os || /windows/i.test(l.os)) && !/\b(server|editor|sdk|benchmark|config|setup|launcher_?config)\b/i.test(l.exe));
+    const pick = ok.find(l => !l.type || l.type === 'default' || l.type === 'none') || ok[0];
+    if (pick) out.set(id, { exe: pick.exe.replace(/\//g, '\\').replace(/^\.?\\/, ''), args: pick.args });
+  }
+  return out;
+}
+function steamLocalPlaytime(steamRoot) {
+  let dirs = []; try { dirs = fs.readdirSync(path.join(steamRoot, 'userdata')).filter(d => /^\d+$/.test(d) && d !== '0'); } catch {}
+  let best = null, bt = 0;
+  for (const d of dirs) { const f = path.join(steamRoot, 'userdata', d, 'config', 'localconfig.vdf'); try { const t = fs.statSync(f).mtimeMs; if (t > bt) { bt = t; best = f; } } catch {} }
+  if (!best) return {};
+  try { const lc = vdfText(fs.readFileSync(best, 'utf8')); return ((((((lc.userlocalconfigstore || {}).software || {}).valve || {}).steam || {}).apps) || {}); } catch { return {}; }
+}
+
+module.exports = { steamOwnedLocal, steamLaunchInfo, steamLocalPlaytime, vdfText, licenseXor, kvBin };
