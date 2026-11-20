@@ -114,6 +114,32 @@ function readPackages(file, wanted) {
   }
   return map;
 }
+// Steam 2026+: o appinfo.vdf virou 256 arquivos appcache\appinfo\appinfo_XX.vdf (versao 42).
+// Cabecalho (44 bytes): magic, universo, n do arquivo, total(256), qtd de apps, tam. do indice, qtd de strings, tam. das strings, tam. dos dados, 8 bytes.
+// Indice: 80 bytes por app (appid, deslocamento, tamanho, ...). Cada registro: 20 bytes de hash + KeyValues binario usando a tabela de strings.
+function readAppsShard(buf, wanted, out) {
+  const magic = buf.readUInt32LE(0); if ((magic & 0xffffff00) !== 0x07564400 || (magic & 0xff) < 42) throw new Error('appinfo_XX desconhecido');
+  const cnt = buf.readUInt32LE(16), idxSize = buf.readUInt32LE(20), nStr = buf.readUInt32LE(24), strSize = buf.readUInt32LE(28);
+  const H = 44, entSize = cnt ? idxSize / cnt : 80, strStart = H + idxSize, dataStart = strStart + strSize;
+  const table = new Array(nStr); let p = strStart;
+  for (let k = 0; k < nStr; k++) { const z = buf.indexOf(0, p); table[k] = buf.toString('utf8', p, z); p = z + 1; }
+  for (let k = 0; k < cnt; k++) {
+    const e = H + k * entSize, id = buf.readUInt32LE(e); if (!wanted.has(id)) continue;
+    const off = buf.readUInt32LE(e + 4);
+    try {
+      const st = { i: dataStart + off + 20 }, d = kvBin(buf, st, table), root = d.appinfo || d, c = root.common || {}, cf = root.config || {}, launch = [];
+      for (const l of Object.values(cf.launch || {})) { if (!l || typeof l !== 'object') continue; const os = String(((l.config || {}).oslist) || ''); launch.push({ exe: String(l.executable || ''), args: String(l.arguments || ''), type: String(l.type || '').toLowerCase(), os, beta: !!(l.config || {}).betakey }); }
+      out.set(id, { name: String(c.name || '').trim(), type: String(c.type || '').toLowerCase(), installdir: String(cf.installdir || ''), launch });
+    } catch {}
+  }
+}
+function appsAny(steamRoot, wanted) {
+  const one = path.join(steamRoot, 'appcache', 'appinfo.vdf'), dir = path.join(steamRoot, 'appcache', 'appinfo');
+  let shards = []; try { shards = fs.readdirSync(dir).filter(f => /^appinfo_[0-9a-f]{2}\.vdf$/i.test(f)); } catch {}
+  if (shards.length) { const out = new Map(); for (const f of shards) { if (out.size >= wanted.size) break; try { readAppsShard(fs.readFileSync(path.join(dir, f)), wanted, out); } catch {} } if (out.size || !fs.existsSync(one)) return out; }
+  return readApps(one, wanted);
+}
+const hasAppinfo = r => fs.existsSync(path.join(r, 'appcache', 'appinfo.vdf')) || fs.existsSync(path.join(r, 'appcache', 'appinfo'));
 function readApps(file, wanted) {
   const buf = fs.readFileSync(file), magic = buf.readUInt32LE(0), ver = magic & 0xff;
   if ((magic & 0xffffff00) !== 0x07564400) throw new Error('appinfo.vdf desconhecido');
@@ -144,7 +170,7 @@ function readApps(file, wanted) {
 // ---------- principal ----------
 const ID0 = 76561197960265728n;
 function steamOwnedLocal(steamRoot) {
-  if (!steamRoot || !fs.existsSync(path.join(steamRoot, 'appcache', 'appinfo.vdf'))) return { games: [], why: 'Steam não encontrada neste PC.' };
+  if (!steamRoot || !hasAppinfo(steamRoot)) return { games: [], why: 'Steam não encontrada neste PC.' };
   let users = {}; try { users = vdfText(fs.readFileSync(path.join(steamRoot, 'config', 'loginusers.vdf'), 'utf8')).users || {}; } catch {}
   const accs = [];
   let dirs = []; try { dirs = fs.readdirSync(path.join(steamRoot, 'userdata')).filter(d => /^\d+$/.test(d) && d !== '0'); } catch {}
@@ -159,7 +185,7 @@ function steamOwnedLocal(steamRoot) {
   if (!pkgs.size) return { games: [], why: 'Não consegui ler as licenças da conta da Steam.', sid: a.sid };
   const pm = readPackages(path.join(steamRoot, 'appcache', 'packageinfo.vdf'), pkgs), apps = new Set();
   for (const ids of pm.values()) for (const x of ids) apps.add(x);
-  const meta = readApps(path.join(steamRoot, 'appcache', 'appinfo.vdf'), apps);
+  const meta = appsAny(steamRoot, apps);
   let play = {}; try { const lc = vdfText(fs.readFileSync(path.join(a.dir, 'config', 'localconfig.vdf'), 'utf8')); play = ((((((lc.userlocalconfigstore || {}).software || {}).valve || {}).steam || {}).apps) || {}); } catch {}
   const games = [];
   for (const id of apps) {
@@ -172,7 +198,7 @@ function steamOwnedLocal(steamRoot) {
 
 // .exe principal de cada app instalado (opcao de inicializacao padrao para Windows), relativo a pasta do jogo
 function steamLaunchInfo(steamRoot, appids) {
-  const meta = readApps(path.join(steamRoot, 'appcache', 'appinfo.vdf'), new Set(appids)), out = new Map();
+  const meta = appsAny(steamRoot, new Set(appids)), out = new Map();
   for (const [id, m] of meta) {
     const ok = m.launch.filter(l => /\.exe$/i.test(l.exe) && !l.beta && (!l.os || /windows/i.test(l.os)) && !/\b(server|editor|sdk|benchmark|config|setup|launcher_?config)\b/i.test(l.exe));
     const pick = ok.find(l => !l.type || l.type === 'default' || l.type === 'none') || ok[0];
