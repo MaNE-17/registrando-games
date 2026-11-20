@@ -963,6 +963,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
     case 'wall_attach': { if (!g || !/^tmp-wp-\d+\.\w+$/.test(String(b.file || ''))) return { ok: false }; const src = path.join(COVERS(), b.file); if (!fs.existsSync(src)) return { ok: false }; rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${path.extname(b.file)}`; fs.renameSync(src, path.join(COVERS(), g.wall)); save(); return { ok: true }; }
+    case 'img_local': { if (!g) return { error: 'Salve o jogo primeiro.' }; if (!/^data:image\//.test(String(b.data || '')) || !['logo', 'wall'].includes(b.kind)) return { error: 'Imagem inválida.' }; return await wallSave(g, b.data, b.kind); }
     case 'logo_clear': if (g) { rmLogo(g); g.sgl = 1; save(); } return { ok: true };
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
     case 'cover_clear': if (g) { rmCover(g); g.sgc = 1; save(); } return { ok: true };
