@@ -1,6 +1,6 @@
 {
   "name": "registrando-games",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Registrando Games",
   "author": "Registrando Games",
   "main": "main.js",
@@ -36,7 +36,7 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": false,
+      "allowToChangeInstallationDirectory": true,
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
