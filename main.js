@@ -135,6 +135,7 @@ async function diagReport() {
   for (const [n, p] of [['GOG Galaxy', path.join(pd, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')], ['Epic (novo)', path.join(la, 'com.epicgames.eglv2')], ['Epic (antigo)', path.join(pd, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests')], ['Ubisoft cache', path.join(la, 'Ubisoft Game Launcher', 'cache')], ['EA ProgramData', path.join(pd, 'EA Desktop')], ['EA conta', path.join(la, 'Electronic Arts', 'EA Desktop')], ['Battle.net logs', path.join(la, 'Battle.net', 'Logs')], ['Battle.net cache', path.join(la, 'Battle.net', 'Cache')], ['Amazon Games', path.join(la, 'Amazon Games', 'Data', 'Games', 'Sql')]]) L.push(n + ': ' + ex(p) + '  (' + p + ')');
   L.push('', '== Steam');
   try { await scanSteam(); L.push('Pasta da Steam: ' + steamRoot + ' (' + (fs.existsSync(steamRoot) ? 'existe' : 'não existe') + ') | instalados lidos: ' + steamNames.size); } catch (e) { L.push('Steam: erro ' + e.message); }
+  try { steamExeFill(); L.push('Pasta/.exe dos instalados: ' + steamExeInfo + ' | pastas lidas: ' + steamDirs.size); } catch (e) { L.push('Pasta/.exe: ERRO ' + e.message); }
   try { const r = STL.steamOwnedLocal(steamRoot); L.push('Biblioteca pelo cache local: ' + (r.why || r.games.length + ' jogo(s), ' + r.packages + ' licença(s)')); } catch (e) { L.push('Biblioteca pelo cache local: ERRO ' + e.message); }
   L.push('', '== Busca nos launchers');
   for (const n of LCH.NAMES) {
@@ -504,20 +505,25 @@ function scanSteam() {
 // Steam sem chave da API: importa os jogos instalados (lidos dos appmanifest). Com a API configurada, o steamSync completa o resto.
 // Preenche pasta e .exe dos jogos da Steam instalados (a partir das opcoes de inicializacao do cache da Steam).
 // O .exe serve para reconhecer o jogo rodando e para o botao Parar; o jogo continua abrindo pela Steam.
+let steamExeInfo = '';
 function steamExeFill() {
+  const st = { comAppid: 0, instalados: 0, semInfo: [], semArq: [], ok: 0 };
   try {
+    st.comAppid = data.games.filter(g => g.appid).length; st.instalados = data.games.filter(g => g.appid && steamDirs.has(g.appid)).length;
     const want = data.games.filter(g => g.appid && steamDirs.has(g.appid) && (!g.exe || g.exeAuto)).map(g => g.appid);
-    if (!want.length || !steamRoot) return 0;
+    if (!want.length || !steamRoot) { steamExeInfo = `jogos com appid: ${st.comAppid}, instalados (com pasta): ${st.instalados}, para preencher: 0, pasta da Steam: ${steamRoot || '(não achei)'}`; return 0; }
     const info = STL.steamLaunchInfo(steamRoot, want); let n = 0;
     for (const g of data.games) {
       if (!g.appid || !want.includes(g.appid)) continue;
-      const dir = steamDirs.get(g.appid), li = info.get(g.appid); if (!dir || !li) continue;
-      const exe = path.join(dir, li.exe); if (!fs.existsSync(exe)) continue;
+      const dir = steamDirs.get(g.appid), li = info.get(g.appid); if (!dir || !li) { st.semInfo.push(g.name); continue; }
+      const exe = path.join(dir, li.exe); if (!fs.existsSync(exe)) { st.semArq.push(g.name + ' -> ' + exe); continue; }
+      st.ok++;
       if (g.exe !== exe) { g.exe = exe; g.exeAuto = 1; g.instDir = dir; n++; }
     }
     if (n) save();
+    steamExeInfo = `jogos com appid: ${st.comAppid}, instalados: ${st.instalados}, .exe ok: ${st.ok}, sem opção de inicialização: ${st.semInfo.length} ${st.semInfo.slice(0, 5).join('; ')}, .exe não encontrado: ${st.semArq.length} ${st.semArq.slice(0, 5).join('; ')}`;
     return n;
-  } catch { return 0; }
+  } catch (e) { steamExeInfo = 'ERRO ' + (e && e.stack || e); return 0; }
 }
 // Depois que um jogo da Steam fecha, a Steam grava o tempo novo no localconfig.vdf: puxa de la (sem contar em dobro)
 function steamPlayRefresh(ids) {
