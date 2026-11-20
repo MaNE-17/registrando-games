@@ -858,6 +858,8 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'play': {
       if (!g) return {};
+      if (b.install && g.appid && !steamApps.has(g.appid)) { await shell.openExternal('steam://install/' + g.appid); return { ok: true }; }
+      if (b.install && g.lkey && !launcherInst.has(g.lkey)) { const id = g.lkey.split(':')[1] || ''; if (g.platform === 'GOG' && /^\d+$/.test(id)) { await shell.openExternal('goggalaxy://openGameView/' + id); return { ok: true }; } if (g.uri) { if (/^shell:/i.test(g.uri)) cp.spawn('explorer.exe', [g.uri], { detached: true, stdio: 'ignore' }).unref(); else await shell.openExternal(g.uri); return { ok: true }; } return { error: 'Abra o launcher dele para instalar.' }; }
       if (g.lkey && !g.appid && !launcherInst.has(g.lkey) && !(g.exe && fs.existsSync(g.exe)) && !g.uri) {
         const id = g.lkey.split(':')[1] || '';
         if (g.platform === 'GOG' && /^\d+$/.test(id)) { try { await shell.openExternal('goggalaxy://openGameView/' + id); } catch {} return { ok: true }; }
