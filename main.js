@@ -132,7 +132,7 @@ async function diagReport() {
   L.push('Pasta de dados: ' + DATA_DIR + ' | jogos: ' + data.games.length + ' | barra lateral: ' + JSON.stringify(data.sidePlats || 'padrão'));
   L.push('Auto atualizar ao abrir: ' + (data.autoRefresh !== false) + ' | Steam API: chave ' + (data.config.key ? 'preenchida' : 'vazia') + ', SteamID ' + (data.config.steamid ? 'preenchido' : 'vazio'));
   L.push('', '== Pastas dos launchers');
-  for (const [n, p] of [['GOG Galaxy', path.join(pd, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')], ['Epic (novo)', path.join(la, 'com.epicgames.eglv2')], ['Epic (antigo)', path.join(pd, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests')], ['Ubisoft cache', path.join(la, 'Ubisoft Game Launcher', 'cache')], ['EA ProgramData', path.join(pd, 'EA Desktop')], ['EA conta', path.join(la, 'Electronic Arts', 'EA Desktop')], ['Battle.net logs', path.join(la, 'Battle.net', 'Logs')], ['Battle.net cache', path.join(la, 'Battle.net', 'Cache')]]) L.push(n + ': ' + ex(p) + '  (' + p + ')');
+  for (const [n, p] of [['GOG Galaxy', path.join(pd, 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db')], ['Epic (novo)', path.join(la, 'com.epicgames.eglv2')], ['Epic (antigo)', path.join(pd, 'Epic', 'EpicGamesLauncher', 'Data', 'Manifests')], ['Ubisoft cache', path.join(la, 'Ubisoft Game Launcher', 'cache')], ['EA ProgramData', path.join(pd, 'EA Desktop')], ['EA conta', path.join(la, 'Electronic Arts', 'EA Desktop')], ['Battle.net logs', path.join(la, 'Battle.net', 'Logs')], ['Battle.net cache', path.join(la, 'Battle.net', 'Cache')], ['Amazon Games', path.join(la, 'Amazon Games', 'Data', 'Games', 'Sql')]]) L.push(n + ': ' + ex(p) + '  (' + p + ')');
   L.push('', '== Steam');
   try { await scanSteam(); L.push('Pasta da Steam: ' + steamRoot + ' (' + (fs.existsSync(steamRoot) ? 'existe' : 'não existe') + ') | instalados lidos: ' + steamNames.size); } catch (e) { L.push('Steam: erro ' + e.message); }
   try { const r = STL.steamOwnedLocal(steamRoot); L.push('Biblioteca pelo cache local: ' + (r.why || r.games.length + ' jogo(s), ' + r.packages + ' licença(s)')); } catch (e) { L.push('Biblioteca pelo cache local: ERRO ' + e.message); }
@@ -571,7 +571,6 @@ async function launchersImport(opt = {}) {
     const ign = new Set(data.lIgnored || []);
     const nzk = s => nzn(s);
     for (const n of LCH.NAMES.filter(x => want.includes(x))) {
-      if ((force || (opt.discover && !(data.sideOff || []).includes(n))) && (found[n] || []).length && !(data.sidePlats || []).includes(n)) data.sidePlats = [...(data.sidePlats || []), n];
       let novos = 0;
       for (const f of found[n] || []) {
         if (f.installed !== false) inst.add(f.key);
@@ -588,6 +587,7 @@ async function launchersImport(opt = {}) {
         if (f.installed !== false && g.cat) delete g.cat; // reinstalou: volta para a barra lateral
         if (f.exe && (!g.exe || !fs.existsSync(g.exe))) g.exe = f.exe;
       }
+      if ((force || (opt.discover && !(data.sideOff || []).includes(n))) && data.games.some(g => g.platform === n && !g.hidden) && !(data.sidePlats || []).includes(n)) data.sidePlats = [...(data.sidePlats || []), n];
       counts[n] = { total: (found[n] || []).length, novos, err: (found[n] && found[n].err) || found[n + '_err'] || '' };
     }
     launcherInst = inst; save();

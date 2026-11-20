@@ -2,7 +2,7 @@
 // Tudo e lido do proprio computador: nenhuma conta, chave ou login.
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 
-const NAMES = ['Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass'];
+const NAMES = ['Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Amazon Games', 'Game Pass'];
 // Todos os launchers de PC que podem ir para a barra lateral (os que nao tem deteccao so servem de filtro)
 const CATALOG = ['Steam', 'Epic Games', 'GOG', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass', 'itch.io', 'Amazon Games', 'Riot Games', 'Humble Bundle'];
 const SIDE_DEF = ['Steam', 'Epic Games', 'Ubisoft Connect', 'EA app', 'Battle.net', 'Game Pass'];
@@ -427,7 +427,7 @@ async function sqlOpen(file) {
 async function gogLibrary() {
   const file = process.env.RG_GOG_DB || path.join(process.env.ProgramData || 'C:\\ProgramData', 'GOG.com', 'Galaxy', 'storage', 'galaxy-2.0.db');
   if (!fs.existsSync(file)) return [];
-  const db = await sqlOpen(file), all = (q) => { const r = db.exec(q); return r.length ? r[0].values : []; }, out = [];
+  const db = await sqlOpen(file), all = (q) => { try { const r = db.exec(q); return r.length ? r[0].values : []; } catch { return []; } }, out = [];
   try {
     const hid = new Set(all("SELECT releaseKey FROM UserReleaseProperties WHERE isHidden=1").map(r => r[0]));
     const mins = {}; for (const [k, m] of all("SELECT releaseKey,minutesInGame FROM GameTimes WHERE releaseKey LIKE 'gog\\_%' ESCAPE '\\'")) mins[k] = m || 0;
@@ -455,9 +455,42 @@ async function gogLibrary() {
   return out;
 }
 
+// Amazon Games: %LOCALAPPDATA%\Amazon Games\Data\Games\Sql
+//  - GameInstallInfo.sqlite (tabela DbSet): jogos instalados
+//  - Entitlements.sqlite (tabela game_entitlements): biblioteca da conta; cada item e um JSON protegido pelo Windows (DPAPI do usuario)
+const AMZ_PS = "$ErrorActionPreference='Stop';Add-Type -AssemblyName System.Security;[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);$r=[Console]::In.ReadToEnd()|ConvertFrom-Json;$o=foreach($e in @($r)){try{$p=[Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String([string]$e),$null,[Security.Cryptography.DataProtectionScope]::CurrentUser);$j=[Text.Encoding]::UTF8.GetString($p)|ConvertFrom-Json;[pscustomobject]@{id=[string]$j.ProductIdStr;t=[string]$j.ProductTitle;l=[string]$j.ProductLine;s=[string]$j.State}}catch{[pscustomobject]@{id='';t='';l='';s=''}}};[Console]::Write((ConvertTo-Json -InputObject @($o) -Compress -Depth 3))";
+function dpapiAmazon(blobs) {
+  if (process.env.RG_AMZ_PLAIN) return Promise.resolve(blobs.map(b => { try { const j = JSON.parse(Buffer.from(b, 'base64').toString('utf8')); return { id: j.ProductIdStr, t: j.ProductTitle, l: j.ProductLine, s: j.State }; } catch { return {}; } }));
+  if (process.platform !== 'win32' || !blobs.length) return Promise.resolve([]);
+  return new Promise(res => {
+    const c = cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', AMZ_PS], { windowsHide: true, timeout: 30000, maxBuffer: 16 << 20 }, (e, out) => { try { const j = JSON.parse(String(out || '').trim() || '[]'); res(Array.isArray(j) ? j : [j]); } catch { res([]); } });
+    c.stdin.end(JSON.stringify(blobs));
+  });
+}
+async function amazon(opt = {}) {
+  const sq = process.env.RG_AMZ || path.join(process.env.LOCALAPPDATA || '', 'Amazon Games', 'Data', 'Games', 'Sql');
+  const out = [], keys = new Set(), nm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const rows = async (file, q) => { if (!fs.existsSync(file)) return []; const db = await sqlOpen(file); try { const r = db.exec(q); return r.length ? r[0].values : []; } catch { return []; } finally { db.close(); } };
+  for (const [id, title, dir] of await rows(path.join(sq, 'GameInstallInfo.sqlite'), 'SELECT Id, ProductTitle, InstallDirectory FROM DbSet WHERE Installed = 1')) {
+    if (!id || !dir || !isDir(String(dir))) continue;
+    const key = 'amazon:' + id; if (keys.has(key)) continue; keys.add(key);
+    out.push({ launcher: 'Amazon Games', key, name: clean(String(title || PB(String(dir)))), exe: guessExe(String(dir)), uri: 'amazon-games://play/' + id, installed: true });
+  }
+  if (opt.light) return out;
+  const ent = await rows(path.join(sq, 'Entitlements.sqlite'), 'SELECT value FROM game_entitlements');
+  const blobs = ent.map(([v]) => v instanceof Uint8Array ? Buffer.from(v).toString('base64') : String(v || '')).filter(Boolean);
+  const GAME = new Set(['Sonic:Game', 'Twitch:FuelGame']);
+  for (const r of await dpapiAmazon(blobs)) {
+    if (!r || !r.id || !r.t || r.s !== 'LIVE' || !GAME.has(r.l)) continue;
+    const key = 'amazon:' + r.id; if (keys.has(key) || out.some(o => nm(o.name) === nm(r.t))) continue; keys.add(key);
+    out.push({ launcher: 'Amazon Games', key, name: clean(r.t), exe: '', uri: 'amazon-games://play/' + r.id, owned: true, installed: false, cover: '', genres: [] });
+  }
+  return out;
+}
+
 async function scanAll(only, opt = {}) {
   const res = {};
-  for (const [n, f] of [['Epic Games', async o => epic(o)], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Game Pass', gamepass]]) {
+  for (const [n, f] of [['Epic Games', async o => epic(o)], ['GOG', gog], ['Ubisoft Connect', ubisoft], ['EA app', ea], ['Battle.net', battlenet], ['Amazon Games', amazon], ['Game Pass', gamepass]]) {
     if (only && !only.includes(n)) continue;
     if (opt.light && n === 'Game Pass') continue;
     try { res[n] = await f(opt); } catch (e) { res[n] = []; res[n + '_err'] = e.message; }
