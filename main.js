@@ -922,6 +922,20 @@ ipcMain.handle('api', async (_e, p, b) => {
       const l = data.lists.find(x => x.id === b.list); if (!l) return {};
       l.ids = l.ids.includes(b.game) ? l.ids.filter(i => i !== b.game) : [...l.ids, b.game]; save(); return { ok: true };
     }
+    case 'bt_batt': {
+      if (process.platform !== 'win32') return { list: [] };
+      if (BTB.t && Date.now() - BTB.t < 20000 && !b.force) return { list: BTB.list };
+      if (!BTB.p) BTB.p = new Promise(res => {
+        const ps = "$k='{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2';$o=@();Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -match '^(BTHENUM|BTHLE|BTHLEDEVICE|BTHHFENUM)' } | ForEach-Object { $d=$_; $b=(Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName $k -ErrorAction SilentlyContinue).Data; if ($b -ne $null) { $o += [pscustomobject]@{n=$d.FriendlyName;b=[int]$b;c=[string]$d.Class;s=[string]$d.Status} } }; ConvertTo-Json -Compress -InputObject @($o)";
+        cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', ps], { windowsHide: true, timeout: 25000, maxBuffer: 4e6 }, (e, out) => {
+          let list = []; try { const j = JSON.parse(String(out || '').trim() || '[]'); list = (Array.isArray(j) ? j : [j]).filter(x => x && x.n && x.s === 'OK'); } catch {}
+          const clean = n => String(n).replace(/\s+(Hands-?Free( AG)?( Audio)?|Stereo|Avrcp Transport|A2DP|LE|AG Audio)\s*$/i, '').trim();
+          const by = new Map(); for (const x of list) { const n = clean(x.n), k = n.toLowerCase(); const cur = by.get(k); if (!cur || (x.b > 0 && cur.b === 0)) by.set(k, { name: n, battery: x.b, cls: x.c }); }
+          BTB.list = [...by.values()]; BTB.t = Date.now(); BTB.p = null; res();
+        });
+      });
+      await BTB.p; return { list: BTB.list };
+    }
     case 'snd_pick': {
       const ev = String(b.ev || '').replace(/[^a-z]/g, '').slice(0, 12) || 'som';
       const r = await dialog.showOpenDialog(win, { title: 'Escolher som', properties: ['openFile'], filters: [{ name: 'Áudio', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'opus', 'webm'] }] });
@@ -1058,6 +1072,7 @@ ipcMain.handle('api', async (_e, p, b) => {
 });
 
 // ---- Controles (SDL3 num processo separado) ----
+const BTB = { t: 0, list: [], p: null };
 const PAD = { ok: false, err: '', sdl: '', pads: [], proc: null, tries: 0 };
 function padStart() {
   try {

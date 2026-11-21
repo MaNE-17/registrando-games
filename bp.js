@@ -2,7 +2,7 @@
 // Usa as funcoes e o estado do index.html (S, api, play, load, coverSrc, wallSrc...).
 (()=>{
 const BP={on:false,th:'orig',scr:'home',hist:[],style:'kb',padOk:null,
- home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:'',sort:'name',f:{}},det:{g:null,f:0},cfg:{i:0},ed:{i:1},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
+ home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:'',sort:'name',f:{}},det:{g:null,f:0},cfg:{i:0},ed:{i:1},dev:{i:0,bt:null,t:0},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
 try{const t=localStorage.getItem('bpth');if(t==='ps')BP.th=t}catch{}
 const BPTH=[['orig','Registrando Games'],['ps','PlayStation']];
 BP.pads={};BP.cz=100;try{const o=JSON.parse(localStorage.getItem('bplib')||'{}');if(o.sort)BP.lib.sort=o.sort;if(o.f)BP.lib.f=o.f}catch{}try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
@@ -31,6 +31,7 @@ bpEl.innerHTML=`<div class="bp-bg"><div class="bp-bgi"></div><div class="bp-bgi"
 <section class="bp-scr" id="bps-det" hidden></section>
 <section class="bp-scr" id="bps-srch" hidden><div class="sr-q" id="srq"></div><div class="bl-g" id="srg"></div></section>
 <section class="bp-scr" id="bps-edit" hidden><div class="bc-l" id="bel"></div></section>
+<section class="bp-scr" id="bps-dev" hidden><div class="bc-l" id="bdl"></div></section>
 <section class="bp-scr" id="bps-cfg" hidden><div class="bc-l" id="bcl"></div></section>
 <div class="bp-foot" id="bpfoot"></div>
 <div class="bp-side" id="bpside"></div>
@@ -75,7 +76,7 @@ function bpBg(g){const sig=g?g.id+'|'+wallSrc(g)+'|'+coverSrc(g):'';if(sig===BGL
 let BPTT=0;function bpToast(t){const e=bq('#bptoast');e.textContent=t;e.classList.add('on');clearTimeout(BPTT);BPTT=setTimeout(()=>e.classList.remove('on'),2600)}
 function bpClock(){bq('#bpclk').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
 setInterval(()=>{if(BP.on)bpClock()},10000);
-const SCRN={home:'Início',lib:'Biblioteca',cfg:'Configurações',det:'',srch:'Pesquisar',edit:'Editar jogo'};
+const SCRN={home:'Início',lib:'Biblioteca',cfg:'Configurações',det:'',srch:'Pesquisar',edit:'Editar jogo',dev:'Controles e fones'};
 function bpTop(){const nf=Object.keys(BP.lib.f).length,ex=BP.scr==='lib'?`<span class="ct sub">${esc((SORTS.find(x=>x[0]===BP.lib.sort)||SORTS[0])[1])}${nf?` · ${nf} filtro${nf>1?'s':''}`:''}</span>`:'';bq('#bpcats').innerHTML=BP.scr==='det'?'':`<span class="ct on">${SCRN[BP.scr]}</span>`+ex;bq('#bpcats').style.transform=''}
 function bpFoot(){let h;
  if(BP.kb&&BP.style==='kb')h=[['<i class="g sh">Enter</i>','Confirmar'],['<i class="g sh">⌫</i>','Apagar'],['<i class="g sh">Esc</i>','Cancelar']];
@@ -88,7 +89,7 @@ function bpFoot(){let h;
 function bpGo(scr,push=true){BP.topF=false;BP.lib.tf=false;bpEl.classList.remove('tab-f');if(push&&BP.scr!==scr)BP.hist.push(BP.scr);BP.scr=scr;
  bpEl.querySelectorAll('.bp-scr').forEach(s=>s.hidden=s.id!=='bps-'+scr);bpClass();bpTop();bpFoot();bpPaint(true)}
 function bpBack(){if(BP.scr==='home')return;const p=BP.hist.pop()||'home';bpGo(p,false)}
-function bpPaint(full){if(!BP.on)return;({home:homeRender,lib:libRender,det:detRender,cfg:cfgRender,srch:srchRender,edit:edRender})[BP.scr](full);topUi()}
+function bpPaint(full){if(!BP.on)return;({home:homeRender,lib:libRender,det:detRender,cfg:cfgRender,srch:srchRender,edit:edRender,dev:devRender})[BP.scr](full);topUi()}
 
 // Inicio: so jogos instalados ou jogados recentemente
 function homeRender(full){const H=BP.home,A=bpRec(vis().filter(g=>(S.inst||[]).includes(g.id)||g.last_played)),L=A.slice(0,20);if(A.length>20)L.push({id:'__more',more:true,name:'Veja mais na sua biblioteca'});H.list=L;
@@ -151,7 +152,7 @@ function detPress(){const g=detGame();if(!g)return;const b=detBtns(g)[BP.det.f];
 function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••••'+v.slice(-4):'••••'):'Não preenchido';
  const txt=(n,k,ph,sec)=>({t:'txt',n,v:c[k]||'',show:sec?mask(c[k]):(c[k]||'Não preenchido'),fn:()=>kbOpen(n,c[k]||'',ph,async v=>{c[k]=v;await saveCfgBP();bpToast('Salvo')})});
  const tog=(n,on,fn)=>({t:'tog',n,on,fn});
- return [{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
+ return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
   {t:'h',n:'Sons da interface'},{t:'tog',n:'Sons da interface',on:BP.snd.on,fn:v=>{BP.snd.on=v;sndSave();cfgRender()},local:1},{t:'num',n:'Volume dos sons',show:BP.snd.vol+'%',fn:d=>{BP.snd.vol=Math.max(0,Math.min(100,BP.snd.vol+10*d));sndSave();cfgRender();sndPreset('tick')}},
   {t:'ch',n:'Som de cada ação',show:SNDE.length+' ações',fn:sndList},
   {t:'h',n:'Geral'},tog('Iniciar com o Windows',!!c.startup,v=>api('startup_set',{on:v,min:c.startMin!==false})),tog('Abrir minimizado ao iniciar com o Windows',c.startMin!==false,v=>api('startup_set',{on:!!c.startup,min:v})),
@@ -318,6 +319,25 @@ function sndMenu(ev,name){const cur=BP.snd.map[ev]||(SNDE.find(x=>x[0]===ev)||[]
   ...(cust?[{n:sndName(cur),ck:true,pv:()=>sndPreset(cur),fn:()=>ovClose()}]:[]),
   {n:'Escolher arquivo do PC…',pv:()=>{},fn:async()=>{const r=await api('snd_pick',{ev});if(r&&r.url){sndPreset(r.url);set(r.url)}else if(r&&r.error)bpToast(r.error)}}]},true)}
 
+// ---- tela: controles e fones de ouvido (bateria) ----
+const AUD=/fone|head|buds|airpods|earbud|earphone|wh-|wf-|jbl|soundcore|galaxy buds|hands-?free|headset|audio|speaker|caixa|beats|sony wh|bose|edifier|qcy|haylou|redmi buds|freebuds/i,PADN=/controller|gamepad|dualsense|dualshock|xbox|pro controller|joy-?con|8bitdo|gamesir/i;
+async function devLoad(force){try{const r=await api('bt_batt',{force:!!force});BP.dev.bt=r.list||[]}catch{BP.dev.bt=[]}BP.dev.t=Date.now();if(BP.scr==='dev')devRender()}
+setInterval(()=>{if(BP.on&&BP.scr==='dev')devLoad(true)},30000);
+function batBar(pc,st){const wired=st==='wired'||st==='noBattery',chg=st==='charging',lv=pc!=null?pc:st==='full'?100:st==='medium'?60:st==='low'?20:st==='empty'?5:null,col=lv==null?'#9aa3b2':lv>50?'#3fd16f':lv>20?'#f5b301':'#e5484d';
+ if(wired)return '<span class="dv-v">Com fio (sem bateria)</span>';
+ return `<span class="dv-v"><span class="dv-bar"><i style="width:${lv||0}%;background:${col}"></i></span><b>${lv!=null?lv+'%':'—'}</b>${chg?'<em>Carregando</em>':''}</span>`}
+function devRender(){const P=Object.values(BP.pads),bt=BP.dev.bt;
+ const padNames=new Set(P.map(p=>String(p.name||'').toLowerCase()));
+ const btPads=(bt||[]).filter(x=>PADN.test(x.name)&&!padNames.has(x.name.toLowerCase())),aud=(bt||[]).filter(x=>!PADN.test(x.name)&&(AUD.test(x.name)||/audio|media/i.test(x.cls||''))),oth=(bt||[]).filter(x=>!PADN.test(x.name)&&!aud.includes(x));
+ const IC={pad:BPI.pad,aud:SV('<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3z"/><path d="M3 15a2 2 0 0 0 2 2h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H3z"/>'),bt:SV('<path d="m7 7 10 10-5 5V2l5 5L7 17"/>')};
+ const row=(ic,n,sub,bar)=>`<div class="bc-r dv"><span class="bc-n dv-n">${ic}<span>${esc(n)}${sub?`<small>${esc(sub)}</small>`:''}</span></span>${bar}</div>`;
+ let h=`<div class="bc-h">Controles</div>`;
+ h+=P.length||btPads.length?P.map(p=>row(IC.pad,p.name||'Controle',({ps5:'DualSense',ps4:'DualShock 4',xboxOne:'Xbox',xbox360:'Xbox 360',xbox:'Xbox'})[p.type]||'',batBar(p.power&&p.power.percent,p.power&&p.power.state))).join('')+btPads.map(x=>row(IC.pad,x.name,'Bluetooth',batBar(x.battery))).join(''):'<div class="dv-e">Nenhum controle conectado.</div>';
+ h+=`<div class="bc-h">Fones de ouvido</div>`+(bt==null?'<div class="dv-e">Procurando…</div>':aud.length?aud.map(x=>row(IC.aud,x.name,'Bluetooth',batBar(x.battery))).join(''):'<div class="dv-e">Nenhum fone Bluetooth conectado que informe a bateria.</div>');
+ if(oth.length)h+=`<div class="bc-h">Outros dispositivos Bluetooth</div>`+oth.map(x=>row(IC.bt,x.name,'Bluetooth',batBar(x.battery))).join('');
+ h+=`<div class="dv-note">A bateria aparece quando o dispositivo informa ao Windows. Fones com receptor USB próprio (2,4 GHz) normalmente não informam. Atualiza a cada 30 segundos.</div>`;
+ const el=bq('#bdl');if(el._h!==h){el._h=h;el.innerHTML=h}bpBg(null)}
+
 // ---- bateria dos controles ----
 function batRender(){const L=Object.values(BP.pads),h=L.map(p=>{const pw=p.power||{},st=pw.state,pc=pw.percent;
   const wired=st==='wired'||st==='noBattery',chg=st==='charging',lv=pc!=null?pc:st==='full'?100:st==='medium'?60:st==='low'?20:st==='empty'?5:null;
@@ -325,7 +345,7 @@ function batRender(){const L=Object.values(BP.pads),h=L.map(p=>{const pw=p.power
   const bat=wired?`<svg class="bt-pl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M7 8h10v4a5 5 0 0 1-10 0z"/><path d="M12 17v5"/></svg>`:
    `<span class="btb"><i style="height:${lv==null?0:Math.max(6,lv)}%;background:${col}"></i>${chg?'<b>⚡</b>':''}</span>`;
   return `<span class="bt-c" title="${esc(p.name||'Controle')}${lv!=null&&!wired?' · '+lv+'%':''}">${BPI.pad}${bat}${lv!=null&&!wired?`<small>${lv}%</small>`:''}</span>`}).join('');
- bq('#bpbat').innerHTML=h;bpEl.classList.toggle('has-bat',!!L.length)}
+ bq('#bpbat').innerHTML=h;bpEl.classList.toggle('has-bat',!!L.length);if(BP.on&&BP.scr==='dev')devRender()}
 
 // ---- pesquisa (lupa ao lado do relogio, como na Steam) ----
 function sbGeo(){const b=bq('#bpsr'),r=b.getBoundingClientRect();if(!r.width)return;const sb=bq('#bpsb');sb.style.right=(innerWidth-r.right-r.width*0.35)+'px';sb.style.top='0px';sb.style.height=Math.round(r.bottom+r.height*0.18)+'px'}
@@ -401,6 +421,7 @@ function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0
   else if(k==='a'){detPress();return}else if(k==='down'||k==='sdown'){bq('.dt-r')?.scrollBy({top:90,behavior:'smooth'});return}else if(k==='up'||k==='sup'){bq('.dt-r')?.scrollBy({top:-90,behavior:'smooth'});return}else return;
   bpEl.querySelectorAll('.db').forEach((b,i)=>b.classList.toggle('f',i===BP.det.f));return}
  if(BP.scr==='cfg'){if(k==='up')cfgMove(-1);else if(k==='down')cfgMove(1);else if(k==='a')cfgPress();else if(k==='left')cfgPress(-1);else if(k==='right')cfgPress(1)}
+ if(BP.scr==='dev'){const L=bq('#bdl');if(k==='down'||k==='sdown')L.scrollBy({top:120,behavior:'smooth'});else if(k==='up'||k==='sup')L.scrollBy({top:-120,behavior:'smooth'});else if(k==='a')devLoad(true);return}
  if(BP.scr==='edit'){if(k==='up')edMove(-1);else if(k==='down')edMove(1);else if(k==='a')edPress(0);else if(k==='left')edPress(-1);else if(k==='right')edPress(1)}
  if(BP.scr==='srch'){const S2=BP.srch,c=gridCols(bq('#srg'));if(k==='left')srchSel(S2.idx-1);else if(k==='right')srchSel(S2.idx+1);else if(k==='down')srchSel(S2.idx+c);
   else if(k==='up'){if(S2.idx<c)srchKb();else srchSel(S2.idx-c)}else if(k==='a'){const g=curGame();g&&detOpen(g)}}}

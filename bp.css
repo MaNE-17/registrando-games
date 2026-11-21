@@ -398,3 +398,15 @@ body.bpon{overflow:hidden}
 .bl-tabs .tb.f{box-shadow:0 0 0 .3vh #fff;transform:scale(1.05)}
 .bl-tabs .tb{transition:transform .15s,box-shadow .15s,background .15s}
 .tab-f .bl-g .bt.on{box-shadow:none!important;transform:none!important;opacity:.85}
+/* tela de controles e fones */
+.scr-dev .bp-sh{background:rgba(8,10,15,.94)!important}
+.bc-r.dv{cursor:default}
+.dv-n{display:flex;align-items:center;gap:1.8vh}
+.dv-n>svg{width:3vh;height:3vh;flex:none;color:var(--bpa)}
+.dv-n small{display:block;font-size:1.5vh;font-weight:500;opacity:.6;margin-top:.3vh}
+.dv-v{display:flex;align-items:center;gap:1.4vh;font-size:1.9vh;font-weight:700}
+.dv-v em{font-style:normal;font-size:1.5vh;font-weight:600;color:#f5b301}
+.dv-bar{width:16vh;height:1.2vh;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+.dv-bar i{display:block;height:100%;border-radius:99px}
+.dv-e{padding:1.6vh 2.2vh;font-size:1.8vh;opacity:.6}
+.dv-note{margin:3vh 1.4vh 0;font-size:1.5vh;opacity:.5;line-height:1.5}
