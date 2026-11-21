@@ -372,3 +372,4 @@ body.bpon{overflow:hidden}
 .scr-srch #srg{top:10vh}
 .bp-cats .ct.sub{font-size:1.6vh;font-weight:500;color:rgba(255,255,255,.55);margin-left:-1vw}
 .top-f .bp-top,.scr-srch .bp-top{opacity:0;pointer-events:none}
+.bo-l{position:relative}

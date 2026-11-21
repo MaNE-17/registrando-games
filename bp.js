@@ -38,7 +38,8 @@ bpEl.innerHTML=`<div class="bp-bg"><div class="bp-bgi"></div><div class="bp-bgi"
 document.body.appendChild(bpEl);
 const bq=s=>bpEl.querySelector(s);
 // rola so o container (scrollIntoView rolaria a tela inteira do Big Picture)
-function scrV(c,el,smooth){if(!c||!el)return;const p=Math.round(c.clientHeight*.12),t=el.offsetTop,b=t+el.offsetHeight;let y=c.scrollTop;if(t-p<y)y=t-p;else if(b+p>y+c.clientHeight)y=b+p-c.clientHeight;y=Math.max(0,y);if(y!==c.scrollTop)c.scrollTo({top:y,behavior:smooth?'smooth':'auto'})}
+function scrV(c,el,smooth){if(!c||!el)return;let t=0,e=el;while(e&&e!==c){t+=e.offsetTop;e=e.offsetParent}if(e!==c){const r=el.getBoundingClientRect(),cr=c.getBoundingClientRect();t=r.top-cr.top+c.scrollTop}
+ const p=Math.round(c.clientHeight*.12),b=t+el.offsetHeight,now=Date.now();let y=(c._ty!=null&&now-c._tt<450)?c._ty:c.scrollTop;const y0=y;if(t-p<y)y=t-p;else if(b+p>y+c.clientHeight)y=b+p-c.clientHeight;y=Math.max(0,Math.min(y,c.scrollHeight-c.clientHeight));if(y!==y0||y!==c.scrollTop){c._ty=y;c._tt=now;c.scrollTo({top:y,behavior:smooth?'smooth':'auto'})}}
 function scrH(c,el){if(!c||!el)return;c.scrollTo({left:Math.max(0,el.offsetLeft-c.clientWidth/2+el.offsetWidth/2),behavior:'smooth'})}
 const lgStyle=g=>{const s=(g.bpLogoSize||120)/120,x=g.bpLogoX||0,y=g.bpLogoY||0;return `max-height:${(16*s).toFixed(2)}vh;max-width:${Math.min(80,36*s).toFixed(2)}vw;transform:translate(${x}vw,${-y}vh)`};
 
@@ -227,7 +228,7 @@ function ovClose(all){BP.ov=all?null:(BP.ov&&BP.ov.prev)||null;ovRender()}
 function ovCols(){const g=bq('.bo-g');if(!g)return 6;return getComputedStyle(g).gridTemplateColumns.split(' ').length||6}
 function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('anim',!!(o&&o.anim));if(o)o.anim=0;if(!o||(o.type!=='size'&&o.type!=='logo'))bpEl.classList.remove('ov-light');if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
  const ft=`<div class="bo-f">${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span data-fk="a">${glyph('a')}Selecionar</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div>`;
- if(o.type==='menu')el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;
+ if(o.type==='menu'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-l'),el.querySelector('.bo-i.on'),false)}
  else if(o.type==='logo')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}</div>${LGR.map((r,i)=>`<div class="lgr${i===o.f?' f':''}" data-lf="${i}"><span>${r.n}</span><div class="szt"><i style="width:${(o.v[i]-r.min)/(r.max-r.min)*100}%"></i></div><b>${o.v[i]}${r.u}</b></div>`).join('')}<div class="bo-f"><span>↑/↓ Escolher · ←/→ Ajustar</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='size')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-40)/220*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='date'||o.type==='hm'){const lab=o.type==='date'?['Dia','Mês','Ano']:['Horas','Minutos'],val=o.type==='date'?[String(o.v[0]).padStart(2,'0'),String(o.v[1]).padStart(2,'0'),o.v[2]]:[o.v[0],String(o.v[1]).padStart(2,'0')];
@@ -276,7 +277,7 @@ function kbIn(k){const K=BP.kb,L=KBL[K.lay];
  else if(k==='up'||k==='down'){const fr=K.c/L[K.r].length;K.r=(K.r+(k==='up'?-1:1)+L.length)%L.length;K.c=Math.min(L[K.r].length-1,Math.floor(fr*L[K.r].length))}else return;kbRender()}
 
 // ---- ordenar e filtrar (Biblioteca) ----
-function libRefresh(msg){libSave();BP.lib.rk='';libRender(true);bpTop();if(msg)bpToast(msg)}
+function libRefresh(msg){libSave();BP.lib.rk='';BP.lib.sel={};BP.lib.idx=0;const G=bq('#blg');G.scrollTop=0;G._ty=null;libRender(true);bpTop();if(msg)bpToast(msg)}
 function sortMenu(){ovOpen({type:'menu',title:'Ordenar por',items:SORTS.filter(x=>x[0]!=='bylist').map(([k,n])=>({n,ck:BP.lib.sort===k,fn:()=>{BP.lib.sort=k;ovClose(true);libRefresh('Ordenado por: '+n)}}))})}
 function filtMenu(){const f=BP.lib.f,all=vis(),cnt=fn=>all.filter(fn).length;
  const sub=(title,key,opts)=>()=>ovOpen({type:'menu',title,items:[{n:'Todos',ck:!f[key],fn:()=>{delete f[key];ovClose(true);libRefresh()}},...opts.map(([v,n,c])=>({n:`${n}  (${c})`,ck:f[key]===v,fn:()=>{f[key]=v;ovClose(true);libRefresh(title+': '+n)}}))]},true);
