@@ -784,7 +784,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       let x = g;
       if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'score', 'replays', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'cat', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'score', 'replays', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'cat', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide', 'bpLogoSize', 'bpLogoX', 'bpLogoY']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.score == null) delete x.score; if (!Array.isArray(x.replays) || !x.replays.length) delete x.replays;
