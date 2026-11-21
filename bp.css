@@ -75,8 +75,8 @@ body.bpon{overflow:hidden}
 .th-orig .bp-sh{background:linear-gradient(to top,rgba(4,6,10,.96) 0,rgba(4,6,10,.72) 30%,rgba(4,6,10,.15) 58%,transparent 70%),linear-gradient(90deg,rgba(4,6,10,.7) 0,transparent 55%),linear-gradient(to bottom,rgba(4,6,10,.55) 0,transparent 16%)}
 .th-orig .bp-cats .ct.on::after{content:"";position:absolute;left:0;right:0;bottom:-.5vh;height:.4vh;border-radius:99px;background:var(--bpa)}
 .th-orig .bp-row{bottom:9vh}
-.th-orig .bt{width:15vh;height:22.5vh;opacity:.82}
-.th-orig .bt.on{width:18vh;height:27vh;opacity:1;box-shadow:0 0 0 .4vh var(--bpa),0 1.6vh 4vh rgba(0,0,0,.6)}
+.th-orig #bps-home .bt{opacity:.82}
+.th-orig #bps-home .bt.on{opacity:1;box-shadow:0 0 0 .4vh var(--bpa),0 1.6vh 4vh rgba(0,0,0,.6)}
 .th-orig .bp-info{bottom:41vh}
 .th-orig .bb.pri.play,.th-orig .bb.pri.playing{background:var(--bpa)}
 
@@ -135,8 +135,8 @@ body.bpon{overflow:hidden}
 .th-ps .bp-cats .ct.on{color:#fff;font-weight:600}
 .th-ps .bp-row{top:11vh}
 .th-ps .bp-trk{align-items:flex-start;gap:1.1vw}
-.th-ps .bt{width:11vh;height:11vh;border-radius:1.6vh}
-.th-ps .bt.on{width:15.5vh;height:15.5vh;margin-right:24vw;box-shadow:0 0 0 .3vh #fff,0 0 2.6vh rgba(255,255,255,.35)}
+.th-ps #bps-home .bt{border-radius:1.6vh}
+.th-ps #bps-home .bt.on{margin-right:24vw;box-shadow:0 0 0 .3vh #fff,0 0 2.6vh rgba(255,255,255,.35)}
 .th-ps .bt.on .nm{display:block;position:absolute;left:calc(100% + 1.8vw);top:50%;transform:translateY(-50%);width:22vw;font-size:2.3vh;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th-ps .bp-info{top:47vh}
 .th-ps .bi-lg{max-height:15vh}
@@ -307,11 +307,11 @@ body.bpon{overflow:hidden}
 .bp-trk{transition:transform .42s cubic-bezier(.22,.61,.36,1)!important}
 .bt{transition:width .32s cubic-bezier(.22,.61,.36,1),height .32s cubic-bezier(.22,.61,.36,1),margin .32s cubic-bezier(.22,.61,.36,1),box-shadow .25s ease,opacity .25s ease,transform .25s ease!important}
 .bt.on .bi{animation:none}
-.th-orig .bt{width:calc(15vh*var(--bpz));height:calc(22.5vh*var(--bpz))}
-.th-orig .bt.on{width:calc(18vh*var(--bpz));height:calc(27vh*var(--bpz))}
+.th-orig #bps-home .bt{width:calc(15vh*var(--bpz));height:calc(22.5vh*var(--bpz))}
+.th-orig #bps-home .bt.on{width:calc(18vh*var(--bpz));height:calc(27vh*var(--bpz))}
 .th-orig .bp-info{bottom:calc(13vh + 27vh*var(--bpz))}
-.th-ps .bt{width:calc(11vh*var(--bpz));height:calc(11vh*var(--bpz))}
-.th-ps .bt.on{width:calc(15.5vh*var(--bpz));height:calc(15.5vh*var(--bpz))}
+.th-ps #bps-home .bt{width:calc(11vh*var(--bpz));height:calc(11vh*var(--bpz))}
+.th-ps #bps-home .bt.on{width:calc(15.5vh*var(--bpz));height:calc(15.5vh*var(--bpz))}
 .th-ps .bp-info{top:calc(36vh + 15.5vh*var(--bpz))}
 .bp-info.fi{animation:bpFi .38s cubic-bezier(.22,.61,.36,1)}
 @keyframes bpFi{from{opacity:0;transform:translateY(1.2vh)}to{opacity:1;transform:none}}
@@ -322,6 +322,19 @@ body.bpon{overflow:hidden}
 .lgr.f{background:rgba(255,255,255,.08);box-shadow:inset .35vh 0 0 var(--bpa)}
 .bo-sz .bo-f{margin-top:1.4vh}
 .side-on .bp-scr,.side-on .bp-top,.side-on .bp-foot{transition:filter .25s ease}
-.bp-ov:not([hidden]) .bo-p{animation:bpPo .22s cubic-bezier(.22,.61,.36,1)}
+.bp-ov.anim:not([hidden]) .bo-p{animation:bpPo .22s cubic-bezier(.22,.61,.36,1)}
 @keyframes bpPo{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 #bp .g{vertical-align:middle}
+
+/* biblioteca: capas sempre do mesmo tamanho (a selecionada so cresce por transform, sem mexer nas outras fileiras) */
+.bl-g .bt{width:auto!important;height:auto!important;margin:0!important;aspect-ratio:2/3;opacity:1!important}
+/* glifos do PlayStation */
+#bp .g.gp{width:3.2vh;min-width:3.2vh;height:3.2vh;padding:0}
+#bp .g.gp svg{width:72%;height:72%}
+.st-ps5 .g.gp{background:#fff!important;color:#0b0d12!important}
+.st-ps4 .g.gp{background:#1d2230!important}
+.st-ps4 .g-a{color:#7fb1ff!important}.st-ps4 .g-b{color:#ff6b6b!important}.st-ps4 .g-x{color:#f19fd3!important}.st-ps4 .g-y{color:#4fe0a6!important}
+#bp .g.gp5o{background:none!important;color:#fff!important;min-width:0;width:1.7vh;padding:0;height:2.9vh}
+#bp .g.gp5o svg{width:100%;height:100%}
+#bp .g.gp4o{background:none!important;color:#fff!important;border:.18vh solid rgba(255,255,255,.85);font-size:.95vh;letter-spacing:.08em;height:2.2vh;padding:0 .7vh;border-radius:99px;min-width:0}
+.st-ps5 .bp-foot,.st-ps5 .bo-f{text-transform:uppercase;letter-spacing:.04em}
