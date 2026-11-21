@@ -187,7 +187,7 @@ function track() {
       for (const g of [...hit, ...extra]) {
         if (!g.appid) g.tracked_s = (g.tracked_s || 0) + 5; // Steam ja conta as horas dela
         g.last_played = now(); running.add(g.id);
-        if (g.status === 'Backlog') g.status = 'Jogando';
+        if (g.status === 'Backlog' || (g.status === 'Pausado' && !prev.has(g.id))) g.status = 'Jogando';
       }
       if (running.size && ++tick % 6 === 0) save();
       const fechou = [...prev].filter(id => !running.has(id) && (data.games.find(x => x.id === id) || {}).appid);
@@ -766,6 +766,7 @@ async function sgFill() {
   }
   save();
 }
+ipcMain.on('wall-close', () => { if (wpWin && !wpWin.isDestroyed()) wpWin.close(); if (win && !win.isDestroyed()) { win.show(); win.focus(); } });
 ipcMain.on('wall-pick', async (e, p) => {
   const g = data.games.find(x => x.id === wpGame) || (wpGame === 'novo' ? { id: 'tmp' } : null); if (!g || !p || typeof p.src !== 'string') return;
   const r = await wallSave(g, p.src);
@@ -889,8 +890,9 @@ ipcMain.handle('api', async (_e, p, b) => {
       }
       else if (g.appid) await shell.openExternal('steam://rungameid/' + g.appid);
       else return { error: 'Vincule o executável (.exe) do jogo para poder jogar por aqui.' };
-      if (g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando';
-      g.last_played = now(); save(); setTimeout(track, 4000); return { ok: true };
+      // Com .exe/processo vinculado, 'Ultimo jogo' e o status so mudam quando o jogo realmente abrir (o track() detecta)
+      if (!(g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe)))) { if (g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando'; g.last_played = now(); }
+      save(); setTimeout(track, 4000); return { ok: true };
     }
     case 'bp_full': if (win) { win.setFullScreen(!!b.on); } return { ok: true };
     case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
@@ -962,6 +964,7 @@ ipcMain.handle('api', async (_e, p, b) => {
         wpWin.on('closed', () => { wpWin = null; });
       }
       wpWin.loadURL('https://www.google.com/search?tbm=isch&hl=pt-BR&q=' + encodeURIComponent(q));
+      if (b.bp) wpWin.setFullScreen(true);
       wpWin.show(); wpWin.focus(); return { ok: true };
     }
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
@@ -1057,6 +1060,8 @@ function padStart() {
       if (m.t === 'conn') { PAD.pads = PAD.pads.filter(x => x.id !== m.id).concat({ id: m.id, name: m.name, type: m.type, south: m.south }); }
       if (m.t === 'disc') { PAD.pads = PAD.pads.filter(x => x.id !== m.id); }
       if (!win || win.isDestroyed()) return;
+      // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela
+      if ((m.t === 'down' || m.t === 'up') && wpWin && !wpWin.isDestroyed() && wpWin.isFocused()) { wpWin.webContents.send('pad', m); return; }
       // So repassa os botoes (inclusive o Home) quando o app esta em primeiro plano
       if ((m.t === 'down' || m.t === 'up') && !win.isFocused()) return;
       win.webContents.send('pad', m);
