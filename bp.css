@@ -150,3 +150,105 @@ body.bpon{overflow:hidden}
 .th-ps .bp-foot{opacity:.9}
 .th-ps .bo-p{border-radius:2vh;background:rgba(28,31,38,.96)}
 .th-ps .bo-i.on{background:#fff;color:#111}.th-ps .bo-i.on .ck{color:#0070d1}
+
+/* ===== Telas (Inicio, Biblioteca, Detalhes, Configuracoes) ===== */
+.bp-scr{position:absolute;inset:0;z-index:2;transition:filter .25s}
+.bp-scr[hidden]{display:none}
+.bp-sec{display:none}
+.th-steam .bp-sec{display:block}
+.th-orig .bp-info{bottom:40vh}
+.side-on .bp-scr,.side-on .bp-top,.side-on .bp-foot{filter:brightness(.45) blur(2px)}
+#bp:not(.scr-home) .bp-av{display:none}
+.th-steam:not(.scr-home) .bp-bg{bottom:0;-webkit-mask-image:none;mask-image:none}
+.th-steam:not(.scr-home) .bp-bgi.on{opacity:1}
+
+/* Biblioteca */
+.scr-lib .bp-sh{background:linear-gradient(rgba(8,10,15,.82),rgba(8,10,15,.93))!important}
+.scr-lib .bp-bgi.on{filter:blur(30px) brightness(.6);transform:scale(1.1)}
+.bl-tabs{position:absolute;left:4vw;right:4vw;top:11vh;display:flex;gap:.8vw;align-items:center;overflow:hidden;white-space:nowrap;padding:.6vh 0}
+.bl-tabs .tg{flex:none;opacity:.8}
+.bl-tabs .tb{flex:none;display:inline-flex;align-items:center;gap:1vh;padding:1vh 2vh;border-radius:99px;font-size:1.8vh;font-weight:600;color:rgba(255,255,255,.65);cursor:pointer;background:rgba(255,255,255,.06)}
+.bl-tabs .tb em{font-style:normal;font-size:1.4vh;opacity:.6}
+.bl-tabs .tb.on{background:var(--bpa);color:#fff}.bl-tabs .tb.on em{opacity:.85}
+.bl-g{position:absolute;left:0;right:0;top:19vh;bottom:9vh;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:repeat(auto-fill,minmax(15vh,1fr));gap:2.4vh 1.4vw;padding:1.4vh 4vw 4vh;align-content:start;scrollbar-width:none}
+.bl-g::-webkit-scrollbar{display:none}
+.bl-g .bt{width:auto;height:auto;aspect-ratio:2/3}
+.bl-g .bt.on{transform:scale(1.06);box-shadow:0 0 0 .4vh var(--bpa),0 1.4vh 3.4vh rgba(0,0,0,.6);z-index:2}
+.th-steam .bl-g .bt.on,.th-xbox .bl-g .bt.on,.th-ps .bl-g .bt.on{box-shadow:0 0 0 .4vh #fff,0 1.4vh 3.4vh rgba(0,0,0,.6)}
+.bl-g .bt .nm{display:none!important}
+
+/* Detalhes do jogo */
+.scr-det .bp-sh{background:linear-gradient(to top,rgba(4,6,10,.95) 0,rgba(4,6,10,.7) 34%,rgba(4,6,10,.1) 62%,transparent 75%),linear-gradient(90deg,rgba(4,6,10,.7) 0,transparent 55%)!important}
+.dt-c{position:absolute;left:4vw;right:4vw;bottom:10vh;display:flex;flex-direction:column;gap:2.2vh}
+.dt-c .bi-lg{max-height:18vh}
+.dt-p{display:flex;flex-wrap:wrap;gap:1vh}
+.dt-p .pi{font-size:1.65vh;font-weight:600;padding:.6vh 1.4vh;border-radius:99px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(10px)}
+.dt-p .pi b{font-weight:800}
+.dt-g{display:flex;flex-wrap:wrap;max-width:62vw;border-radius:1.6vh;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:rgba(10,12,18,.6);backdrop-filter:blur(16px)}
+.dt-g .dr{flex:1 1 auto;padding:1.6vh 2.2vh;display:flex;flex-direction:column;gap:.7vh;border-right:1px solid rgba(255,255,255,.08)}
+.dt-g .dr:last-child{border-right:0}
+.dt-g .dr span{font-size:1.25vh;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.dt-g .dr b{font-size:2.1vh;font-weight:700;display:flex;align-items:center;gap:1vh}
+.dt-g .sd{width:1.1vh;height:1.1vh;border-radius:50%;display:inline-block}
+.dt-r{margin:0;max-width:62vw;max-height:13vh;overflow:auto;font-size:1.9vh;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;opacity:.88;scrollbar-width:thin}
+.dt-b{display:flex;gap:1.2vw}
+.db{display:inline-flex;align-items:center;gap:1.1vh;height:6vh;padding:0 3vh;border-radius:1.1vh;border:1px solid rgba(255,255,255,.22);background:rgba(10,12,18,.6);font-size:2vh;font-weight:700;backdrop-filter:blur(12px);transition:transform .15s,box-shadow .15s}
+.db svg{width:2.2vh;height:2.2vh;flex:none}
+.db.pri{border:0;min-width:14vw;justify-content:center}
+.db.pri.play,.db.pri.playing{background:#22a55a}.db.pri.inst{background:#2f7cf6}.db.pri.stop{background:#e5484d}
+.db.on svg{color:var(--bpa)}
+.db.f{transform:scale(1.06);box-shadow:0 0 0 .35vh #fff,0 1vh 3vh rgba(0,0,0,.5)}
+
+/* Configuracoes */
+.scr-cfg .bp-sh{background:rgba(8,10,15,.94)!important}
+.bc-l{position:absolute;top:11vh;bottom:9vh;left:50%;transform:translateX(-50%);width:min(70vw,120vh);overflow-y:auto;padding:0 1vh 4vh;scrollbar-width:none}
+.bc-l::-webkit-scrollbar{display:none}
+.bc-h{font-size:1.5vh;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:3.4vh 1.4vh 1vh}
+.bc-h:first-child{margin-top:1vh}
+.bc-r{display:flex;align-items:center;justify-content:space-between;gap:2vw;padding:1.9vh 2.2vh;border-radius:1vh;font-size:2vh;font-weight:600;cursor:pointer;background:rgba(255,255,255,.04);margin-bottom:.6vh}
+.bc-r.f{background:var(--bpa);color:#fff}
+.th-steam .bc-r.f{background:#3d4450;box-shadow:inset 0 0 0 .25vh #1a9fff}
+.th-xbox .bc-r.f,.th-ps .bc-r.f{background:#fff;color:#111}
+.bc-v{display:flex;align-items:center;gap:1.4vh;font-size:1.8vh;font-weight:500;opacity:.85;max-width:50%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.bc-v small{font-size:1.6vh;opacity:.7}
+.bc-go{font-size:2.6vh;font-weight:400;opacity:.7}
+.bsw{display:inline-block;width:5.6vh;height:3vh;border-radius:99px;background:rgba(255,255,255,.22);position:relative;transition:background .2s;flex:none}
+.bsw i{position:absolute;top:.35vh;left:.35vh;width:2.3vh;height:2.3vh;border-radius:50%;background:#fff;transition:left .2s}
+.bsw.on{background:#22a55a}.bsw.on i{left:2.95vh}
+.bc-r.f .bsw:not(.on){background:rgba(0,0,0,.3)}
+
+/* Barra lateral (botao Home) */
+.bp-side{position:absolute;left:0;top:0;bottom:0;width:max(300px,22vw);z-index:4;background:rgba(14,17,24,.97);border-right:1px solid rgba(255,255,255,.08);box-shadow:2vh 0 6vh rgba(0,0,0,.5);transform:translateX(-102%);transition:transform .22s cubic-bezier(.2,.8,.2,1);padding:3.4vh 1.4vw;display:flex;flex-direction:column;gap:.6vh}
+.side-on .bp-side{transform:none}
+.sd-h{display:flex;align-items:center;gap:1.4vh;padding:0 1.4vh 3vh;font-size:2vh}
+.sd-h svg{width:3.2vh;height:3.2vh;color:var(--bpa)}
+.sd-i{display:flex;align-items:center;gap:1.8vh;padding:1.8vh 1.8vh;border-radius:1vh;font-size:2.1vh;font-weight:600;color:rgba(255,255,255,.8);cursor:pointer}
+.sd-i svg{width:2.6vh;height:2.6vh;flex:none}
+.sd-i.cur{color:var(--bpa)}
+.sd-i.f{background:var(--bpa);color:#fff}
+.th-xbox .sd-i.f,.th-ps .sd-i.f{background:#fff;color:#111}
+.th-steam .sd-i.f{background:#3d4450;box-shadow:inset .35vh 0 0 #1a9fff}
+.sd-i:last-child{margin-top:auto}
+
+/* Teclado virtual */
+.bp-kb{position:absolute;inset:0;z-index:7;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6vh}
+.bp-kb[hidden]{display:none}
+.kb-p{width:min(86vw,150vh);background:rgba(20,23,31,.98);border:1px solid rgba(255,255,255,.12);border-radius:2vh;padding:2.6vh 3vh 2vh;box-shadow:0 3vh 8vh rgba(0,0,0,.6)}
+.kb-t{font-size:1.7vh;font-weight:700;opacity:.7;margin-bottom:1.2vh}
+.kb-v{min-height:6vh;display:flex;align-items:center;padding:0 2vh;border-radius:1vh;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14);font-size:2.4vh;font-weight:600;overflow:hidden;white-space:nowrap;margin-bottom:2vh}
+.kb-v .ph{opacity:.4;font-weight:500}
+.kb-cur{display:inline-block;width:.25vh;height:3vh;background:var(--bpa);margin-left:.3vh;animation:kbBlink 1s steps(1) infinite}
+@keyframes kbBlink{50%{opacity:0}}
+.kb-k{display:flex;flex-direction:column;gap:1vh}
+.kb-row{display:flex;gap:1vh}
+.kk{flex:1;height:6.4vh;display:grid;place-items:center;border-radius:.9vh;background:rgba(255,255,255,.08);font-size:2.3vh;font-weight:600;cursor:pointer;transition:background .1s,transform .1s}
+.kk.w{flex:1.6;font-size:1.8vh}.kk.sp{flex:3.4;font-size:1.8vh}
+.kk.on{background:rgba(255,255,255,.25)}
+.kk.ok{background:#22a55a}
+.kk.f{background:var(--bpa);color:#fff;transform:scale(1.06);box-shadow:0 0 0 .3vh #fff}
+.kb-f{display:flex;gap:2vw;justify-content:flex-end;margin-top:2vh;font-size:1.6vh;font-weight:600;opacity:.85}
+.kb-f span{display:inline-flex;align-items:center;gap:.8vh}
+
+.bp-kb:not([hidden])~.bp-toast{z-index:8}
+#bp .bp-kb:not([hidden]){padding-bottom:9vh}
+.kb-on .bp-foot{z-index:8}

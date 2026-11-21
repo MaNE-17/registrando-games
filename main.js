@@ -1056,12 +1056,7 @@ function padStart() {
       if (m.t === 'conn') { PAD.pads = PAD.pads.filter(x => x.id !== m.id).concat({ id: m.id, name: m.name, type: m.type, south: m.south }); }
       if (m.t === 'disc') { PAD.pads = PAD.pads.filter(x => x.id !== m.id); }
       if (!win || win.isDestroyed()) return;
-      if (m.t === 'down' && m.b === 'guide') {
-        // Botao Home: com um jogo aberto pelo app e a janela em segundo plano, nao rouba o foco do jogo
-        if (!win.isFocused() && running.size) return;
-        if (!win.isFocused()) { show(); win.webContents.send('pad', { t: 'bp', on: true }); return; }
-      }
-      // So repassa os botoes quando o app esta em primeiro plano (para nao agir enquanto se joga outra coisa)
+      // So repassa os botoes (inclusive o Home) quando o app esta em primeiro plano
       if ((m.t === 'down' || m.t === 'up') && !win.isFocused()) return;
       win.webContents.send('pad', m);
     });
