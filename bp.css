@@ -421,3 +421,17 @@ body.bpon{overflow:hidden}
 .bt.bcol .cl em{font-style:normal;font-size:1.6vh;opacity:.6}
 .bl-g.cols .bt.on{box-shadow:0 0 0 .4vh var(--bpa),0 1.4vh 3.4vh rgba(0,0,0,.6)}
 .bl-tabs .tb .tsub{font-weight:700;margin-left:-.2vh}
+/* v1.28 */
+.bl-tabs{justify-content:safe center}
+.bt.bcol .ci{display:grid;place-items:center;width:7vh;height:7vh}
+.bt.bcol .ci svg,.bt.bcol .ci img{width:6vh!important;height:6vh!important;object-fit:contain;color:#fff!important}
+.bt.blst .fan{position:absolute;inset:8% 10% 34%;display:block}
+.bt.blst .fan img{position:absolute;top:0;height:100%;aspect-ratio:2/3;object-fit:cover;border-radius:.6vh;box-shadow:0 .6vh 1.6vh rgba(0,0,0,.5);left:calc(50% - 4.5vh + (var(--i) - 1.5) * 3.2vh);transform:rotate(calc((var(--i) - 1.5) * 4deg))}
+.bt.blst .cl{justify-content:flex-end;padding-bottom:5%}
+.bo-g.bo-ic{grid-template-columns:repeat(6,15vh)}
+.bo-ic .gc{height:13vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1vh;padding:1vh;box-sizing:border-box;text-align:center}
+.bo-ic .gc span{display:grid;place-items:center;width:5vh;height:5vh}
+.bo-ic .gc span svg,.bo-ic .gc span img{width:4.6vh!important;height:4.6vh!important;color:#fff!important}
+.bo-ic .gc b{font-size:1.4vh;font-weight:600;line-height:1.2;opacity:.85}
+.bt.blst .bi::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(10,12,18,.95) 0,rgba(10,12,18,.6) 38%,transparent 65%);border-radius:inherit}
+.bt.blst .cl{z-index:1}

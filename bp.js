@@ -81,7 +81,7 @@ function bpTop(){const nf=Object.keys(BP.lib.f).length,ex=BP.scr==='lib'?`<span 
 function bpFoot(){let h;
  if(BP.kb&&BP.style==='kb')h=[['<i class="g sh">Enter</i>','Confirmar'],['<i class="g sh">⌫</i>','Apagar'],['<i class="g sh">Esc</i>','Cancelar']];
  else if(BP.kb)h=[[glyph('a'),'Digitar'],[glyph('x'),'Apagar'],[glyph('y'),'Espaço'],[glyph('start'),'Confirmar'],[glyph('b'),'Cancelar']];
- else if(BP.scr==='lib')h=[[glyph('start'),'Opções'],[glyph('y'),'Ordenar'],[glyph('x'),'Filtrar'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
+ else if(BP.scr==='lib')h=[[glyph('start'),BP.lib.tf?'Alterar abas':((C=>C&&C.grp&&C.base==='col')(BP.lib.tabs[BP.lib.tab])?'Trocar ícone':'Opções')],[glyph('y'),'Ordenar'],[glyph('x'),'Filtrar'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
  else h=[[glyph('start'),'Opções'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
  const KS=['a','x','y','start','b'];bq('#bpfoot').innerHTML=h.map(([g,t])=>{const k=(g.match(/g-(\w+)/)||[])[1]||'';return `<span data-fk="${k}">${g}${t}</span>`}).join('')}
 
@@ -111,33 +111,51 @@ const libSave=()=>{try{localStorage.setItem('bplib',JSON.stringify({sort:BP.lib.
 const yr=g=>g.released?new Date(g.released*1000).getFullYear():0;
 function libPass(g){const f=BP.lib.f;if(f.status&&g.status!==f.status)return false;if(f.platform&&canonP(g.platform)!==f.platform)return false;if(f.genre&&!(g.genres||[]).includes(f.genre))return false;if(f.year&&yr(g)!==f.year)return false;return true}
 const libSort=l=>{const fn=SORT[BP.lib.sort]||NC;return [...l].sort((a,b)=>fn(a,b)||NC(a,b))};
-const LTABS=[['all','Todos'],['inst','Instalados'],['col','Coleções'],['fav','Favoritos'],['rec','Recentes'],['lists','Listas']];
+const LTABS=[['all','Todos'],['inst','Instalados'],['col','Coleções'],['lists','Listas'],['fav','Favoritos'],['rec','Recentes']];
 BP.ltab={all:1,inst:1,col:1,fav:0,rec:0,lists:0};try{Object.assign(BP.ltab,JSON.parse(localStorage.getItem('bptabs')||'{}'))}catch{}
+BP.colIco={};try{BP.colIco=JSON.parse(localStorage.getItem('bpcolico')||'{}')}catch{}
 const isManual=g=>!g.appid&&!g.lkey;
-function libTabs(){const v=vis().filter(libPass),T=BP.ltab,t=[];
+const byPlat=v=>{const by=new Map();for(const g of v){const p=canonP(g.platform)||'Outros';if(!by.has(p))by.set(p,[]);by.get(p).push(g)}return by};
+// aba com grupos (Colecoes e Listas): mostra os cartoes; A abre o grupo e mostra os jogos
+function grpTab(k,n,groups){const op=BP.lib.open&&BP.lib.open.k===k&&groups.find(x=>x.id===BP.lib.open.id);
+ if(op)return{k:k+':'+op.id,base:k,n,cnt:groups.length,sub:op,g:k==='lists'?op.games:libSort(op.games)};
+ return{k,base:k,n,cnt:groups.length,grp:true,g:groups}}
+function libTabs(){const v=vis().filter(libPass),T=BP.ltab,t=[],by=byPlat(v);
  if(T.all)t.push({k:'all',n:'Todos',g:libSort(v)});
- if(T.inst){const inst=v.filter(g=>(S.inst||[]).includes(g.id)||isManual(g));t.push({k:'inst',n:'Instalados',g:libSort(inst)})}
- if(T.col){const by=new Map();for(const g of v){const p=canonP(g.platform)||'Outros';if(!by.has(p))by.set(p,[]);by.get(p).push(g)}
-  const cols=[...by.entries()].sort((a,b)=>dispP(a[0]).localeCompare(dispP(b[0]))).map(([p,l])=>({id:'col:'+p,col:p,name:dispP(p),games:l}));
-  const op=BP.lib.colOpen&&cols.find(c=>c.col===BP.lib.colOpen);
-  if(op)t.push({k:'col:'+op.col,n:'Coleções',cnt:cols.length,col:op,g:libSort(op.games)});else{BP.lib.colOpen=null;t.push({k:'col',n:'Coleções',cnt:cols.length,cols:true,g:cols})}}
- if(T.fav){const fav=v.filter(g=>g.fav);if(fav.length)t.push({k:'fav',n:'Favoritos',g:libSort(fav)})}
- if(T.rec){const rec=v.filter(g=>g.last_played);if(rec.length)t.push({k:'rec',n:'Recentes',g:bpRec(rec)})}
- if(T.lists)for(const L of S.lists||[]){const l=(L.ids||[]).map(id=>v.find(g=>g.id===id)).filter(Boolean);if(l.length)t.push({k:'l:'+L.id,n:L.name||'Lista',g:l})}
+ if(T.inst)t.push({k:'inst',n:'Instalados',g:libSort(v.filter(g=>!g.cat&&((S.inst||[]).includes(g.id)||isManual(g))))});
+ if(T.col)t.push(grpTab('col','Coleções',[...by.entries()].sort((a,b)=>dispP(a[0]).localeCompare(dispP(b[0]))).map(([p,l])=>({id:p,kind:'col',name:dispP(p),games:l}))));
+ if(T.lists)t.push(grpTab('lists','Listas',(S.lists||[]).map(L=>({id:L.id,kind:'list',name:L.name||'Lista',games:(L.ids||[]).map(id=>v.find(g=>g.id===id)).filter(Boolean)})).filter(x=>x.games.length)));
+ if(T.fav){const fav=v.filter(g=>g.fav);t.push({k:'fav',n:'Favoritos',g:libSort(fav)})}
+ if(T.rec){const rec=v.filter(g=>g.last_played);t.push({k:'rec',n:'Recentes',g:bpRec(rec)})}
+ for(const[p,l]of[...by.entries()].sort((a,b)=>dispP(a[0]).localeCompare(dispP(b[0]))))if(T['p:'+p])t.push({k:'p:'+p,n:dispP(p),g:libSort(l)});
  if(!t.length)t.push({k:'all',n:'Todos',g:libSort(v)});
  return t}
-function colTile(c,j){const ic=plIco({platform:c.col});return `<div class="bt bcol" data-bi="${j}"><div class="bi"><span class="cl">${ic||BPI.lib}<b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
-function tabsMenu(){const o={type:'menu',title:'Abas da Biblioteca',sub:'A mostra ou esconde a aba',items:LTABS.map(([k,n])=>({n,ck:!!BP.ltab[k],fn:()=>{BP.ltab[k]=BP.ltab[k]?0:1;if(!LTABS.some(([x])=>BP.ltab[x]))BP.ltab.all=1;try{localStorage.setItem('bptabs',JSON.stringify(BP.ltab))}catch{}o.items.forEach((it,i)=>it.ck=!!BP.ltab[LTABS[i][0]]);ovRender();BP.lib.tab=0;BP.lib.rk='';cfgRender()}}))};ovOpen(o)}
+function colIcon(p){const c=BP.colIco[p];if(c&&c.startsWith('data:'))return `<img class="cli" src="${esc(c)}" alt="">`;const k=c||(BRAND[p]||(CONSOLES.some(x=>x.n===p)?CSLUG(p):null));return (k&&ICO[k])||BPI.lib}
+function grpTile(c,j){if(c.kind==='list'){const cv=c.games.slice(0,4).map(g=>coverSrc(g)).filter(Boolean);
+  return `<div class="bt bcol blst" data-bi="${j}"><div class="bi"><span class="fan">${cv.map((u,i)=>`<img src="${esc(u)}" style="--i:${i}" alt="" loading="lazy">`).join('')}</span><span class="cl"><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
+ return `<div class="bt bcol" data-bi="${j}"><div class="bi"><span class="cl"><span class="ci">${colIcon(c.id)}</span><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
+const tabSave=()=>{try{localStorage.setItem('bptabs',JSON.stringify(BP.ltab))}catch{}};
+function tabsMenu(){const plats=[...byPlat(vis()).keys()].sort((a,b)=>dispP(a).localeCompare(dispP(b)));
+ const all=[...LTABS.map(([k,n])=>[k,n]),...plats.map(p=>['p:'+p,dispP(p)])];
+ const o={type:'menu',title:'Alterar abas',sub:'A mostra ou esconde cada aba',items:all.map(([k,n],i)=>({n,ck:!!BP.ltab[k],fn:()=>{BP.ltab[k]=BP.ltab[k]?0:1;if(!all.some(([x])=>BP.ltab[x]))BP.ltab.all=1;tabSave();o.items.forEach((it,j)=>it.ck=!!BP.ltab[all[j][0]]);ovRender();BP.lib.open=null;BP.lib.rk='';libRender(true);tabFocus(true)}}))};ovOpen(o)}
+// trocar o icone de uma colecao
+function colIconMenu(c){const opts=[...CATALOG.map(n=>[BRAND[n],n]),...CONSOLES.map(x=>[CSLUG(x.n),x.n])].filter(([k])=>ICO[k]);
+ const cur=BP.colIco[c.id];const ov={type:'ico',title:'Ícone da coleção',sub:c.name,items:[['','Padrão'],...opts,['__pc','Imagem do PC…']],i:0,c};
+ ov.i=Math.max(0,ov.items.findIndex(x=>x[0]===(cur&&!cur.startsWith('data:')?cur:'')));ovOpen(ov)}
+async function colIcoSet(ov){const [k]=ov.items[ov.i],id=ov.c.id;
+ if(k==='__pc'){const r=await api('pick_img');if(!r||!r.data)return;try{BP.colIco[id]=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),m=128,s=Math.min(1,m/Math.max(im.width,im.height));c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/png'))};im.onerror=no;im.src=r.data})}catch{return bpToast('Não consegui usar essa imagem.')}}
+ else if(!k)delete BP.colIco[id];else BP.colIco[id]=k;
+ try{localStorage.setItem('bpcolico',JSON.stringify(BP.colIco))}catch{}ovClose(true);BP.lib.rk='';libRender(true);bpToast('Ícone trocado')}
 function libRender(full){const B=BP.lib,T=B.tabs=libTabs();if(B.tab>=T.length)B.tab=0;const C=T[B.tab];
- bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}${t.col?`<b class="tsub">› ${esc(t.col.name)}</b>`:''}<em>${t.col?t.g.length:t.cnt!=null?t.cnt:t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
+ bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}${t.sub?`<b class="tsub">› ${esc(t.sub.name)}</b>`:''}<em>${t.sub?t.g.length:t.cnt!=null?t.cnt:t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
  scrH(bq('#bltabs'),bq('#bltabs .tb.on'));if(B.tf){const t=bq('#bltabs .tb.on');t&&t.classList.add('f')}
  const key=C.k+'|'+C.g.map(g=>g.id+(g.cover||'')).join(',');
- if(full||key!==B.rk){B.rk=key;const G=bq('#blg');G.classList.toggle('cols',!!C.cols);G.innerHTML=(C.cols?C.g.map(colTile):C.g.map(bpTile)).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>';if(B.lastK!==C.k){G.scrollTop=0;G._ty=null;B.lastK=C.k}}
+ if(full||key!==B.rk){B.rk=key;const G=bq('#blg');G.classList.toggle('cols',!!C.grp);G.innerHTML=(C.grp?C.g.map(grpTile):C.g.map(bpTile)).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>';if(B.lastK!==C.k){G.scrollTop=0;G._ty=null;B.lastK=C.k}}
  libSel(Math.max(0,C.g.findIndex(g=>g.id===B.sel[C.k])),true)}
 function libSel(i,force,mouse){const B=BP.lib,C=B.tabs[B.tab];if(!C||!C.g.length){bpBg(null);return}i=Math.max(0,Math.min(C.g.length-1,i));
- B.idx=i;B.sel[C.k]=C.g[i].id;const G=bq('#blg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];if(C.cols){if(t){t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(null);return}
+ B.idx=i;B.sel[C.k]=C.g[i].id;const G=bq('#blg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];if(C.grp){if(t){t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(null);return}
  if(t){t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(C.g[i])}
-function tabFocus(on){BP.lib.tf=on;bpEl.classList.toggle('tab-f',on);const t=bq('#bltabs .tb.on');if(t)t.classList.toggle('f',on)}
+function tabFocus(on){BP.lib.tf=on;setTimeout(bpFoot);bpEl.classList.toggle('tab-f',on);const t=bq('#bltabs .tb.on');if(t)t.classList.toggle('f',on)}
 function libCols(){const G=bq('#blg'),c=G.children;if(c.length<2)return 1;const y=c[0].offsetTop;let n=0;for(const e of c){if(e.offsetTop!==y)break;n++}return n||1}
 
 // Detalhes do jogo (parecido com o modo tela cheia do launcher)
@@ -161,7 +179,7 @@ function detPress(){const g=detGame();if(!g)return;const b=detBtns(g)[BP.det.f];
 function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••••'+v.slice(-4):'••••'):'Não preenchido';
  const txt=(n,k,ph,sec)=>({t:'txt',n,v:c[k]||'',show:sec?mask(c[k]):(c[k]||'Não preenchido'),fn:()=>kbOpen(n,c[k]||'',ph,async v=>{c[k]=v;await saveCfgBP();bpToast('Salvo')})});
  const tog=(n,on,fn)=>({t:'tog',n,on,fn});
- return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'ch',n:'Abas da Biblioteca',show:LTABS.filter(([k])=>BP.ltab[k]).map(x=>x[1]).join(', '),fn:tabsMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
+ return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
   {t:'h',n:'Sons da interface'},{t:'tog',n:'Sons da interface',on:BP.snd.on,fn:v=>{BP.snd.on=v;sndSave();cfgRender()},local:1},{t:'num',n:'Volume dos sons',show:BP.snd.vol+'%',fn:d=>{BP.snd.vol=Math.max(0,Math.min(100,BP.snd.vol+10*d));sndSave();cfgRender();sndPreset('tick')}},
   {t:'ch',n:'Som de cada ação',show:SNDE.length+' ações',fn:sndList},
   {t:'h',n:'Geral'},tog('Iniciar com o Windows',!!c.startup,v=>api('startup_set',{on:v,min:c.startMin!==false})),tog('Abrir minimizado ao iniciar com o Windows',c.startMin!==false,v=>api('startup_set',{on:!!c.startup,min:v})),
@@ -187,7 +205,7 @@ function bpSet(on){on=!!on;if(on===BP.on)return;BP.on=on;bpEl.hidden=!on;documen
 window.bpOnLoad=()=>{if(BP.on){bpPaint(false);if(BP.ov&&BP.ov.type==='logo')logoLive(BP.ov);if(BP.side.open)sideRender();if(BP.ov&&BP.ov.type==='menu')ovRender()}};
 
 // ---- acoes ----
-const curGame=()=>BP.scr==='home'?((x=>x&&!x.more?x:null)(BP.home.list[BP.home.idx])):BP.scr==='srch'?BP.srch.list[BP.srch.idx]:BP.scr==='edit'?detGame():BP.scr==='lib'?((x=>x&&!x.col?x:null)((BP.lib.tabs[BP.lib.tab]||{g:[]}).g[BP.lib.idx])):BP.scr==='det'?detGame():null;
+const curGame=()=>BP.scr==='home'?((x=>x&&!x.more?x:null)(BP.home.list[BP.home.idx])):BP.scr==='srch'?BP.srch.list[BP.srch.idx]:BP.scr==='edit'?detGame():BP.scr==='lib'?((x=>x&&!x.kind?x:null)((BP.lib.tabs[BP.lib.tab]||{g:[]}).g[BP.lib.idx])):BP.scr==='det'?detGame():null;
 async function bpPlay(g){const a=bpAct(g)[0];if(a==='play')setTimeout(()=>snd('launch'),60);
  if(a==='stop')return bpConfirmStop(g);
  if(a==='playing')return bpToast('O jogo já está abrindo.');
@@ -242,6 +260,7 @@ function ovCols(){const g=bq('.bo-g');if(!g)return 6;return getComputedStyle(g).
 function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('anim',!!(o&&o.anim));if(o)o.anim=0;if(!o||(o.type!=='size'&&o.type!=='logo'))bpEl.classList.remove('ov-light');if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
  const ft=`<div class="bo-f">${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span data-fk="a">${glyph('a')}Selecionar</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div>`;
  if(o.type==='menu'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-l'),el.querySelector('.bo-i.on'),false)}
+ else if(o.type==='ico'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g bo-ic">${o.items.map(([k,n],j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><span>${k===''?((d=>(d&&ICO[d])||BPI.lib)(BRAND[o.c.id]||(CONSOLES.some(x=>x.n===o.c.id)?CSLUG(o.c.id):null))):k==='__pc'?SV('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'):ICO[k]}</span><b>${esc(n)}</b></div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}
  else if(o.type==='logo')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}</div>${LGR.map((r,i)=>`<div class="lgr${i===o.f?' f':''}" data-lf="${i}"><span>${r.n}</span><div class="szt"><i style="width:${(o.v[i]-r.min)/(r.max-r.min)*100}%"></i></div><b>${o.v[i]}${r.u}</b></div>`).join('')}<div class="bo-f"><span>↑/↓ Escolher · ←/→ Ajustar</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='size')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-40)/220*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='date'||o.type==='hm'){const lab=o.type==='date'?['Dia','Mês','Ano']:['Horas','Minutos'],val=o.type==='date'?[String(o.v[0]).padStart(2,'0'),String(o.v[1]).padStart(2,'0'),o.v[2]]:[o.v[0],String(o.v[1]).padStart(2,'0')];
@@ -267,7 +286,8 @@ function ovIn(k){const o=BP.ov;
  if(o.type==='menu'){const n=o.items.length;if(k==='up'||k==='down'){o.i=(o.i+(k==='up'?-1:1)+n)%n;const it=o.items[o.i];if(it&&it.pv){it.pv();ovRender();return}}else if(k==='a'){const it=o.items[o.i];it&&it.fn();return}else return;ovRender();return}
  const c=ovCols(),n=o.items.length;if(!n)return;
  if(k==='left')o.i=Math.max(0,o.i-1);else if(k==='right')o.i=Math.min(n-1,o.i+1);else if(k==='up')o.i=Math.max(0,o.i-c);else if(k==='down')o.i=Math.min(n-1,o.i+c);
- else if(k==='rb'||k==='rt')o.i=Math.min(n-1,o.i+c*3);else if(k==='lb'||k==='lt')o.i=Math.max(0,o.i-c*3);else if(k==='a'){bpCovApply(o);return}else return;
+ else if(k==='rb'||k==='rt')o.i=Math.min(n-1,o.i+c*3);else if(k==='lb'||k==='lt')o.i=Math.max(0,o.i-c*3);else if(k==='a'){if(o.type==='ico')colIcoSet(o);else bpCovApply(o);return}else return;
+ if(o.type==='ico'){ovRender();return}
  if(o.i>=n-c*2)bpCovMore(o);
  bq('.bo-g .gc.on')?.classList.remove('on');const e=bq(`.bo-g .gc[data-oi="${o.i}"]`);if(e){e.classList.add('on');scrV(bq('.bo-g'),e,true)}}
 
@@ -416,16 +436,16 @@ function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0
  if(k==='guide'){if(BP.kb)return;if(BP.ov)BP.ov=null,ovRender();sideToggle();return}
  if(BP.kb)return kbIn(k);if(BP.ov)return ovIn(k);if(BP.side.open)return sideIn(k);
  if(BP.topF){if(k==='a'){srchOpen();return}if(k==='down'||k==='b'){BP.topF=false;topUi();return}return}
- if(k==='start'){if(BP.scr!=='cfg'&&BP.scr!=='edit')bpOpts();return}
- if(k==='b'){if(BP.scr==='home')sideToggle(true);else if(BP.scr==='lib'&&BP.lib.colOpen){const p=BP.lib.colOpen;BP.lib.colOpen=null;BP.lib.sel.col='col:'+p;BP.lib.rk='';libRender(true)}else bpBack();return}
+ if(k==='start'){if(BP.scr==='lib'){if(BP.lib.tf){tabsMenu();return}const C=BP.lib.tabs[BP.lib.tab],x=C&&C.g[BP.lib.idx];if(x&&x.kind==='col'){colIconMenu(x);return}if(x&&x.kind)return}if(BP.scr!=='cfg'&&BP.scr!=='edit')bpOpts();return}
+ if(k==='b'){if(BP.scr==='home')sideToggle(true);else if(BP.scr==='lib'&&BP.lib.open){const o=BP.lib.open;BP.lib.open=null;BP.lib.sel[o.k]=o.id;BP.lib.rk='';libRender(true)}else bpBack();return}
  if(BP.scr==='home'){if(k==='up'){BP.topF=true;topUi();return}if(k==='left')homeSel(BP.home.idx-1);else if(k==='right')homeSel(BP.home.idx+1);else if(k==='lt')homeSel(BP.home.idx-10);else if(k==='rt')homeSel(BP.home.idx+10);
   else if(k==='a'){const x=BP.home.list[BP.home.idx];if(x&&x.more){BP.hist=['home'];bpGo('lib',false)}else if(x)detOpen(x)}return}
- if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.colOpen=null;B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
+ if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.open=null;B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
  if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c)tabFocus(true);else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
   else if(k==='lt')libSel(B.idx-c*3);else if(k==='rt')libSel(B.idx+c*3);
-  else if(k==='lb'||k==='rb'){const n=B.tabs.length;B.colOpen=null;B.tab=(B.tab+(k==='lb'?-1:1)+n)%n;libRender(true)}
+  else if(k==='lb'||k==='rb'){const n=B.tabs.length;B.open=null;B.tab=(B.tab+(k==='lb'?-1:1)+n)%n;libRender(true)}
   else if(k==='y')sortMenu();else if(k==='x')filtMenu()
-  else if(k==='a'){const C=B.tabs[B.tab],x=C&&C.g[B.idx];if(x&&x.col){B.colOpen=x.col;B.rk='';libRender(true)}else{const g=curGame();g&&detOpen(g)}}return}
+  else if(k==='a'){const C=B.tabs[B.tab],x=C&&C.g[B.idx];if(x&&x.kind){B.open={k:B.tabs[B.tab].base,id:x.id};B.rk='';libRender(true)}else{const g=curGame();g&&detOpen(g)}}return}
  if(BP.scr==='det'){const n=detBtns(detGame()||{}).length;if(k==='left')BP.det.f=Math.max(0,BP.det.f-1);else if(k==='right')BP.det.f=Math.min(n-1,BP.det.f+1);
   else if(k==='a'){detPress();return}else if(k==='down'||k==='sdown'){bq('.dt-r')?.scrollBy({top:90,behavior:'smooth'});return}else if(k==='up'||k==='sup'){bq('.dt-r')?.scrollBy({top:-90,behavior:'smooth'});return}else return;
   bpEl.querySelectorAll('.db').forEach((b,i)=>b.classList.toggle('f',i===BP.det.f));return}
@@ -463,11 +483,11 @@ bpEl.addEventListener('click',e=>{
  const fk0=e.target.closest('[data-fk]');if(fk0&&fk0.dataset.fk){bpIn(fk0.dataset.fk);return}
  const kk=e.target.closest('[data-kr]');if(kk&&BP.kb){BP.kb.r=+kk.dataset.kr;BP.kb.c=+kk.dataset.kc;kbKey(KBL[BP.kb.lay][BP.kb.r][BP.kb.c]);return}
  if(BP.kb){if(e.target.id==='bpkb')kbClose();return}
- const oi=e.target.closest('[data-oi]');if(oi&&BP.ov){BP.ov.i=+oi.dataset.oi;if(BP.ov.type==='grid'){ovRender();bpCovApply(BP.ov)}else ovIn('a');return}
+ const oi=e.target.closest('[data-oi]');if(oi&&BP.ov){BP.ov.i=+oi.dataset.oi;if(BP.ov.type==='ico'){colIcoSet(BP.ov);return}if(BP.ov.type==='grid'){ovRender();bpCovApply(BP.ov)}else ovIn('a');return}
  if(BP.ov){if(e.target.id==='bpov')ovClose();return}
  const si=e.target.closest('[data-si]');if(si){BP.side.i=+si.dataset.si;sideIn('a');return}
  if(BP.side.open){if(!e.target.closest('#bpside'))sideToggle(false);return}
- const lt=e.target.closest('[data-lt]');if(lt){BP.lib.colOpen=null;BP.lib.tab=+lt.dataset.lt;libRender(true);return}
+ const lt=e.target.closest('[data-lt]');if(lt){BP.lib.open=null;BP.lib.tab=+lt.dataset.lt;libRender(true);return}
  const t=e.target.closest('[data-bi]');if(t){const i=+t.dataset.bi;if(BP.scr==='home'){if(i===BP.home.idx)bpIn('a');else homeSel(i)}else if(BP.scr==='lib'){if(i===BP.lib.idx)bpIn('a');else libSel(i)}return}
  const db=e.target.closest('[data-db]');if(db){BP.det.f=+db.dataset.db;detPress();return}
  const ci=e.target.closest('[data-ci]');if(ci){BP.cfg.i=+ci.dataset.ci;cfgRender();cfgPress();return}
