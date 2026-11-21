@@ -410,3 +410,14 @@ body.bpon{overflow:hidden}
 .dv-bar i{display:block;height:100%;border-radius:99px}
 .dv-e{padding:1.6vh 2.2vh;font-size:1.8vh;opacity:.6}
 .dv-note{margin:3vh 1.4vh 0;font-size:1.5vh;opacity:.5;line-height:1.5}
+/* colecoes (plataformas e launchers) */
+.bl-g.cols{grid-template-columns:repeat(auto-fill,minmax(30vh,1fr))}
+.bl-g.cols .bt.bcol{aspect-ratio:16/9!important}
+.bt.bcol .bi{background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.1);box-sizing:border-box}
+.bt.bcol .cl{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2vh;padding:6%;text-align:center}
+.bt.bcol .cl .pli,.bt.bcol .cl>svg{display:grid!important;place-items:center;width:7vh;height:7vh;position:static!important;background:none!important;box-shadow:none!important;opacity:1!important}
+.bt.bcol .cl .pli svg,.bt.bcol .cl>svg{width:6vh!important;height:6vh!important;color:#fff}
+.bt.bcol .cl b{font-size:2.2vh;font-weight:700}
+.bt.bcol .cl em{font-style:normal;font-size:1.6vh;opacity:.6}
+.bl-g.cols .bt.on{box-shadow:0 0 0 .4vh var(--bpa),0 1.4vh 3.4vh rgba(0,0,0,.6)}
+.bl-tabs .tb .tsub{font-weight:700;margin-left:-.2vh}

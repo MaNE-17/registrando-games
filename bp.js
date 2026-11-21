@@ -111,22 +111,31 @@ const libSave=()=>{try{localStorage.setItem('bplib',JSON.stringify({sort:BP.lib.
 const yr=g=>g.released?new Date(g.released*1000).getFullYear():0;
 function libPass(g){const f=BP.lib.f;if(f.status&&g.status!==f.status)return false;if(f.platform&&canonP(g.platform)!==f.platform)return false;if(f.genre&&!(g.genres||[]).includes(f.genre))return false;if(f.year&&yr(g)!==f.year)return false;return true}
 const libSort=l=>{const fn=SORT[BP.lib.sort]||NC;return [...l].sort((a,b)=>fn(a,b)||NC(a,b))};
-function libTabs(){const v=vis().filter(libPass),t=[{k:'all',n:'Todos',g:libSort(v)}];
- const inst=v.filter(g=>(S.inst||[]).includes(g.id));if(inst.length)t.push({k:'inst',n:'Instalados',g:libSort(inst)});
- const fav=v.filter(g=>g.fav);if(fav.length)t.push({k:'fav',n:'Favoritos',g:libSort(fav)});
- const rec=v.filter(g=>g.last_played);if(rec.length)t.push({k:'rec',n:'Recentes',g:bpRec(rec)});
- const by=new Map();for(const g of v){const p=canonP(g.platform)||'Outros';if(!by.has(p))by.set(p,[]);by.get(p).push(g)}
- [...by.entries()].sort((a,b)=>b[1].length-a[1].length).forEach(([p,l])=>t.push({k:'p:'+p,n:dispP(p),g:libSort(l)}));
- for(const L of S.lists||[]){const l=(L.ids||[]).map(id=>v.find(g=>g.id===id)).filter(Boolean);if(l.length)t.push({k:'l:'+L.id,n:L.name||'Lista',g:l})}
+const LTABS=[['all','Todos'],['inst','Instalados'],['col','Coleções'],['fav','Favoritos'],['rec','Recentes'],['lists','Listas']];
+BP.ltab={all:1,inst:1,col:1,fav:0,rec:0,lists:0};try{Object.assign(BP.ltab,JSON.parse(localStorage.getItem('bptabs')||'{}'))}catch{}
+const isManual=g=>!g.appid&&!g.lkey;
+function libTabs(){const v=vis().filter(libPass),T=BP.ltab,t=[];
+ if(T.all)t.push({k:'all',n:'Todos',g:libSort(v)});
+ if(T.inst){const inst=v.filter(g=>(S.inst||[]).includes(g.id)||isManual(g));t.push({k:'inst',n:'Instalados',g:libSort(inst)})}
+ if(T.col){const by=new Map();for(const g of v){const p=canonP(g.platform)||'Outros';if(!by.has(p))by.set(p,[]);by.get(p).push(g)}
+  const cols=[...by.entries()].sort((a,b)=>dispP(a[0]).localeCompare(dispP(b[0]))).map(([p,l])=>({id:'col:'+p,col:p,name:dispP(p),games:l}));
+  const op=BP.lib.colOpen&&cols.find(c=>c.col===BP.lib.colOpen);
+  if(op)t.push({k:'col:'+op.col,n:'Coleções',cnt:cols.length,col:op,g:libSort(op.games)});else{BP.lib.colOpen=null;t.push({k:'col',n:'Coleções',cnt:cols.length,cols:true,g:cols})}}
+ if(T.fav){const fav=v.filter(g=>g.fav);if(fav.length)t.push({k:'fav',n:'Favoritos',g:libSort(fav)})}
+ if(T.rec){const rec=v.filter(g=>g.last_played);if(rec.length)t.push({k:'rec',n:'Recentes',g:bpRec(rec)})}
+ if(T.lists)for(const L of S.lists||[]){const l=(L.ids||[]).map(id=>v.find(g=>g.id===id)).filter(Boolean);if(l.length)t.push({k:'l:'+L.id,n:L.name||'Lista',g:l})}
+ if(!t.length)t.push({k:'all',n:'Todos',g:libSort(v)});
  return t}
+function colTile(c,j){const ic=plIco({platform:c.col});return `<div class="bt bcol" data-bi="${j}"><div class="bi"><span class="cl">${ic||BPI.lib}<b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
+function tabsMenu(){const o={type:'menu',title:'Abas da Biblioteca',sub:'A mostra ou esconde a aba',items:LTABS.map(([k,n])=>({n,ck:!!BP.ltab[k],fn:()=>{BP.ltab[k]=BP.ltab[k]?0:1;if(!LTABS.some(([x])=>BP.ltab[x]))BP.ltab.all=1;try{localStorage.setItem('bptabs',JSON.stringify(BP.ltab))}catch{}o.items.forEach((it,i)=>it.ck=!!BP.ltab[LTABS[i][0]]);ovRender();BP.lib.tab=0;BP.lib.rk='';cfgRender()}}))};ovOpen(o)}
 function libRender(full){const B=BP.lib,T=B.tabs=libTabs();if(B.tab>=T.length)B.tab=0;const C=T[B.tab];
- bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}<em>${t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
+ bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}${t.col?`<b class="tsub">› ${esc(t.col.name)}</b>`:''}<em>${t.col?t.g.length:t.cnt!=null?t.cnt:t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
  scrH(bq('#bltabs'),bq('#bltabs .tb.on'));if(B.tf){const t=bq('#bltabs .tb.on');t&&t.classList.add('f')}
  const key=C.k+'|'+C.g.map(g=>g.id+(g.cover||'')).join(',');
- if(full||key!==B.rk){B.rk=key;bq('#blg').innerHTML=C.g.map(bpTile).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>'}
+ if(full||key!==B.rk){B.rk=key;const G=bq('#blg');G.classList.toggle('cols',!!C.cols);G.innerHTML=(C.cols?C.g.map(colTile):C.g.map(bpTile)).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>';if(B.lastK!==C.k){G.scrollTop=0;G._ty=null;B.lastK=C.k}}
  libSel(Math.max(0,C.g.findIndex(g=>g.id===B.sel[C.k])),true)}
 function libSel(i,force,mouse){const B=BP.lib,C=B.tabs[B.tab];if(!C||!C.g.length){bpBg(null);return}i=Math.max(0,Math.min(C.g.length-1,i));
- B.idx=i;B.sel[C.k]=C.g[i].id;const G=bq('#blg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];
+ B.idx=i;B.sel[C.k]=C.g[i].id;const G=bq('#blg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];if(C.cols){if(t){t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(null);return}
  if(t){t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(C.g[i])}
 function tabFocus(on){BP.lib.tf=on;bpEl.classList.toggle('tab-f',on);const t=bq('#bltabs .tb.on');if(t)t.classList.toggle('f',on)}
 function libCols(){const G=bq('#blg'),c=G.children;if(c.length<2)return 1;const y=c[0].offsetTop;let n=0;for(const e of c){if(e.offsetTop!==y)break;n++}return n||1}
@@ -152,7 +161,7 @@ function detPress(){const g=detGame();if(!g)return;const b=detBtns(g)[BP.det.f];
 function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••••'+v.slice(-4):'••••'):'Não preenchido';
  const txt=(n,k,ph,sec)=>({t:'txt',n,v:c[k]||'',show:sec?mask(c[k]):(c[k]||'Não preenchido'),fn:()=>kbOpen(n,c[k]||'',ph,async v=>{c[k]=v;await saveCfgBP();bpToast('Salvo')})});
  const tog=(n,on,fn)=>({t:'tog',n,on,fn});
- return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
+ return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'ch',n:'Abas da Biblioteca',show:LTABS.filter(([k])=>BP.ltab[k]).map(x=>x[1]).join(', '),fn:tabsMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
   {t:'h',n:'Sons da interface'},{t:'tog',n:'Sons da interface',on:BP.snd.on,fn:v=>{BP.snd.on=v;sndSave();cfgRender()},local:1},{t:'num',n:'Volume dos sons',show:BP.snd.vol+'%',fn:d=>{BP.snd.vol=Math.max(0,Math.min(100,BP.snd.vol+10*d));sndSave();cfgRender();sndPreset('tick')}},
   {t:'ch',n:'Som de cada ação',show:SNDE.length+' ações',fn:sndList},
   {t:'h',n:'Geral'},tog('Iniciar com o Windows',!!c.startup,v=>api('startup_set',{on:v,min:c.startMin!==false})),tog('Abrir minimizado ao iniciar com o Windows',c.startMin!==false,v=>api('startup_set',{on:!!c.startup,min:v})),
@@ -178,7 +187,7 @@ function bpSet(on){on=!!on;if(on===BP.on)return;BP.on=on;bpEl.hidden=!on;documen
 window.bpOnLoad=()=>{if(BP.on){bpPaint(false);if(BP.ov&&BP.ov.type==='logo')logoLive(BP.ov);if(BP.side.open)sideRender();if(BP.ov&&BP.ov.type==='menu')ovRender()}};
 
 // ---- acoes ----
-const curGame=()=>BP.scr==='home'?((x=>x&&!x.more?x:null)(BP.home.list[BP.home.idx])):BP.scr==='srch'?BP.srch.list[BP.srch.idx]:BP.scr==='edit'?detGame():BP.scr==='lib'?(BP.lib.tabs[BP.lib.tab]||{g:[]}).g[BP.lib.idx]:BP.scr==='det'?detGame():null;
+const curGame=()=>BP.scr==='home'?((x=>x&&!x.more?x:null)(BP.home.list[BP.home.idx])):BP.scr==='srch'?BP.srch.list[BP.srch.idx]:BP.scr==='edit'?detGame():BP.scr==='lib'?((x=>x&&!x.col?x:null)((BP.lib.tabs[BP.lib.tab]||{g:[]}).g[BP.lib.idx])):BP.scr==='det'?detGame():null;
 async function bpPlay(g){const a=bpAct(g)[0];if(a==='play')setTimeout(()=>snd('launch'),60);
  if(a==='stop')return bpConfirmStop(g);
  if(a==='playing')return bpToast('O jogo já está abrindo.');
@@ -408,15 +417,15 @@ function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0
  if(BP.kb)return kbIn(k);if(BP.ov)return ovIn(k);if(BP.side.open)return sideIn(k);
  if(BP.topF){if(k==='a'){srchOpen();return}if(k==='down'||k==='b'){BP.topF=false;topUi();return}return}
  if(k==='start'){if(BP.scr!=='cfg'&&BP.scr!=='edit')bpOpts();return}
- if(k==='b'){if(BP.scr==='home')sideToggle(true);else bpBack();return}
+ if(k==='b'){if(BP.scr==='home')sideToggle(true);else if(BP.scr==='lib'&&BP.lib.colOpen){const p=BP.lib.colOpen;BP.lib.colOpen=null;BP.lib.sel.col='col:'+p;BP.lib.rk='';libRender(true)}else bpBack();return}
  if(BP.scr==='home'){if(k==='up'){BP.topF=true;topUi();return}if(k==='left')homeSel(BP.home.idx-1);else if(k==='right')homeSel(BP.home.idx+1);else if(k==='lt')homeSel(BP.home.idx-10);else if(k==='rt')homeSel(BP.home.idx+10);
   else if(k==='a'){const x=BP.home.list[BP.home.idx];if(x&&x.more){BP.hist=['home'];bpGo('lib',false)}else if(x)detOpen(x)}return}
- if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
+ if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.colOpen=null;B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
  if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c)tabFocus(true);else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
   else if(k==='lt')libSel(B.idx-c*3);else if(k==='rt')libSel(B.idx+c*3);
-  else if(k==='lb'||k==='rb'){const n=B.tabs.length;B.tab=(B.tab+(k==='lb'?-1:1)+n)%n;libRender(true)}
+  else if(k==='lb'||k==='rb'){const n=B.tabs.length;B.colOpen=null;B.tab=(B.tab+(k==='lb'?-1:1)+n)%n;libRender(true)}
   else if(k==='y')sortMenu();else if(k==='x')filtMenu()
-  else if(k==='a'){const g=curGame();g&&detOpen(g)}return}
+  else if(k==='a'){const C=B.tabs[B.tab],x=C&&C.g[B.idx];if(x&&x.col){B.colOpen=x.col;B.rk='';libRender(true)}else{const g=curGame();g&&detOpen(g)}}return}
  if(BP.scr==='det'){const n=detBtns(detGame()||{}).length;if(k==='left')BP.det.f=Math.max(0,BP.det.f-1);else if(k==='right')BP.det.f=Math.min(n-1,BP.det.f+1);
   else if(k==='a'){detPress();return}else if(k==='down'||k==='sdown'){bq('.dt-r')?.scrollBy({top:90,behavior:'smooth'});return}else if(k==='up'||k==='sup'){bq('.dt-r')?.scrollBy({top:-90,behavior:'smooth'});return}else return;
   bpEl.querySelectorAll('.db').forEach((b,i)=>b.classList.toggle('f',i===BP.det.f));return}
@@ -458,7 +467,7 @@ bpEl.addEventListener('click',e=>{
  if(BP.ov){if(e.target.id==='bpov')ovClose();return}
  const si=e.target.closest('[data-si]');if(si){BP.side.i=+si.dataset.si;sideIn('a');return}
  if(BP.side.open){if(!e.target.closest('#bpside'))sideToggle(false);return}
- const lt=e.target.closest('[data-lt]');if(lt){BP.lib.tab=+lt.dataset.lt;libRender(true);return}
+ const lt=e.target.closest('[data-lt]');if(lt){BP.lib.colOpen=null;BP.lib.tab=+lt.dataset.lt;libRender(true);return}
  const t=e.target.closest('[data-bi]');if(t){const i=+t.dataset.bi;if(BP.scr==='home'){if(i===BP.home.idx)bpIn('a');else homeSel(i)}else if(BP.scr==='lib'){if(i===BP.lib.idx)bpIn('a');else libSel(i)}return}
  const db=e.target.closest('[data-db]');if(db){BP.det.f=+db.dataset.db;detPress();return}
  const ci=e.target.closest('[data-ci]');if(ci){BP.cfg.i=+ci.dataset.ci;cfgRender();cfgPress();return}
