@@ -93,9 +93,9 @@ function bpBack(){if(BP.scr==='home')return;const p=BP.hist.pop()||'home';bpGo(p
 function bpPaint(full){if(!BP.on)return;({home:homeRender,lib:libRender,det:detRender,cfg:cfgRender,srch:srchRender,edit:edRender,dev:devRender})[BP.scr](full);topUi()}
 
 // Inicio: so jogos instalados ou jogados recentemente
-function homeRender(full){const H=BP.home,A=bpRec(vis().filter(g=>(S.inst||[]).includes(g.id)||g.last_played)),L=A.slice(0,20);if(A.length>20)L.push({id:'__more',more:true,name:'Veja mais na sua biblioteca'});H.list=L;
+function homeRender(full){const H=BP.home,A=bpRec(vis().filter(g=>g.last_played)),L=A.slice(0,20);if(A.length>20)L.push({id:'__more',more:true,name:'Veja mais na sua biblioteca'});H.list=L;
  const key=L.map(g=>g.id+(S.running.includes(g.id)?'r':'')+(g.cover||'')).join(',');
- if(full||key!==H.rk){H.rk=key;bq('#bptrk').innerHTML=L.length?L.map((g,j)=>g.more?`<div class="bt bmore" data-bi="${j}"><div class="bi"><span class="mr">${BPI.lib}<b>Veja mais na sua biblioteca</b></span></div></div>`:bpTile(g,j)).join(''):'<div class="bp-empty">Nenhum jogo instalado ou jogado recentemente.<br>Aperte o botão Home para abrir a Biblioteca.</div>'}
+ if(full||key!==H.rk){H.rk=key;bq('#bptrk').innerHTML=L.length?L.map((g,j)=>g.more?`<div class="bt bmore" data-bi="${j}"><div class="bi"><span class="mr">${BPI.lib}<b>Veja mais na sua biblioteca</b></span></div></div>`:bpTile(g,j)).join(''):'<div class="bp-empty">Nenhum jogo jogado recentemente.<br>Aperte o botão Home para abrir a Biblioteca.</div>'}
  homeSel(Math.max(0,L.findIndex(g=>g.id===H.sel)),true)}
 const TG={orig:{w:15,ws:18,g:1.4},ps:{w:11,ws:15.5,g:1.1}};
 function homeGeo(){const t=TG[BP.th]||TG.orig,vh=innerHeight/100,vw=innerWidth/100,z=BP.cz/100;return{w:t.w*vh*z,ws:t.ws*vh*z,g:t.g*vw,pad:4*vw}}
@@ -183,7 +183,7 @@ function detPress(){const g=detGame();if(!g)return;const b=detBtns(g)[BP.det.f];
 function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••••'+v.slice(-4):'••••'):'Não preenchido';
  const txt=(n,k,ph,sec)=>({t:'txt',n,v:c[k]||'',show:sec?mask(c[k]):(c[k]||'Não preenchido'),fn:()=>kbOpen(n,c[k]||'',ph,async v=>{c[k]=v;await saveCfgBP();bpToast('Salvo')})});
  const tog=(n,on,fn)=>({t:'tog',n,on,fn});
- return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
+ return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'act',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:czOpen},
   {t:'h',n:'Sons da interface'},{t:'tog',n:'Sons da interface',on:BP.snd.on,fn:v=>{BP.snd.on=v;sndSave();cfgRender()},local:1},{t:'num',n:'Volume dos sons',show:BP.snd.vol+'%',fn:d=>{BP.snd.vol=Math.max(0,Math.min(100,BP.snd.vol+10*d));sndSave();cfgRender();sndPreset('tick')}},
   {t:'ch',n:'Som de cada ação',show:SNDE.length+' ações',fn:sndList},
   {t:'h',n:'Geral'},tog('Iniciar com o Windows',!!c.startup,v=>api('startup_set',{on:v,min:c.startMin!==false})),tog('Abrir minimizado ao iniciar com o Windows',c.startMin!==false,v=>api('startup_set',{on:!!c.startup,min:v})),
@@ -199,6 +199,7 @@ function cfgRender(){const R=cfgRows(),C=BP.cfg;if(R[C.i]&&R[C.i].t==='h')C.i++;
  bq('#bcl').innerHTML=R.map((r,i)=>r.t==='h'?`<div class="bc-h">${esc(r.n)}</div>`:`<div class="bc-r${i===C.i?' f':''}" data-ci="${i}"><span class="bc-n">${esc(r.n)}</span><span class="bc-v">${r.t==='tog'?`<i class="bsw${r.on?' on':''}"><i></i></i>`:r.t==='num'?`<b class="bc-go">‹</b><b class="sc">${esc(r.show)}</b><b class="bc-go">›</b>`:r.t==='act'?`${r.show?`<small>${esc(r.show)}</small>`:''}<b class="bc-go">›</b>`:`${esc(r.show)}<b class="bc-go">›</b>`}</span></div>`).join('');
  scrV(bq('#bcl'),bq('.bc-r.f'),true);bpBg(null)}
 async function cfgPress(d=0){const r=cfgRows()[BP.cfg.i];if(!r||r.t==='h')return;if(r.t==='num'){r.fn(d||1);return}if(d)return;if(r.t==='tog'){snd('toggle');await r.fn(!r.on);if(!r.local)await load();return}r.fn()}
+function czOpen(){bpGo('home',false);const o={type:'cz',title:'Tamanho das capas no Início',v:BP.cz,v0:BP.cz};ovOpen(o);bpEl.classList.add('ov-light')}
 function bpZoom(){bpEl.style.setProperty('--bpz',BP.cz/100);if(BP.on&&BP.scr==='home')homeTx(BP.home.idx)}
 function cfgMove(d){const R=cfgRows();let i=BP.cfg.i;do{i+=d}while(R[i]&&R[i].t==='h');if(i<0||i>=R.length)return;BP.cfg.i=i;cfgRender()}
 
@@ -261,10 +262,11 @@ function sideIn(k){const L=SIDE(),n=L.length;if(k==='up')BP.side.i=(BP.side.i-1+
 function ovOpen(o,stack){o.i=o.i||0;o.prev=stack?BP.ov:null;BP.ov=o;o.anim=1;ovRender()}
 function ovClose(all){BP.ov=all?null:(BP.ov&&BP.ov.prev)||null;ovRender()}
 function ovCols(){const g=bq('.bo-g');if(!g)return 6;return getComputedStyle(g).gridTemplateColumns.split(' ').length||6}
-function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('anim',!!(o&&o.anim));if(o)o.anim=0;if(!o||(o.type!=='size'&&o.type!=='logo'))bpEl.classList.remove('ov-light');if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
+function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('anim',!!(o&&o.anim));if(o)o.anim=0;if(!o||(o.type!=='size'&&o.type!=='logo'&&o.type!=='cz'))bpEl.classList.remove('ov-light');if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
  const ft=`<div class="bo-f">${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span data-fk="a">${glyph('a')}Selecionar</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div>`;
  if(o.type==='menu'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-l'),el.querySelector('.bo-i.on'),false)}
  else if(o.type==='ico'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g bo-ic">${o.items.map(([k,n],j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><span>${k===''?((d=>(d&&ICO[d])||BPI.lib)(BRAND[o.c.id]||(CONSOLES.some(x=>x.n===o.c.id)?CSLUG(o.c.id):null))):k==='__pc'?SV('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'):ICO[k]}</span><b>${esc(n)}</b></div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}
+ else if(o.type==='cz')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-70)/90*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='logo')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}</div>${LGR.map((r,i)=>`<div class="lgr${i===o.f?' f':''}" data-lf="${i}"><span>${r.n}</span><div class="szt"><i style="width:${(o.v[i]-r.min)/(r.max-r.min)*100}%"></i></div><b>${o.v[i]}${r.u}</b></div>`).join('')}<div class="bo-f"><span>↑/↓ Escolher · ←/→ Ajustar</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='size')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-40)/220*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='date'||o.type==='hm'){const lab=o.type==='date'?['Dia','Mês','Ano']:['Horas','Minutos'],val=o.type==='date'?[String(o.v[0]).padStart(2,'0'),String(o.v[1]).padStart(2,'0'),o.v[2]]:[o.v[0],String(o.v[1]).padStart(2,'0')];
@@ -273,6 +275,9 @@ function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('a
  else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g k-${o.kind||'cover'}">${o.items.map((it,j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" alt=""></div>`).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
   scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}}
 function ovIn(k){const o=BP.ov;
+ if(o.type==='cz'){if(k==='b'||k==='back'){BP.cz=o.v0;bpZoom();ovClose();BP.hist=['home'];bpGo('cfg',false);return}
+  if(k==='left'||k==='lb')o.v=Math.max(70,o.v-5);else if(k==='right'||k==='rb')o.v=Math.min(160,o.v+5);else if(k==='y')o.v=100;
+  else if(k==='a'){try{localStorage.setItem('bpcz',BP.cz)}catch{}ovClose();bpToast('Tamanho salvo: '+BP.cz+'%');BP.hist=['home'];bpGo('cfg',false);return}else return;BP.cz=o.v;bpZoom();ovRender();return}
  if(o.type==='logo'){if(k==='b'||k==='back'){o.v=[...o.v0];logoLive(o);ovClose();return}
   const r=LGR[o.f];if(k==='up')o.f=(o.f+2)%3;else if(k==='down')o.f=(o.f+1)%3;else if(k==='left'||k==='lb')o.v[o.f]=Math.max(r.min,o.v[o.f]-r.st);else if(k==='right'||k==='rb')o.v[o.f]=Math.min(r.max,o.v[o.f]+r.st);
   else if(k==='y'){o.v=[120,0,0]}else if(k==='a'){api('save',{id:o.g.id,bpLogoSize:o.v[0],bpLogoX:o.v[1],bpLogoY:o.v[2]}).then(load);ovClose(true);bpToast('Logo salva');return}else return;logoLive(o);ovRender();return}
