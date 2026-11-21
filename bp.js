@@ -85,7 +85,7 @@ function bpFoot(){let h;
  const KS=['a','x','y','start','b'];bq('#bpfoot').innerHTML=h.map(([g,t])=>{const k=(g.match(/g-(\w+)/)||[])[1]||'';return `<span data-fk="${k}">${g}${t}</span>`}).join('')}
 
 // ---- telas ----
-function bpGo(scr,push=true){BP.topF=false;if(push&&BP.scr!==scr)BP.hist.push(BP.scr);BP.scr=scr;
+function bpGo(scr,push=true){BP.topF=false;BP.lib.tf=false;bpEl.classList.remove('tab-f');if(push&&BP.scr!==scr)BP.hist.push(BP.scr);BP.scr=scr;
  bpEl.querySelectorAll('.bp-scr').forEach(s=>s.hidden=s.id!=='bps-'+scr);bpClass();bpTop();bpFoot();bpPaint(true)}
 function bpBack(){if(BP.scr==='home')return;const p=BP.hist.pop()||'home';bpGo(p,false)}
 function bpPaint(full){if(!BP.on)return;({home:homeRender,lib:libRender,det:detRender,cfg:cfgRender,srch:srchRender,edit:edRender})[BP.scr](full);topUi()}
@@ -120,13 +120,14 @@ function libTabs(){const v=vis().filter(libPass),t=[{k:'all',n:'Todos',g:libSort
  return t}
 function libRender(full){const B=BP.lib,T=B.tabs=libTabs();if(B.tab>=T.length)B.tab=0;const C=T[B.tab];
  bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}<em>${t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
- scrH(bq('#bltabs'),bq('#bltabs .tb.on'));
+ scrH(bq('#bltabs'),bq('#bltabs .tb.on'));if(B.tf){const t=bq('#bltabs .tb.on');t&&t.classList.add('f')}
  const key=C.k+'|'+C.g.map(g=>g.id+(g.cover||'')).join(',');
  if(full||key!==B.rk){B.rk=key;bq('#blg').innerHTML=C.g.map(bpTile).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>'}
  libSel(Math.max(0,C.g.findIndex(g=>g.id===B.sel[C.k])),true)}
 function libSel(i,force,mouse){const B=BP.lib,C=B.tabs[B.tab];if(!C||!C.g.length){bpBg(null);return}i=Math.max(0,Math.min(C.g.length-1,i));
  B.idx=i;B.sel[C.k]=C.g[i].id;const G=bq('#blg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];
  if(t){t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(C.g[i])}
+function tabFocus(on){BP.lib.tf=on;bpEl.classList.toggle('tab-f',on);const t=bq('#bltabs .tb.on');if(t)t.classList.toggle('f',on)}
 function libCols(){const G=bq('#blg'),c=G.children;if(c.length<2)return 1;const y=c[0].offsetTop;let n=0;for(const e of c){if(e.offsetTop!==y)break;n++}return n||1}
 
 // Detalhes do jogo (parecido com o modo tela cheia do launcher)
@@ -152,7 +153,7 @@ function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••�
  const tog=(n,on,fn)=>({t:'tog',n,on,fn});
  return [{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'num',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:d=>{BP.cz=Math.max(70,Math.min(160,BP.cz+10*d));try{localStorage.setItem('bpcz',BP.cz)}catch{}bpZoom();cfgRender()}},
   {t:'h',n:'Sons da interface'},{t:'tog',n:'Sons da interface',on:BP.snd.on,fn:v=>{BP.snd.on=v;sndSave();cfgRender()},local:1},{t:'num',n:'Volume dos sons',show:BP.snd.vol+'%',fn:d=>{BP.snd.vol=Math.max(0,Math.min(100,BP.snd.vol+10*d));sndSave();cfgRender();sndPreset('tick')}},
-  ...SNDE.map(([k,n,df])=>({t:'ch',n,show:SNDP[BP.snd.map[k]||df],fn:()=>sndMenu(k,n)})),
+  {t:'ch',n:'Som de cada ação',show:SNDE.length+' ações',fn:sndList},
   {t:'h',n:'Geral'},tog('Iniciar com o Windows',!!c.startup,v=>api('startup_set',{on:v,min:c.startMin!==false})),tog('Abrir minimizado ao iniciar com o Windows',c.startMin!==false,v=>api('startup_set',{on:!!c.startup,min:v})),
   tog('Atualizar e sincronizar automaticamente ao abrir o app',c.autoRefresh!==false,v=>api('auto_refresh_set',{on:v})),tog('Avisar quando tiver versão nova',c.updNotify!==false,v=>api('upd_notify_set',{on:v})),
   {t:'h',n:'Steam'},txt('Chave da API da Steam','key','Cole ou digite a chave',1),txt('SteamID ou link do perfil','steamid','Ex.: 7656119… ou o link do perfil'),
@@ -307,10 +308,15 @@ const SYN={tick:t=>tone(t,{type:'sine',f:2100,dur:.03,vol:.18}),soft:t=>tone(t,{
  digital:t=>tone(t,{type:'square',f:1250,dur:.035,vol:.07}),pop:t=>{tone(t,{type:'sine',f:300,f2:120,dur:.06,vol:.35});noise(t,{dur:.03,vol:.08,f:2500,f2:2500})},
  chime:t=>{tone(t,{type:'sine',f:880,dur:.18,vol:.22});tone(t+.09,{type:'sine',f:1320,dur:.26,vol:.2})},swoosh:t=>noise(t,{dur:.18,vol:.22,f:500,f2:3800,q:.8}),
  low:t=>tone(t,{type:'triangle',f:360,f2:180,dur:.1,vol:.3}),glass:t=>{tone(t,{type:'sine',f:2600,dur:.12,vol:.12});tone(t,{type:'sine',f:3900,dur:.08,vol:.06})},none:()=>{}};
-function sndPreset(p){if(!p||p==='none')return;try{if(!AC){AC=new AudioContext();AC._m=AC.createGain();AC._m.connect(AC.destination)}if(AC.state==='suspended')AC.resume();AC._m.gain.value=BP.snd.vol/100;(SYN[p]||SYN.tick)(AC.currentTime+.005)}catch{}}
+function sndPreset(p){if(!p||p==='none')return;if(String(p).startsWith('file:')){try{const a=new Audio(p);a.volume=BP.snd.vol/100;a.play().catch(()=>{})}catch{}return}try{if(!AC){AC=new AudioContext();AC._m=AC.createGain();AC._m.connect(AC.destination)}if(AC.state==='suspended')AC.resume();AC._m.gain.value=BP.snd.vol/100;(SYN[p]||SYN.tick)(AC.currentTime+.005)}catch{}}
 function snd(ev){if(!BP.on||!BP.snd.on)return;const now=performance.now();if(now-(SNL[ev]||0)<(ev==='move'?45:80))return;SNL[ev]=now;sndPreset(BP.snd.map[ev]||(SNDE.find(x=>x[0]===ev)||[])[2])}
-function sndMenu(ev,name){const cur=BP.snd.map[ev]||(SNDE.find(x=>x[0]===ev)||[])[2];
- ovOpen({type:'menu',title:name,sub:'O som toca ao passar por cada opção',items:Object.keys(SNDP).map(k=>({n:SNDP[k],ck:cur===k,pv:()=>sndPreset(k),fn:()=>{BP.snd.map[ev]=k;sndSave();ovClose(true);cfgRender();bpToast('Som: '+SNDP[k])}}))})}
+const sndName=v=>String(v||'').startsWith('file:')?'Arquivo: '+decodeURIComponent(String(v).split('/').pop()).replace(/^[a-z]+-\d+-/,''):SNDP[v]||'';
+function sndList(){ovOpen({type:'menu',title:'Som de cada ação',items:SNDE.map(([k,n,df])=>({n:`${n}  ·  ${sndName(BP.snd.map[k]||df)}`,ar:1,fn:()=>sndMenu(k,n)}))},true)}
+function sndMenu(ev,name){const cur=BP.snd.map[ev]||(SNDE.find(x=>x[0]===ev)||[])[2],cust=String(cur).startsWith('file:');
+ const set=v=>{BP.snd.map[ev]=v;sndSave();ovClose();if(BP.ov&&BP.ov.title==='Som de cada ação'){BP.ov.items=SNDE.map(([k,n,df])=>({n:`${n}  ·  ${sndName(BP.snd.map[k]||df)}`,ar:1,fn:()=>sndMenu(k,n)}));ovRender()}cfgRender();bpToast('Som: '+sndName(v))};
+ ovOpen({type:'menu',title:name,sub:'O som toca ao passar por cada opção',items:[...Object.keys(SNDP).map(k=>({n:SNDP[k],ck:cur===k,pv:()=>sndPreset(k),fn:()=>set(k)})),
+  ...(cust?[{n:sndName(cur),ck:true,pv:()=>sndPreset(cur),fn:()=>ovClose()}]:[]),
+  {n:'Escolher arquivo do PC…',pv:()=>{},fn:async()=>{const r=await api('snd_pick',{ev});if(r&&r.url){sndPreset(r.url);set(r.url)}else if(r&&r.error)bpToast(r.error)}}]},true)}
 
 // ---- bateria dos controles ----
 function batRender(){const L=Object.values(BP.pads),h=L.map(p=>{const pw=p.power||{},st=pw.state,pc=pw.percent;
@@ -322,7 +328,7 @@ function batRender(){const L=Object.values(BP.pads),h=L.map(p=>{const pw=p.power
  bq('#bpbat').innerHTML=h;bpEl.classList.toggle('has-bat',!!L.length)}
 
 // ---- pesquisa (lupa ao lado do relogio, como na Steam) ----
-function sbGeo(){const b=bq('#bpsr'),r=b.getBoundingClientRect();if(!r.width)return;const sb=bq('#bpsb');sb.style.right=(innerWidth-r.right-r.width*0.35)+'px';sb.style.top=Math.max(0,r.top-r.height*0.45)+'px';sb.style.height=(r.height*1.9)+'px'}
+function sbGeo(){const b=bq('#bpsr'),r=b.getBoundingClientRect();if(!r.width)return;const sb=bq('#bpsb');sb.style.right=(innerWidth-r.right-r.width*0.35)+'px';sb.style.top='0px';sb.style.height=Math.round(r.bottom+r.height*0.18)+'px'}
 let SBT=0;function sbShow(on){const sb=bq('#bpsb');clearTimeout(SBT);if(on){sbGeo();sb.classList.remove('out');sb.classList.add('show')}else if(sb.classList.contains('show')){sb.classList.add('out');SBT=setTimeout(()=>sb.classList.remove('show','out'),260)}}
 function topUi(){const on=BP.topF&&(BP.scr==='home'||BP.scr==='lib');bpEl.classList.toggle('top-f',on);bq('#bpsr').hidden=!(BP.scr==='home'||BP.scr==='lib'||BP.scr==='srch');sbShow(on||BP.scr==='srch');sbText()}
 function sbText(){const q=BP.scr==='srch'?BP.srch.q:'';bq('#bpsbt').innerHTML=q?esc(q)+(BP.kb?'<i class="kb-cur"></i>':''):`<em>Busque jogos…</em>`}
@@ -385,7 +391,8 @@ function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0
  if(k==='b'){if(BP.scr==='home')sideToggle(true);else bpBack();return}
  if(BP.scr==='home'){if(k==='up'){BP.topF=true;topUi();return}if(k==='left')homeSel(BP.home.idx-1);else if(k==='right')homeSel(BP.home.idx+1);else if(k==='lt')homeSel(BP.home.idx-10);else if(k==='rt')homeSel(BP.home.idx+10);
   else if(k==='a'){const x=BP.home.list[BP.home.idx];if(x&&x.more){BP.hist=['home'];bpGo('lib',false)}else if(x)detOpen(x)}return}
- if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c){BP.topF=true;topUi()}else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
+ if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
+ if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c)tabFocus(true);else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
   else if(k==='lt')libSel(B.idx-c*3);else if(k==='rt')libSel(B.idx+c*3);
   else if(k==='lb'||k==='rb'){const n=B.tabs.length;B.tab=(B.tab+(k==='lb'?-1:1)+n)%n;libRender(true)}
   else if(k==='y')sortMenu();else if(k==='x')filtMenu()

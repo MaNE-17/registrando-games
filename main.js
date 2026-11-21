@@ -922,6 +922,16 @@ ipcMain.handle('api', async (_e, p, b) => {
       const l = data.lists.find(x => x.id === b.list); if (!l) return {};
       l.ids = l.ids.includes(b.game) ? l.ids.filter(i => i !== b.game) : [...l.ids, b.game]; save(); return { ok: true };
     }
+    case 'snd_pick': {
+      const ev = String(b.ev || '').replace(/[^a-z]/g, '').slice(0, 12) || 'som';
+      const r = await dialog.showOpenDialog(win, { title: 'Escolher som', properties: ['openFile'], filters: [{ name: 'Áudio', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'opus', 'webm'] }] });
+      if (r.canceled || !r.filePaths[0]) return {};
+      const src = r.filePaths[0]; if (fs.statSync(src).size > 15e6) return { error: 'Arquivo grande demais (máx. 15 MB).' };
+      const dir = path.join(app.getPath('userData'), 'sons'); fs.mkdirSync(dir, { recursive: true });
+      for (const f of fs.readdirSync(dir)) if (f.startsWith(ev + '-')) try { fs.unlinkSync(path.join(dir, f)); } catch {}
+      const dst = path.join(dir, `${ev}-${Date.now()}-${path.basename(src).replace(/[^\w.\- ]+/g, '_')}`); fs.copyFileSync(src, dst);
+      return { url: require('url').pathToFileURL(dst).href };
+    }
     case 'pick_img': {
       const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'Imagens', extensions: Object.keys(MIME) }] });
       if (r.canceled) return {};
