@@ -160,6 +160,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
     data.sideMig1 = 1;
   }
   data.sideOff = data.sideOff || [];
+  if (!data.scoreMig1) { data.scoreMig1 = 1; for (const g of data.games || []) { if (g.rating > 0 && g.score == null) g.score = Math.min(10, g.rating * 2); delete g.rating; delete g.meta; delete g.meta_url; } }
   try { emuMigrate(); } catch {}
   if (!data.clearLP1) { data.clearLP1 = 1; for (const g of data.games || []) g.last_played = 0; }
   if (!data.fixRomTrack) { data.fixRomTrack = 1; for (const g of data.games || []) if (g.rom) { g.last_played = 0; g.tracked_s = 0; if (g.status === 'Jogando') g.status = 'Backlog'; } }
@@ -363,7 +364,6 @@ async function steamInfo(g) {
   try {
     const r = (await J(`https://store.steampowered.com/api/appdetails?appids=${g.appid}&l=portuguese`))[g.appid] || {};
     const d = r.data || {};
-    if (d.metacritic) { g.meta = d.metacritic.score; g.meta_url = d.metacritic.url; }
     if (!g.rel_manual && !g.released && d.release_date) { const t = parseRel(d.release_date.date); if (t) g.released = t; }
     if (g.released) delete g.rel_why;
     else g.rel_why = r.success === false ? 'A Steam não tem página para esse jogo (removido ou restrito na sua região).'
@@ -435,7 +435,7 @@ async function importFamily(c) {
       continue;
     }
     n++;
-    const g = { id: rid(), name: a.name || ('App ' + a.appid), appid: a.appid, platform: 'Steam', family: true, genres: [], status: 'Backlog', rating: 0, review: '',
+    const g = { id: rid(), name: a.name || ('App ' + a.appid), appid: a.appid, platform: 'Steam', family: true, genres: [], status: 'Backlog', review: '',
       exe: '', steam_min: pm, tracked_s: 0, manual_s: 0, last_played: lp, finished: null, added: now() };
     by.set(a.appid, g); data.games.push(g);
   }
@@ -460,7 +460,7 @@ async function steamSync() {
         if (s.rtime_last_played) g.last_played = Math.max(g.last_played || 0, s.rtime_last_played);
       } else {
         added++;
-        data.games.push({ id: rid(), name: s.name, appid: s.appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '',
+        data.games.push({ id: rid(), name: s.name, appid: s.appid, platform: 'Steam', genres: [], status: 'Backlog', review: '',
           exe: '', steam_min: s.playtime_forever || 0, tracked_s: 0, manual_s: 0, last_played: s.rtime_last_played || 0, finished: null, added: now() });
       }
     }
@@ -541,7 +541,7 @@ async function steamLocalImport() {
   let novos = 0;
   for (const [appid, name] of steamNames) {
     if (have.has(appid) || ign.has('steam:' + appid) || appid === 228980 || /redistributable|steamworks common|steamvr|proton|steam linux runtime|dedicated server|sdk$/i.test(name)) continue;
-    data.games.push({ id: rid(), name, appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() });
+    data.games.push({ id: rid(), name, appid, platform: 'Steam', genres: [], status: 'Backlog', review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() });
     novos++;
   }
   // biblioteca completa (instalada ou nao) pelo cache local da Steam: nao depende da API nem da privacidade do perfil
@@ -552,7 +552,7 @@ async function steamLocalImport() {
       const g = by.get(s.appid);
       if (g) { if (!data.config.key && s.minutes > (g.steam_min || 0)) g.steam_min = s.minutes; if (s.last > (g.last_played || 0)) g.last_played = s.last; continue; }
       if (ign.has('steam:' + s.appid)) continue;
-      const ng = { id: rid(), name: s.name, appid: s.appid, platform: 'Steam', genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: s.minutes || 0, tracked_s: 0, manual_s: 0, last_played: s.last || 0, finished: null, added: now() };
+      const ng = { id: rid(), name: s.name, appid: s.appid, platform: 'Steam', genres: [], status: 'Backlog', review: '', exe: '', steam_min: s.minutes || 0, tracked_s: 0, manual_s: 0, last_played: s.last || 0, finished: null, added: now() };
       data.games.push(ng); by.set(s.appid, ng); novos++;
     }
     if (r.games.length && !(data.sidePlats || []).includes('Steam') && !(data.sideOff || []).includes('Steam')) data.sidePlats = [...(data.sidePlats || []), 'Steam'];
@@ -583,7 +583,7 @@ async function launchersImport(opt = {}) {
         let g = data.games.find(x => x.lkey === f.key) || data.games.find(x => !x.lkey && !x.appid && x.platform === n && nzk(x.name) === nzk(f.name));
         if (!g) {
           if (ign.has(f.key)) continue;
-          g = { id: rid(), name: f.name, platform: n, genres: [], status: 'Backlog', rating: 0, review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+          g = { id: rid(), name: f.name, platform: n, genres: [], status: 'Backlog', review: '', exe: '', steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
           if (f.cover) coverQ.push([g.id, f.cover]);
           data.games.push(g); novos++;
         }
@@ -683,18 +683,17 @@ async function wallSave(g, src, kind = 'wall') {
 // Datas editadas a mao (rel_manual) nunca sao trocadas; jogo sem resposta so e tentado de novo depois de 7 dias.
 async function refreshAllInfo() {
   await batchRelease(data.games.filter(x => x.appid));
-  const wk = 7 * 864e5, list = data.games.filter(g => g.name && (g.appid ? g.info4 && !g.released && !g.rel_manual : (!g.released && !g.rel_manual || g.meta == null)) && !(g.mtry && Date.now() - g.mtry < wk));
+  const wk = 7 * 864e5, list = data.games.filter(g => g.name && (g.appid ? g.info4 && !g.released && !g.rel_manual : !g.released && !g.rel_manual) && !(g.mtry && Date.now() - g.mtry < wk));
   let n = 0;
   for (const g of list) {
     if (stopRefresh) break;
-    msg = `Buscando datas e notas dos jogos adicionados... (${++n}/${list.length})`;
+    msg = `Buscando datas de lançamento dos jogos adicionados... (${++n}/${list.length})`;
     try {
       let r = null; try { r = await mcInfo(g); } catch {}
-      let rel = r && r.released, sc = r && r.score, url = r && r.url;
-      if ((!rel || sc == null) && isPC(g.platform)) { try { const id = await steamSearchId(g.name, true); if (id) { const d = (await steamDetails(id)).data || {}; if (!rel && d.release_date) rel = parseRel(d.release_date.date); if (sc == null && d.metacritic) { sc = d.metacritic.score; url = d.metacritic.url; } } } catch {} }
+      let rel = r && r.released;
+      if (!rel && isPC(g.platform)) { try { const id = await steamSearchId(g.name, true); if (id) { const d = (await steamDetails(id)).data || {}; if (d.release_date) rel = parseRel(d.release_date.date); } } catch {} }
       if (rel && !g.released && !g.rel_manual) { g.released = rel; delete g.rel_why; }
-      if (sc != null && g.meta == null) { g.meta = sc; g.meta_url = url; }
-      if (!((rel || g.released) && (sc != null || g.meta != null))) g.mtry = Date.now(); else delete g.mtry;
+      if (!(rel || g.released)) g.mtry = Date.now(); else delete g.mtry;
       save();
     } catch {}
     await sleep(500);
@@ -720,7 +719,7 @@ function walkRoms(dir, depth, out, exts) {
   return out;
 }
 async function emuEnrich(g) {
-  try { const r = await mcInfo(g); if (r) { if (r.score != null) { g.meta = r.score; g.meta_url = r.url; } if (r.released && !g.rel_manual) g.released = r.released; } } catch {}
+  try { const r = await mcInfo(g); if (r) { if (r.released && !g.rel_manual) g.released = r.released; } } catch {}
   if (data.config.sgdb) {
     try { if (!g.cover) { const p = await sgPage(g, 0, 'cover'); if (p.items[0]) await wallSave(g, p.items[0].url, 'cover'); g.sgc = 1; } } catch {}
     try { if (!g.logo) { const p = await sgPage(g, 0, 'logo'); if (p.items[0]) await wallSave(g, p.items[0].url, 'logo'); g.sgl = 1; } } catch {}
@@ -738,7 +737,7 @@ async function emuImport(id) {
     const files = walkRoms(c.roms, 0, [], c.exts).filter(f => !have.has(f.toLowerCase()));
     const fresh = [];
     for (const f of files) {
-      const g = { id: rid(), name: romTitle(f), platform: c.platform, genres: [], status: 'Backlog', rating: 0, review: '', exe: c.exe, cwd: path.dirname(c.exe) + path.sep, args: emuArgs(f, c.flags || [], c.pos), rom: f, emu: c.id, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
+      const g = { id: rid(), name: romTitle(f), platform: c.platform, genres: [], status: 'Backlog', review: '', exe: c.exe, cwd: path.dirname(c.exe) + path.sep, args: emuArgs(f, c.flags || [], c.pos), rom: f, emu: c.id, steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() };
       data.games.push(g); fresh.push(g);
     }
     if (fresh.length) { data.sideCons = data.sideCons || []; if (!data.sideCons.includes(c.platform)) data.sideCons.push(c.platform); }
@@ -778,15 +777,15 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), updNew: data.updNotify === false ? null : UPDNEW, top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
-      config: { updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
       if (!x) { x = { id: rid(), steam_min: 0, tracked_s: 0, manual_s: 0, last_played: 0, finished: null, added: now() }; data.games.push(x); }
-      for (const k of ['name', 'platform', 'genres', 'status', 'rating', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'cat', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
+      for (const k of ['name', 'platform', 'genres', 'status', 'score', 'replays', 'review', 'exe', 'meta', 'meta_url', 'tracked_s', 'manual_s', 'hidden', 'cat', 'finished', 'released', 'sortname', 'fav', 'proc', 'cwd', 'args', 'rom', 'emu', 'logoSize', 'logoX', 'logoY', 'logoHide']) if (k in b) x[k] = b[k];
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
-      if (x.meta == null) { delete x.meta; delete x.meta_url; }
+      if (x.score == null) delete x.score; if (!Array.isArray(x.replays) || !x.replays.length) delete x.replays;
       if (x.status === 'Zerado' && !x.finished) x.finished = now(); else if (x.status !== 'Zerado') x.finished = null;
       save(); return { ok: true, id: x.id };
     }
@@ -845,6 +844,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'emu_del': { data.emus = (data.emus || []).filter(x => x.id !== b.id); save(); return { ok: true }; }
     case 'emu_import': { if (emuBusy) return { ok: true }; const c = emuOf(b.id); msg = (c ? c.name : 'Emulador') + ': procurando ROMs...'; emuImport(b.id); return { ok: true }; }
     case 'pick_rom': { const c = emuOf(b.id) || {}; const r = await dialog.showOpenDialog(win, { properties: ['openFile'], defaultPath: c.roms && isDirP(c.roms) ? c.roms : undefined, filters: [{ name: 'ROM', extensions: (c.exts && c.exts.length ? c.exts : EMU_DEF_EXTS).map(x => x.slice(1)) }, { name: 'Todos', extensions: ['*'] }] }); return { path: r.canceled ? '' : r.filePaths[0] }; }
+    case 'st_names': { const o = {}; for (const [k, v] of Object.entries(b.names || {})) if (['Backlog', 'Jogando', 'Zerado', 'Pausado', 'Abandonado'].includes(k) && typeof v === 'string' && v.trim()) o[k] = v.trim().slice(0, 24); data.stNames = o; save(); return { ok: true }; }
     case 'auto_refresh_set': data.autoRefresh = !!b.on; save(); return { ok: true };
     case 'upd_notify_set': data.updNotify = !!b.on; if (!b.on) UPDNEW = null; save(); if (b.on) updWatch(); return { ok: true };
     case 'startup_set': {
