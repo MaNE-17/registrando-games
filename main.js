@@ -160,6 +160,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
     data.sideMig1 = 1;
   }
   data.sideOff = data.sideOff || [];
+  if (!data.manMig1) { data.manMig1 = 1; for (const g of data.games || []) if (g.manual_s > 0) { g.tracked_s = (g.tracked_s || 0) + g.manual_s; g.manual_s = 0; } }
   if (!data.scoreMig1) { data.scoreMig1 = 1; for (const g of data.games || []) { if (g.rating > 0 && g.score == null) g.score = Math.min(10, g.rating * 2); delete g.rating; delete g.meta; delete g.meta_url; } }
   try { emuMigrate(); } catch {}
   if (!data.clearLP1) { data.clearLP1 = 1; for (const g of data.games || []) g.last_played = 0; }
