@@ -81,6 +81,7 @@ function bpTop(){const nf=Object.keys(BP.lib.f).length,ex=BP.scr==='lib'?`<span 
 function bpFoot(){let h;
  if(BP.kb&&BP.style==='kb')h=[['<i class="g sh">Enter</i>','Confirmar'],['<i class="g sh">⌫</i>','Apagar'],['<i class="g sh">Esc</i>','Cancelar']];
  else if(BP.kb)h=[[glyph('a'),'Digitar'],[glyph('x'),'Apagar'],[glyph('y'),'Espaço'],[glyph('start'),'Confirmar'],[glyph('b'),'Cancelar']];
+ else if(BP.scr==='lib'&&BP.lib.mv)h=[['<i class="g sh">←→</i>','Mover aba'],[glyph('a'),'Pronto']];
  else if(BP.scr==='lib')h=[[glyph('start'),BP.lib.tf?'Alterar abas':((C=>C&&C.grp&&C.base==='col')(BP.lib.tabs[BP.lib.tab])?'Trocar ícone':'Opções')],[glyph('y'),'Ordenar'],[glyph('x'),'Filtrar'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
  else h=[[glyph('start'),'Opções'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
  const KS=['a','x','y','start','b'];bq('#bpfoot').innerHTML=h.map(([g,t])=>{const k=(g.match(/g-(\w+)/)||[])[1]||'';return `<span data-fk="${k}">${g}${t}</span>`}).join('')}
@@ -113,6 +114,7 @@ function libPass(g){const f=BP.lib.f;if(f.status&&g.status!==f.status)return fal
 const libSort=l=>{const fn=SORT[BP.lib.sort]||NC;return [...l].sort((a,b)=>fn(a,b)||NC(a,b))};
 const LTABS=[['all','Todos'],['inst','Instalados'],['col','Coleções'],['lists','Listas'],['fav','Favoritos'],['rec','Recentes']];
 BP.ltab={all:1,inst:1,col:1,fav:0,rec:0,lists:0};try{Object.assign(BP.ltab,JSON.parse(localStorage.getItem('bptabs')||'{}'))}catch{}
+BP.tord=[];try{BP.tord=JSON.parse(localStorage.getItem('bptord')||'[]')}catch{}
 BP.colIco={};try{BP.colIco=JSON.parse(localStorage.getItem('bpcolico')||'{}')}catch{}
 const isManual=g=>!g.appid&&!g.lkey;
 const byPlat=v=>{const by=new Map();for(const g of v){const p=canonP(g.platform)||'Outros';if(!by.has(p))by.set(p,[]);by.get(p).push(g)}return by};
@@ -122,22 +124,24 @@ function grpTab(k,n,groups){const op=BP.lib.open&&BP.lib.open.k===k&&groups.find
  return{k,base:k,n,cnt:groups.length,grp:true,g:groups}}
 function libTabs(){const v=vis().filter(libPass),T=BP.ltab,t=[],by=byPlat(v);
  if(T.all)t.push({k:'all',n:'Todos',g:libSort(v)});
- if(T.inst)t.push({k:'inst',n:'Instalados',g:libSort(v.filter(g=>!g.cat&&((S.inst||[]).includes(g.id)||isManual(g))))});
+ if(T.inst)t.push({k:'inst',n:'Instalados',g:libSort(v.filter(g=>!g.cat&&((S.inst||[]).includes(g.id)||(canonP(g.platform)==='PC'&&isManual(g)&&(g.exe||g.proc)))))});
  if(T.col)t.push(grpTab('col','Coleções',[...by.entries()].sort((a,b)=>dispP(a[0]).localeCompare(dispP(b[0]))).map(([p,l])=>({id:p,kind:'col',name:dispP(p),games:l}))));
  if(T.lists)t.push(grpTab('lists','Listas',(S.lists||[]).map(L=>({id:L.id,kind:'list',name:L.name||'Lista',games:(L.ids||[]).map(id=>v.find(g=>g.id===id)).filter(Boolean)})).filter(x=>x.games.length)));
  if(T.fav){const fav=v.filter(g=>g.fav);t.push({k:'fav',n:'Favoritos',g:libSort(fav)})}
  if(T.rec){const rec=v.filter(g=>g.last_played);t.push({k:'rec',n:'Recentes',g:bpRec(rec)})}
  for(const[p,l]of[...by.entries()].sort((a,b)=>dispP(a[0]).localeCompare(dispP(b[0]))))if(T['p:'+p])t.push({k:'p:'+p,n:dispP(p),g:libSort(l)});
  if(!t.length)t.push({k:'all',n:'Todos',g:libSort(v)});
- return t}
+ const O=BP.tord,ix=x=>{const i=O.indexOf(x.base||x.k);return i<0?999:i};return t.map((x,i)=>[x,i]).sort((a,b)=>ix(a[0])-ix(b[0])||a[1]-b[1]).map(x=>x[0])}
 function colIcon(p){const c=BP.colIco[p];if(c&&c.startsWith('data:'))return `<img class="cli" src="${esc(c)}" alt="">`;const k=c||(BRAND[p]||(CONSOLES.some(x=>x.n===p)?CSLUG(p):null));return (k&&ICO[k])||BPI.lib}
 function grpTile(c,j){if(c.kind==='list'){const cv=c.games.slice(0,4).map(g=>coverSrc(g)).filter(Boolean);
   return `<div class="bt bcol blst" data-bi="${j}"><div class="bi"><span class="fan">${cv.map((u,i)=>`<img src="${esc(u)}" style="--i:${i}" alt="" loading="lazy">`).join('')}</span><span class="cl"><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
  return `<div class="bt bcol" data-bi="${j}"><div class="bi"><span class="cl"><span class="ci">${colIcon(c.id)}</span><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
 const tabSave=()=>{try{localStorage.setItem('bptabs',JSON.stringify(BP.ltab))}catch{}};
+function tabMove(d){const B=BP.lib,T=B.tabs,ks=T.map(x=>x.base||x.k),i=B.tab,j=i+d;if(j<0||j>=ks.length)return;[ks[i],ks[j]]=[ks[j],ks[i]];
+ BP.tord=[...ks,...BP.tord.filter(k=>!ks.includes(k))];try{localStorage.setItem('bptord',JSON.stringify(BP.tord))}catch{}B.tab=j;libRender(true);tabFocus(true)}
 function tabsMenu(){const plats=[...byPlat(vis()).keys()].sort((a,b)=>dispP(a).localeCompare(dispP(b)));
  const all=[...LTABS.map(([k,n])=>[k,n]),...plats.map(p=>['p:'+p,dispP(p)])];
- const o={type:'menu',title:'Alterar abas',sub:'A mostra ou esconde cada aba',items:all.map(([k,n],i)=>({n,ck:!!BP.ltab[k],fn:()=>{BP.ltab[k]=BP.ltab[k]?0:1;if(!all.some(([x])=>BP.ltab[x]))BP.ltab.all=1;tabSave();o.items.forEach((it,j)=>it.ck=!!BP.ltab[all[j][0]]);ovRender();BP.lib.open=null;BP.lib.rk='';libRender(true);tabFocus(true)}}))};ovOpen(o)}
+ const o={type:'menu',title:'Alterar abas',sub:'A mostra ou esconde cada aba',items:[{n:'Mudar a posição das abas',ar:1,fn:()=>{ovClose(true);BP.lib.mv=true;bpEl.classList.add('tab-mv');bpFoot();bpToast('←/→ move a aba · A ou B termina')}},...all.map(([k,n],i)=>({n,ck:!!BP.ltab[k],fn:()=>{BP.ltab[k]=BP.ltab[k]?0:1;if(!all.some(([x])=>BP.ltab[x]))BP.ltab.all=1;tabSave();o.items.forEach((it,j)=>{if(j)it.ck=!!BP.ltab[all[j-1][0]]});ovRender();BP.lib.open=null;BP.lib.rk='';libRender(true);tabFocus(true)}}))]};ovOpen(o)}
 // trocar o icone de uma colecao
 function colIconMenu(c){const opts=[...CATALOG.map(n=>[BRAND[n],n]),...CONSOLES.map(x=>[CSLUG(x.n),x.n])].filter(([k])=>ICO[k]);
  const cur=BP.colIco[c.id];const ov={type:'ico',title:'Ícone da coleção',sub:c.name,items:[['','Padrão'],...opts,['__pc','Imagem do PC…']],i:0,c};
@@ -287,7 +291,6 @@ function ovIn(k){const o=BP.ov;
  const c=ovCols(),n=o.items.length;if(!n)return;
  if(k==='left')o.i=Math.max(0,o.i-1);else if(k==='right')o.i=Math.min(n-1,o.i+1);else if(k==='up')o.i=Math.max(0,o.i-c);else if(k==='down')o.i=Math.min(n-1,o.i+c);
  else if(k==='rb'||k==='rt')o.i=Math.min(n-1,o.i+c*3);else if(k==='lb'||k==='lt')o.i=Math.max(0,o.i-c*3);else if(k==='a'){if(o.type==='ico')colIcoSet(o);else bpCovApply(o);return}else return;
- if(o.type==='ico'){ovRender();return}
  if(o.i>=n-c*2)bpCovMore(o);
  bq('.bo-g .gc.on')?.classList.remove('on');const e=bq(`.bo-g .gc[data-oi="${o.i}"]`);if(e){e.classList.add('on');scrV(bq('.bo-g'),e,true)}}
 
@@ -436,10 +439,12 @@ function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0
  if(k==='guide'){if(BP.kb)return;if(BP.ov)BP.ov=null,ovRender();sideToggle();return}
  if(BP.kb)return kbIn(k);if(BP.ov)return ovIn(k);if(BP.side.open)return sideIn(k);
  if(BP.topF){if(k==='a'){srchOpen();return}if(k==='down'||k==='b'){BP.topF=false;topUi();return}return}
+ if(BP.scr==='lib'&&BP.lib.mv){if(k==='left'||k==='lb')tabMove(-1);else if(k==='right'||k==='rb')tabMove(1);else if(k==='a'||k==='b'){BP.lib.mv=false;bpEl.classList.remove('tab-mv');bpFoot();bpToast('Posição das abas salva')}return}
  if(k==='start'){if(BP.scr==='lib'){if(BP.lib.tf){tabsMenu();return}const C=BP.lib.tabs[BP.lib.tab],x=C&&C.g[BP.lib.idx];if(x&&x.kind==='col'){colIconMenu(x);return}if(x&&x.kind)return}if(BP.scr!=='cfg'&&BP.scr!=='edit')bpOpts();return}
  if(k==='b'){if(BP.scr==='home')sideToggle(true);else if(BP.scr==='lib'&&BP.lib.open){const o=BP.lib.open;BP.lib.open=null;BP.lib.sel[o.k]=o.id;BP.lib.rk='';libRender(true)}else bpBack();return}
  if(BP.scr==='home'){if(k==='up'){BP.topF=true;topUi();return}if(k==='left')homeSel(BP.home.idx-1);else if(k==='right')homeSel(BP.home.idx+1);else if(k==='lt')homeSel(BP.home.idx-10);else if(k==='rt')homeSel(BP.home.idx+10);
   else if(k==='a'){const x=BP.home.list[BP.home.idx];if(x&&x.more){BP.hist=['home'];bpGo('lib',false)}else if(x)detOpen(x)}return}
+ if(BP.scr==='lib'&&BP.lib.tf&&(k==='x'||k==='y')){k==='y'?sortMenu():filtMenu();return}
  if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.open=null;B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
  if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c)tabFocus(true);else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
   else if(k==='lt')libSel(B.idx-c*3);else if(k==='rt')libSel(B.idx+c*3);
