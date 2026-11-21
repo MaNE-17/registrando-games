@@ -28,10 +28,14 @@ bpEl.innerHTML=`<div class="bp-bg"><div class="bp-bgi"></div><div class="bp-bgi"
 <section class="bp-scr" id="bps-det" hidden></section>
 <section class="bp-scr" id="bps-cfg" hidden><div class="bc-l" id="bcl"></div></section>
 <div class="bp-foot" id="bpfoot"></div>
-<aside class="bp-side" id="bpside"></aside>
+<div class="bp-side" id="bpside"></div>
 <div class="bp-ov" id="bpov" hidden></div><div class="bp-kb" id="bpkb" hidden></div><div class="bp-toast" id="bptoast"></div>`;
 document.body.appendChild(bpEl);
 const bq=s=>bpEl.querySelector(s);
+// rola so o container (scrollIntoView rolaria a tela inteira do Big Picture)
+function scrV(c,el,smooth){if(!c||!el)return;const p=Math.round(c.clientHeight*.12),t=el.offsetTop,b=t+el.offsetHeight;let y=c.scrollTop;if(t-p<y)y=t-p;else if(b+p>y+c.clientHeight)y=b+p-c.clientHeight;y=Math.max(0,y);if(y!==c.scrollTop)c.scrollTo({top:y,behavior:smooth?'smooth':'auto'})}
+function scrH(c,el){if(!c||!el)return;c.scrollTo({left:Math.max(0,el.offsetLeft-c.clientWidth/2+el.offsetWidth/2),behavior:'smooth'})}
+const lgStyle=g=>{const s=(g.logoSize||120)/120;return `max-height:${(16*s).toFixed(2)}vh;max-width:${Math.min(80,36*s).toFixed(2)}vw`};
 
 // ---- rotulos dos botoes conforme o controle ----
 const BPGL={xbox:{a:'A',b:'B',x:'X',y:'Y',lb:'LB',rb:'RB',start:'☰',lt:'LT',rt:'RT'},ps:{a:'✕',b:'○',x:'□',y:'△',lb:'L1',rb:'R1',start:'☰',lt:'L2',rt:'R2'},
@@ -82,7 +86,7 @@ function homeSel(i,force){const H=BP.home,L=H.list;if(!L.length){bq('#bpinfo').i
  const T=bq('#bptrk');T.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=T.children[i];
  if(t){T.classList.add('nt');t.classList.add('on');T.style.transform=`translateX(${-t.offsetLeft+T.children[0].offsetLeft}px)`;requestAnimationFrame(()=>T.classList.remove('nt'))}
  const g=L[i],lg=logoSrc(g)&&!g.logoHide?logoSrc(g):'';
- bq('#bpinfo').innerHTML=`<div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>`;bpBg(g)}
+ bq('#bpinfo').innerHTML=`<div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>`;bpBg(g)}
 
 // Biblioteca: abas como na Steam (Todos, Instalados, Favoritos, launchers/plataformas, listas)
 function libTabs(){const v=vis(),t=[{k:'all',n:'Todos',g:[...v].sort(NC)}];
@@ -95,24 +99,24 @@ function libTabs(){const v=vis(),t=[{k:'all',n:'Todos',g:[...v].sort(NC)}];
  return t}
 function libRender(full){const B=BP.lib,T=B.tabs=libTabs();if(B.tab>=T.length)B.tab=0;const C=T[B.tab];
  bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}<em>${t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
- const on=bq('#bltabs .tb.on');on&&on.scrollIntoView({block:'nearest',inline:'center'});
+ scrH(bq('#bltabs'),bq('#bltabs .tb.on'));
  const key=C.k+'|'+C.g.map(g=>g.id+(g.cover||'')).join(',');
  if(full||key!==B.rk){B.rk=key;bq('#blg').innerHTML=C.g.map(bpTile).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>'}
  libSel(Math.max(0,C.g.findIndex(g=>g.id===B.sel[C.k])),true)}
 function libSel(i,force){const B=BP.lib,C=B.tabs[B.tab];if(!C||!C.g.length){bpBg(null);return}i=Math.max(0,Math.min(C.g.length-1,i));
  B.idx=i;B.sel[C.k]=C.g[i].id;const G=bq('#blg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];
- if(t){t.classList.add('on');t.scrollIntoView({block:force?'center':'nearest',behavior:force?'auto':'smooth'})}bpBg(C.g[i])}
+ if(t){t.classList.add('on');scrV(G,t,!force)}bpBg(C.g[i])}
 function libCols(){const G=bq('#blg'),c=G.children;if(c.length<2)return 1;const y=c[0].offsetTop;let n=0;for(const e of c){if(e.offsetTop!==y)break;n++}return n||1}
 
 // Detalhes do jogo (parecido com o modo tela cheia do launcher)
 function detOpen(g){BP.det.g=g.id;BP.det.f=0;bpGo('det')}
 function detGame(){return S.games.find(x=>x.id===BP.det.g)}
-function detBtns(g){const a=bpAct(g),b=[{k:'a',n:a[1],ic:a[2],cls:'pri '+a[0]},{k:'fav',n:g.fav?'Favorito':'Favoritar',ic:g.fav?BPI.favOn:BPI.fav,cls:g.fav?'on':''}];
+function detBtns(g){const a=bpAct(g),b=[{k:'a',n:a[1],ic:a[2],cls:'pri a-'+a[0]},{k:'fav',n:g.fav?'Favorito':'Favoritar',ic:g.fav?BPI.favOn:BPI.fav,cls:g.fav?'on':''}];
  if((g.review||'').trim())b.push({k:'rev',n:'Ler review',ic:BPI.book,cls:''});return b}
 function detRender(){const g=detGame(),el=bq('#bps-det');if(!g){bpBack();return}
  const t=secs(g),lg=logoSrc(g)&&!g.logoHide?logoSrc(g):'',rp=(g.replays||[]).length,btn=detBtns(g);BP.det.f=Math.min(BP.det.f,btn.length-1);
  const row=(k,v)=>v?`<div class="dr"><span>${k}</span><b>${v}</b></div>`:'';
- el.innerHTML=`<div class="dt-c"><div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>
+ el.innerHTML=`<div class="dt-c"><div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>
  <div class="dt-p">${g.score!=null?`<span class="pi">Nota: <b style="color:${scC(g.score)}">${scF(g.score)}</b></span>`:''}${g.platform?`<span class="pi">${esc(dispP(canonP(g.platform)))}</span>`:''}${g.released?`<span class="pi">${dpt(g.released)}</span>`:''}${(g.genres||[]).map(x=>`<span class="pi">${esc(x)}</span>`).join('')}</div>
  <div class="dt-g">${row('Status',`${esc(stN(g.status||'Backlog'))}<i class="sd" style="background:${COL[g.status||'Backlog']}"></i>`)}${row('Finalizado em',g.status==='Zerado'&&g.finished?dpt(g.finished):'')}${row('Replays',rp?rp+'×':'')}${row('Tempo de jogo',t?fmt(t):'')}${row('Último jogo',g.last_played?dpt(g.last_played):'')}</div>
  ${(g.review||'').trim()?`<p class="dt-r">${esc(g.review)}</p>`:''}
@@ -137,7 +141,7 @@ async function bpUpd(){bpToast('Procurando atualização…');const r=await api(
  ovOpen({type:'menu',title:'Versão nova disponível',sub:r.msg||'',items:[{n:'Instalar agora',fn:async()=>{ovClose(true);bpToast('Baixando a atualização… o app vai reiniciar sozinho.');const x=await api('upd_install');if(x&&x.msg&&!x.ok)bpToast(x.msg)}},{n:'Depois',fn:()=>ovClose(true)}]})}
 function cfgRender(){const R=cfgRows(),C=BP.cfg;if(R[C.i]&&R[C.i].t==='h')C.i++;if(C.i>=R.length)C.i=1;
  bq('#bcl').innerHTML=R.map((r,i)=>r.t==='h'?`<div class="bc-h">${esc(r.n)}</div>`:`<div class="bc-r${i===C.i?' f':''}" data-ci="${i}"><span class="bc-n">${esc(r.n)}</span><span class="bc-v">${r.t==='tog'?`<i class="bsw${r.on?' on':''}"><i></i></i>`:r.t==='act'?`${r.show?`<small>${esc(r.show)}</small>`:''}<b class="bc-go">›</b>`:`${esc(r.show)}<b class="bc-go">›</b>`}</span></div>`).join('');
- const f=bq('.bc-r.f');f&&f.scrollIntoView({block:'nearest'});bpBg(null)}
+ scrV(bq('#bcl'),bq('.bc-r.f'),true);bpBg(null)}
 async function cfgPress(){const r=cfgRows()[BP.cfg.i];if(!r||r.t==='h')return;if(r.t==='tog'){await r.fn(!r.on);await load();return}r.fn()}
 function cfgMove(d){const R=cfgRows();let i=BP.cfg.i;do{i+=d}while(R[i]&&R[i].t==='h');if(i<0||i>=R.length)return;BP.cfg.i=i;cfgRender()}
 
@@ -161,18 +165,23 @@ function bpOpts(){const g=curGame();if(!g)return;const a=bpAct(g),it=[];
  if(BP.scr!=='det')it.push({n:'Ver detalhes',fn:()=>{ovClose(true);detOpen(g)}});
  if(a[0]==='stop')it.push({n:'Fechar o jogo',dl:1,fn:()=>bpConfirmStop(g)});
  it.push({n:g.fav?'Remover dos favoritos':'Adicionar aos favoritos',fn:()=>{ovClose(true);bpFav(g)}});
- it.push({n:'Trocar capa',ar:1,fn:()=>bpCovers(g)});
+ it.push({n:'Trocar capa',ar:1,fn:()=>bpCovers(g,'cover')});
+ it.push({n:'Logo',ar:1,fn:()=>ovOpen({type:'menu',title:'Logo',sub:g.name,items:[{n:'Trocar logo',ar:1,fn:()=>bpCovers(g,'logo')},{n:'Tamanho da logo',ar:1,fn:()=>bpLogoSize(g)},{n:g.logoHide?'Mostrar a logo':'Ocultar a logo (mostrar o nome)',fn:async()=>{await api('save',{id:g.id,logoHide:!g.logoHide});ovClose(true);await load();bpPaint(true)}},...(g.logo?[{n:'Remover a logo',dl:1,fn:async()=>{await api('logo_clear',{id:g.id});ovClose(true);await load();bpPaint(true);bpToast('Logo removida')}}]:[])]},true)});
+ it.push({n:'Papel de parede',ar:1,fn:()=>ovOpen({type:'menu',title:'Papel de parede',sub:g.name,items:[{n:'Trocar papel de parede',ar:1,fn:()=>bpCovers(g,'hero')},...(g.wall?[{n:'Remover o papel de parede',dl:1,fn:async()=>{await api('wall_clear',{id:g.id});ovClose(true);BGL='';await load();bpPaint(true);bpToast('Papel de parede removido')}}]:[])]},true)});
  it.push({n:'Mudar status',ar:1,fn:()=>ovOpen({type:'menu',title:'Status',items:ST.map(s=>({n:stN(s),ck:g.status===s,fn:async()=>{const b={id:g.id,status:s};if(s==='Zerado'&&!g.finished)b.finished=Math.floor(Date.now()/1000);await api('save',b);ovClose(true);bpToast('Status: '+stN(s));await load()}}))},true)});
  if((g.review||'').trim())it.push({n:'Ler review',ar:1,fn:()=>ovOpen({type:'text',title:g.name,text:g.review},true)});
  ovOpen({type:'menu',title:g.name,items:it})}
 function themeMenu(){ovOpen({type:'menu',title:'Tema do Big Picture',items:BPTH.map(([k,n])=>({n,ck:BP.th===k,fn:()=>{BP.th=k;try{localStorage.setItem('bpth',k)}catch{}bpClass();ovClose(true);bpPaint(true);bpToast('Tema: '+n)}}))},!!BP.ov)}
-async function bpCovers(g){if(!S.config.sgdb){bpToast('Para trocar capas, coloque a chave do SteamGridDB nas Configurações.');return}
- const ov={type:'grid',title:'Trocar capa',sub:g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
+const KTIT={cover:'Trocar capa',logo:'Trocar logo',hero:'Trocar papel de parede'};
+async function bpCovers(g,kind='cover'){if(!S.config.sgdb){bpToast('Para trocar imagens, coloque a chave do SteamGridDB nas Configurações.');return}
+ const ov={type:'grid',kind,title:KTIT[kind],sub:g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
+function bpLogoSize(g){ovOpen({type:'size',g,v:g.logoSize||120,g0:g.logoSize||120,title:'Tamanho da logo'},true);if(BP.scr==='home'||BP.scr==='det')bpEl.classList.add('ov-light')}
+function sizeLive(o){const g=S.games.find(x=>x.id===o.g.id);if(g)g.logoSize=o.v;bpEl.querySelectorAll('.bi-lg').forEach(im=>im.style.cssText=lgStyle({logoSize:o.v}))}
 async function bpCovMore(ov){if(ov.loading||!ov.more)return;ov.loading=true;ovRender();
- try{const r=await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:'cover'});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
+ try{const r=await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover'});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
  ov.loading=false;if(BP.ov===ov)ovRender()}
 async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Aplicando a capa…');
- try{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)});ovClose(true);await load();bpPaint(true);bpToast('Capa trocada!')}catch{bpToast('Não consegui usar essa capa. Tente outra.')}}
+ try{if(ov.kind==='logo'||ov.kind==='hero'){const r=await api(ov.kind==='logo'?'logo_set':'wall_sgdb',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
 
 // ---- barra lateral (botao Home) ----
 const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];bpGo('lib',false)}},
@@ -187,13 +196,16 @@ function sideIn(k){const L=SIDE(),n=L.length;if(k==='up')BP.side.i=(BP.side.i-1+
 function ovOpen(o,stack){o.i=o.i||0;o.prev=stack?BP.ov:null;BP.ov=o;ovRender()}
 function ovClose(all){BP.ov=all?null:(BP.ov&&BP.ov.prev)||null;ovRender()}
 function ovCols(){const g=bq('.bo-g');if(!g)return 6;return getComputedStyle(g).gridTemplateColumns.split(' ').length||6}
-function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
+function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();if(!o||o.type!=='size')bpEl.classList.remove('ov-light');if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
  const ft=`<div class="bo-f">${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span>${glyph('a')}Selecionar</span>`:''}<span>${glyph('b')}Voltar</span></div>`;
  if(o.type==='menu')el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;
+ else if(o.type==='size')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-40)/220*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='text')el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div><div class="bo-tx" id="botx">${esc(o.text)}</div>${ft}</div>`;
- else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g">${o.items.map((it,j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" alt=""></div>`).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
-  const on=el.querySelector('.gc.on');on&&on.scrollIntoView({block:'nearest'})}}
+ else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g k-${o.kind||'cover'}">${o.items.map((it,j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" alt=""></div>`).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
+  scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}}
 function ovIn(k){const o=BP.ov;
+ if(o.type==='size'){if(k==='b'||k==='back'){const g=S.games.find(x=>x.id===o.g.id);if(g)g.logoSize=o.g0;sizeLive({g:o.g,v:o.g0||120});ovClose();return}
+  if(k==='left'||k==='lb')o.v=Math.max(40,o.v-5);else if(k==='right'||k==='rb')o.v=Math.min(260,o.v+5);else if(k==='a'){api('save',{id:o.g.id,logoSize:o.v}).then(load);ovClose(true);bpToast('Tamanho salvo');return}else return;sizeLive(o);ovRender();return}
  if(k==='b'||k==='back'){ovClose();return}
  if(o.type==='text'){const t=bq('#botx');if(!t)return;if(k==='down'||k==='sdown')t.scrollBy({top:120,behavior:'smooth'});if(k==='up'||k==='sup')t.scrollBy({top:-120,behavior:'smooth'});return}
  if(o.type==='menu'){const n=o.items.length;if(k==='up')o.i=(o.i-1+n)%n;else if(k==='down')o.i=(o.i+1)%n;else if(k==='a'){const it=o.items[o.i];it&&it.fn();return}else return;ovRender();return}
@@ -201,7 +213,7 @@ function ovIn(k){const o=BP.ov;
  if(k==='left')o.i=Math.max(0,o.i-1);else if(k==='right')o.i=Math.min(n-1,o.i+1);else if(k==='up')o.i=Math.max(0,o.i-c);else if(k==='down')o.i=Math.min(n-1,o.i+c);
  else if(k==='rb'||k==='rt')o.i=Math.min(n-1,o.i+c*3);else if(k==='lb'||k==='lt')o.i=Math.max(0,o.i-c*3);else if(k==='a'){bpCovApply(o);return}else return;
  if(o.i>=n-c*2)bpCovMore(o);
- bq('.bo-g .gc.on')?.classList.remove('on');const e=bq(`.bo-g .gc[data-oi="${o.i}"]`);if(e){e.classList.add('on');e.scrollIntoView({block:'nearest'})}}
+ bq('.bo-g .gc.on')?.classList.remove('on');const e=bq(`.bo-g .gc[data-oi="${o.i}"]`);if(e){e.classList.add('on');scrV(bq('.bo-g'),e,true)}}
 
 // ---- teclado virtual (para digitar com o controle) ----
 const KBL={abc:[['1','2','3','4','5','6','7','8','9','0'],['q','w','e','r','t','y','u','i','o','p'],['a','s','d','f','g','h','j','k','l','ç'],['z','x','c','v','b','n','m',',','.','-'],['⇧','?123','espaço','⌫','Colar','OK']],
@@ -226,7 +238,7 @@ function bpIn(k){if(!BP.on)return;
  if(k==='guide'){if(BP.kb)return;if(BP.ov)BP.ov=null,ovRender();sideToggle();return}
  if(BP.kb)return kbIn(k);if(BP.ov)return ovIn(k);if(BP.side.open)return sideIn(k);
  if(k==='start'){if(BP.scr!=='cfg')bpOpts();return}
- if(k==='b'){bpBack();return}
+ if(k==='b'){if(BP.scr==='home')sideToggle(true);else bpBack();return}
  if(BP.scr==='home'){if(k==='left')homeSel(BP.home.idx-1);else if(k==='right')homeSel(BP.home.idx+1);else if(k==='lt')homeSel(BP.home.idx-10);else if(k==='rt')homeSel(BP.home.idx+10);
   else if(k==='a'){const g=curGame();g&&detOpen(g)}return}
  if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up')libSel(B.idx-c);else if(k==='down')libSel(B.idx+c);

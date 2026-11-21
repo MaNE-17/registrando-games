@@ -637,10 +637,10 @@ const sg = async p => (await sgRaw(p)).data || [];
 const sgBase = {};
 // Uma pagina de capas 600x900 do SteamGridDB (50 por pagina)
 async function sgPage(g, page, kind) {
-  const L = kind === 'logo', pre = L ? '/logos' : '/grids';
-  const key = g.id + '|' + g.name + '|' + (g.appid || '') + '|' + (L ? 'L' : 'G');
+  const L = kind === 'logo', H = kind === 'hero', pre = L ? '/logos' : H ? '/heroes' : '/grids';
+  const key = g.id + '|' + g.name + '|' + (g.appid || '') + '|' + (L ? 'L' : H ? 'H' : 'G');
   // capas verticais: 600x900 e tambem 342x482 / 660x930 (o site mostra todas); humor e epilepsia incluidos, NSFW fica de fora
-  const get = b => sgRaw(`${b}?${L ? '' : 'dimensions=600x900,342x482,660x930&'}humor=any&epilepsy=any&nsfw=false&page=${page}`);
+  const get = b => sgRaw(`${b}?${L || H ? '' : 'dimensions=600x900,342x482,660x930&'}humor=any&epilepsy=any&nsfw=false&page=${page}`);
   let base = sgBase[key], j = null;
   if (base === undefined) {
     base = null;
@@ -967,6 +967,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
     case 'wall_attach': { if (!g || !/^tmp-wp-\d+\.\w+$/.test(String(b.file || ''))) return { ok: false }; const src = path.join(COVERS(), b.file); if (!fs.existsSync(src)) return { ok: false }; rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${path.extname(b.file)}`; fs.renameSync(src, path.join(COVERS(), g.wall)); save(); return { ok: true }; }
     case 'img_local': { if (!g) return { error: 'Salve o jogo primeiro.' }; if (!/^data:image\//.test(String(b.data || '')) || !['logo', 'wall'].includes(b.kind)) return { error: 'Imagem inválida.' }; return await wallSave(g, b.data, b.kind); }
+    case 'wall_sgdb': { if (!g) return { error: 'Jogo não encontrado.' }; if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; return await wallSave(g, b.url, 'wall'); }
     case 'logo_clear': if (g) { rmLogo(g); g.sgl = 1; save(); } return { ok: true };
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
     case 'cover_clear': if (g) { rmCover(g); g.sgc = 1; save(); } return { ok: true };
