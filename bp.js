@@ -2,10 +2,10 @@
 // Usa as funcoes e o estado do index.html (S, api, play, load, coverSrc, wallSrc...).
 (()=>{
 const BP={on:false,th:'orig',scr:'home',hist:[],style:'kb',padOk:null,
- home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:''},det:{g:null,f:0},cfg:{i:0},ed:{i:1},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
+ home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:'',sort:'name',f:{}},det:{g:null,f:0},cfg:{i:0},ed:{i:1},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
 try{const t=localStorage.getItem('bpth');if(t==='ps')BP.th=t}catch{}
 const BPTH=[['orig','Registrando Games'],['ps','PlayStation']];
-BP.pads={};BP.cz=100;try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
+BP.pads={};BP.cz=100;try{const o=JSON.parse(localStorage.getItem('bplib')||'{}');if(o.sort)BP.lib.sort=o.sort;if(o.f)BP.lib.f=o.f}catch{}try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
 const SV=(d,f)=>`<svg viewBox="0 0 24 24" ${f?'fill="currentColor"':'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true">${d}</svg>`;
 const BPI={
  play:SV('<path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/>',1),
@@ -24,7 +24,7 @@ const BPI={
  pad:SV('<path d="M6 11h4M8 9v4"/><path d="M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15.6A3 3 0 0 0 5 19c1 0 1.9-.5 2.4-1.3L9 15h6l1.6 2.7A2.8 2.8 0 0 0 19 19a3 3 0 0 0 3-3.4l-.7-7A4 4 0 0 0 17.3 5z"/>')};
 const bpEl=document.createElement('div');bpEl.id='bp';bpEl.hidden=true;
 bpEl.innerHTML=`<div class="bp-bg"><div class="bp-bgi"></div><div class="bp-bgi"></div></div><div class="bp-sh"></div>
-<div class="bp-top"><div class="bp-av">${BPI.pad}</div><div class="bp-cw"><div class="bp-cats" id="bpcats"></div></div><button class="bp-sr" id="bpsr" title="Pesquisar jogo" aria-label="Pesquisar jogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Pesquisar</span></button><div class="bp-clk" id="bpclk"></div><div class="bp-bat" id="bpbat"></div></div>
+<div class="bp-top"><div class="bp-av">${BPI.pad}</div><div class="bp-cw"><div class="bp-cats" id="bpcats"></div></div><button class="bp-sr" id="bpsr" title="Pesquisar jogo" aria-label="Pesquisar jogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Pesquisar</span></button><div class="bp-bat" id="bpbat"></div><div class="bp-clk" id="bpclk"></div></div>
 <div class="bp-sb" id="bpsb"><div class="sb-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span id="bpsbt"></span></div><div class="bp-bat sb-bat" id="bpsbat"></div></div>
 <section class="bp-scr" id="bps-home"><div class="bp-sec" id="bpsec">Jogados recentemente</div><div class="bp-row"><div class="bp-trk" id="bptrk"></div></div><div class="bp-info" id="bpinfo"></div></section>
 <section class="bp-scr" id="bps-lib" hidden><div class="bl-tabs" id="bltabs"></div><div class="bl-g" id="blg"></div></section>
@@ -44,7 +44,7 @@ const lgStyle=g=>{const s=(g.bpLogoSize||120)/120,x=g.bpLogoX||0,y=g.bpLogoY||0;
 
 // ---- rotulos dos botoes conforme o controle ----
 const BPGL={xbox:{a:'A',b:'B',x:'X',y:'Y',lb:'LB',rb:'RB',start:'☰',lt:'LT',rt:'RT'},ps5:{lb:'L1',rb:'R1',lt:'L2',rt:'R2'},ps4:{lb:'L1',rb:'R1',lt:'L2',rt:'R2'},
- nin:{a:'B',b:'A',x:'Y',y:'X',lb:'L',rb:'R',start:'+',lt:'ZL',rt:'ZR'},kb:{a:'Enter',b:'Esc',x:'Del',y:'Espaço',lb:'Q',rb:'E',start:'O',lt:'PgUp',rt:'PgDn'}};
+ nin:{a:'B',b:'A',x:'Y',y:'X',lb:'L',rb:'R',start:'+',lt:'ZL',rt:'ZR'},kb:{a:'Enter',b:'Esc',x:'F',y:'R',lb:'Q',rb:'E',start:'O',lt:'PgUp',rt:'PgDn'}};
 const PSY={a:'<path d="M7.5 7.5l9 9M16.5 7.5l-9 9"/>',b:'<circle cx="12" cy="12" r="5.2"/>',x:'<rect x="7.3" y="7.3" width="9.4" height="9.4" rx=".6"/>',y:'<path d="M12 6.6l5.6 9.8H6.4z"/>'};
 const PSV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${d}</svg>`;
 const glyph=k=>{const P=BP.style==='ps5'||BP.style==='ps4';
@@ -75,9 +75,11 @@ let BPTT=0;function bpToast(t){const e=bq('#bptoast');e.textContent=t;e.classLis
 function bpClock(){bq('#bpclk').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
 setInterval(()=>{if(BP.on)bpClock()},10000);
 const SCRN={home:'Início',lib:'Biblioteca',cfg:'Configurações',det:'',srch:'Pesquisar',edit:'Editar jogo'};
-function bpTop(){bq('#bpcats').innerHTML=BP.scr==='det'?'':`<span class="ct on">${SCRN[BP.scr]}</span>`;bq('#bpcats').style.transform=''}
+function bpTop(){const nf=Object.keys(BP.lib.f).length,ex=BP.scr==='lib'?`<span class="ct sub">${esc((SORTS.find(x=>x[0]===BP.lib.sort)||SORTS[0])[1])}${nf?` · ${nf} filtro${nf>1?'s':''}`:''}</span>`:'';bq('#bpcats').innerHTML=BP.scr==='det'?'':`<span class="ct on">${SCRN[BP.scr]}</span>`+ex;bq('#bpcats').style.transform=''}
 function bpFoot(){let h;
- if(BP.kb)h=[[glyph('a'),'Digitar'],[glyph('x'),'Apagar'],[glyph('y'),'Espaço'],[glyph('start'),'Confirmar'],[glyph('b'),'Cancelar']];
+ if(BP.kb&&BP.style==='kb')h=[['<i class="g sh">Enter</i>','Confirmar'],['<i class="g sh">⌫</i>','Apagar'],['<i class="g sh">Esc</i>','Cancelar']];
+ else if(BP.kb)h=[[glyph('a'),'Digitar'],[glyph('x'),'Apagar'],[glyph('y'),'Espaço'],[glyph('start'),'Confirmar'],[glyph('b'),'Cancelar']];
+ else if(BP.scr==='lib')h=[[glyph('start'),'Opções'],[glyph('y'),'Ordenar'],[glyph('x'),'Filtrar'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
  else h=[[glyph('start'),'Opções'],[glyph('a'),'Selecionar'],[glyph('b'),'Voltar']];
  const KS=['a','x','y','start','b'];bq('#bpfoot').innerHTML=h.map(([g,t])=>{const k=(g.match(/g-(\w+)/)||[])[1]||'';return `<span data-fk="${k}">${g}${t}</span>`}).join('')}
 
@@ -103,12 +105,16 @@ function homeSel(i,force,mouse){const H=BP.home,L=H.list;if(!L.length){bq('#bpin
  const IE=bq('#bpinfo'),IK=g.id+'|'+lg+'|'+lgStyle(g)+'|'+g.name;if(IE._k===IK)return;const nw=IE._id!==g.id;IE._k=IK;IE._id=g.id;if(nw){IE.classList.remove('fi');void IE.offsetWidth;IE.classList.add('fi')}IE.innerHTML=`<div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>`;bpBg(g)}
 
 // Biblioteca: abas como na Steam (Todos, Instalados, Favoritos, launchers/plataformas, listas)
-function libTabs(){const v=vis(),t=[{k:'all',n:'Todos',g:[...v].sort(NC)}];
- const inst=v.filter(g=>(S.inst||[]).includes(g.id));if(inst.length)t.push({k:'inst',n:'Instalados',g:[...inst].sort(NC)});
- const fav=v.filter(g=>g.fav);if(fav.length)t.push({k:'fav',n:'Favoritos',g:[...fav].sort(NC)});
+const libSave=()=>{try{localStorage.setItem('bplib',JSON.stringify({sort:BP.lib.sort,f:BP.lib.f}))}catch{}};
+const yr=g=>g.released?new Date(g.released*1000).getFullYear():0;
+function libPass(g){const f=BP.lib.f;if(f.status&&g.status!==f.status)return false;if(f.platform&&canonP(g.platform)!==f.platform)return false;if(f.genre&&!(g.genres||[]).includes(f.genre))return false;if(f.year&&yr(g)!==f.year)return false;return true}
+const libSort=l=>{const fn=SORT[BP.lib.sort]||NC;return [...l].sort((a,b)=>fn(a,b)||NC(a,b))};
+function libTabs(){const v=vis().filter(libPass),t=[{k:'all',n:'Todos',g:libSort(v)}];
+ const inst=v.filter(g=>(S.inst||[]).includes(g.id));if(inst.length)t.push({k:'inst',n:'Instalados',g:libSort(inst)});
+ const fav=v.filter(g=>g.fav);if(fav.length)t.push({k:'fav',n:'Favoritos',g:libSort(fav)});
  const rec=v.filter(g=>g.last_played);if(rec.length)t.push({k:'rec',n:'Recentes',g:bpRec(rec)});
  const by=new Map();for(const g of v){const p=canonP(g.platform)||'Outros';if(!by.has(p))by.set(p,[]);by.get(p).push(g)}
- [...by.entries()].sort((a,b)=>b[1].length-a[1].length).forEach(([p,l])=>t.push({k:'p:'+p,n:dispP(p),g:[...l].sort(NC)}));
+ [...by.entries()].sort((a,b)=>b[1].length-a[1].length).forEach(([p,l])=>t.push({k:'p:'+p,n:dispP(p),g:libSort(l)}));
  for(const L of S.lists||[]){const l=(L.ids||[]).map(id=>v.find(g=>g.id===id)).filter(Boolean);if(l.length)t.push({k:'l:'+L.id,n:L.name||'Lista',g:l})}
  return t}
 function libRender(full){const B=BP.lib,T=B.tabs=libTabs();if(B.tab>=T.length)B.tab=0;const C=T[B.tab];
@@ -269,6 +275,20 @@ function kbIn(k){const K=BP.kb,L=KBL[K.lay];
  if(k==='left')K.c=(K.c-1+L[K.r].length)%L[K.r].length;else if(k==='right')K.c=(K.c+1)%L[K.r].length;
  else if(k==='up'||k==='down'){const fr=K.c/L[K.r].length;K.r=(K.r+(k==='up'?-1:1)+L.length)%L.length;K.c=Math.min(L[K.r].length-1,Math.floor(fr*L[K.r].length))}else return;kbRender()}
 
+// ---- ordenar e filtrar (Biblioteca) ----
+function libRefresh(msg){libSave();BP.lib.rk='';libRender(true);bpTop();if(msg)bpToast(msg)}
+function sortMenu(){ovOpen({type:'menu',title:'Ordenar por',items:SORTS.filter(x=>x[0]!=='bylist').map(([k,n])=>({n,ck:BP.lib.sort===k,fn:()=>{BP.lib.sort=k;ovClose(true);libRefresh('Ordenado por: '+n)}}))})}
+function filtMenu(){const f=BP.lib.f,all=vis(),cnt=fn=>all.filter(fn).length;
+ const sub=(title,key,opts)=>()=>ovOpen({type:'menu',title,items:[{n:'Todos',ck:!f[key],fn:()=>{delete f[key];ovClose(true);libRefresh()}},...opts.map(([v,n,c])=>({n:`${n}  (${c})`,ck:f[key]===v,fn:()=>{f[key]=v;ovClose(true);libRefresh(title+': '+n)}}))]},true);
+ const years=[...new Set(all.map(yr).filter(Boolean))].sort((a,b)=>b-a);
+ const lab=(k,fmt)=>f[k]!=null&&f[k]!==''?fmt(f[k]):'Todos';
+ ovOpen({type:'menu',title:'Filtrar',items:[
+  {n:'Status: '+lab('status',stN),ar:1,fn:sub('Status','status',ST.map(s=>[s,stN(s),cnt(g=>g.status===s)]).filter(x=>x[2]))},
+  {n:'Plataforma: '+lab('platform',dispP),ar:1,fn:sub('Plataforma','platform',[...new Set(all.map(g=>canonP(g.platform)).filter(Boolean))].sort((a,b)=>dispP(a).localeCompare(dispP(b))).map(p=>[p,dispP(p),cnt(g=>canonP(g.platform)===p)]))},
+  {n:'Gênero: '+lab('genre',x=>x),ar:1,fn:sub('Gênero','genre',genList().map(x=>[x,x,cnt(g=>(g.genres||[]).includes(x))]).filter(x=>x[2]))},
+  {n:'Ano de lançamento: '+lab('year',x=>x),ar:1,fn:sub('Ano de lançamento','year',years.map(y=>[y,String(y),cnt(g=>yr(g)===y)]))},
+  ...(Object.keys(f).length?[{n:'Limpar filtros',dl:1,fn:()=>{BP.lib.f={};ovClose(true);libRefresh('Filtros limpos')}}]:[])]})}
+
 // ---- bateria dos controles ----
 function batRender(){const L=Object.values(BP.pads),h=L.map(p=>{const pw=p.power||{},st=pw.state,pc=pw.percent;
   const wired=st==='wired'||st==='noBattery',chg=st==='charging',lv=pc!=null?pc:st==='full'?100:st==='medium'?60:st==='low'?20:st==='empty'?5:null;
@@ -343,6 +363,7 @@ function bpIn(k){if(!BP.on)return;
  if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c){BP.topF=true;topUi()}else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
   else if(k==='lt')libSel(B.idx-c*3);else if(k==='rt')libSel(B.idx+c*3);
   else if(k==='lb'||k==='rb'){const n=B.tabs.length;B.tab=(B.tab+(k==='lb'?-1:1)+n)%n;libRender(true)}
+  else if(k==='y')sortMenu();else if(k==='x')filtMenu()
   else if(k==='a'){const g=curGame();g&&detOpen(g)}return}
  if(BP.scr==='det'){const n=detBtns(detGame()||{}).length;if(k==='left')BP.det.f=Math.max(0,BP.det.f-1);else if(k==='right')BP.det.f=Math.min(n-1,BP.det.f+1);
   else if(k==='a'){detPress();return}else if(k==='down'||k==='sdown'){bq('.dt-r')?.scrollBy({top:90,behavior:'smooth'});return}else if(k==='up'||k==='sup'){bq('.dt-r')?.scrollBy({top:-90,behavior:'smooth'});return}else return;
@@ -365,7 +386,7 @@ function bpPad(m){
  else if(m.t==='up')padUp(k)}
 if(window.bridge&&bridge.onPad)bridge.onPad(bpPad);
 bpEl.addEventListener('mousemove',()=>bpEl.classList.remove('nocur'));
-const BPK={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'a',Escape:'b',Backspace:'b',q:'lb',Q:'lb',e:'rb',E:'rb',o:'start',O:'start',PageUp:'lt',PageDown:'rt',Home:'guide',Tab:'guide'};
+const BPK={f:'x',F:'x',r:'y',R:'y',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'a',Escape:'b',Backspace:'b',q:'lb',Q:'lb',e:'rb',E:'rb',o:'start',O:'start',PageUp:'lt',PageDown:'rt',Home:'guide',Tab:'guide'};
 document.addEventListener('keydown',e=>{
  if(e.key==='F11'){e.preventDefault();e.stopPropagation();bpSet(!BP.on);return}
  if(!BP.on)return;e.stopPropagation();

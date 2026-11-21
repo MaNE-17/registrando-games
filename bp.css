@@ -360,3 +360,15 @@ body.bpon{overflow:hidden}
 .btb i{display:block;width:100%;border-radius:.1vh;transition:height .3s}
 .btb b{position:absolute;inset:0;display:grid;place-items:center;font-size:1.3vh;color:#fff;text-shadow:0 0 .3vh #000}
 .bt-pl{width:2.2vh;height:2.2vh}
+/* topo: lupa so com o icone, depois bateria e relogio */
+#bp .bp-sr{background:none!important;padding:0 .6vh!important;min-width:0;box-shadow:none!important;color:#fff!important}
+#bp .bp-sr span{display:none}
+#bp .bp-sr svg{width:2.6vh;height:2.6vh}
+.bp-top{gap:1.8vw}
+.bp-sb{height:6vh}
+.sb-in{font-size:2.3vh;gap:1.6vh}
+.sb-in svg{width:2.6vh;height:2.6vh}
+.sb-in .kb-cur{height:2.6vh}
+.scr-srch #srg{top:10vh}
+.bp-cats .ct.sub{font-size:1.6vh;font-weight:500;color:rgba(255,255,255,.55);margin-left:-1vw}
+.top-f .bp-top,.scr-srch .bp-top{opacity:0;pointer-events:none}
