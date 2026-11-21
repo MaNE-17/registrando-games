@@ -341,7 +341,6 @@ body.bpon{overflow:hidden}
 /* barra de pesquisa estilo Steam (aparece inteira so ao selecionar a lupa) */
 .bp-sb{position:absolute;left:0;right:0;top:0;height:8.4vh;z-index:5;display:none;align-items:stretch;background:#fff;color:#111;box-shadow:0 .6vh 3vh rgba(0,0,0,.45);animation:sbIn .25s cubic-bezier(.22,.61,.36,1)}
 @keyframes sbIn{from{opacity:0;transform:translateY(-1.5vh)}to{opacity:1;transform:none}}
-.top-f .bp-sb,.scr-srch .bp-sb{display:flex}
 .sb-in{flex:1;display:flex;align-items:center;gap:2vh;padding:0 3vw;font-size:2.8vh;font-weight:500;min-width:0;white-space:nowrap;overflow:hidden}
 .sb-in svg{width:3.2vh;height:3.2vh;flex:none;color:#111}
 .sb-in em{color:#8a8f98;font-style:italic}
@@ -371,5 +370,23 @@ body.bpon{overflow:hidden}
 .sb-in .kb-cur{height:2.6vh}
 .scr-srch #srg{top:10vh}
 .bp-cats .ct.sub{font-size:1.6vh;font-weight:500;color:rgba(255,255,255,.55);margin-left:-1vw}
-.top-f .bp-top,.scr-srch .bp-top{opacity:0;pointer-events:none}
+
 .bo-l{position:relative}
+
+/* v1.25: barra de pesquisa com a animacao da Steam (cresce a partir da lupa e acaba nela; bateria e relogio continuam visiveis) */
+#bp .bp-sb{display:none;left:0;box-shadow:none;animation:none;background:transparent;height:6vh}
+#bp .bp-sb.show{display:flex;animation:sbGrow .34s cubic-bezier(.22,.61,.36,1) forwards}
+#bp .bp-sb.show.out{animation:sbFade .24s ease forwards}
+@keyframes sbGrow{0%{background:rgba(255,255,255,0);clip-path:inset(0 0 0 85%)}35%{background:rgba(255,255,255,.28)}70%{background:rgba(255,255,255,.85)}100%{background:#fff;clip-path:inset(0 0 0 0)}}
+@keyframes sbFade{0%{background:#fff}60%{background:rgba(255,255,255,.3)}100%{background:rgba(255,255,255,0);clip-path:inset(0 0 0 85%)}}
+#bp .bp-sb .sb-in{opacity:0;transition:opacity .18s ease .14s}
+#bp .bp-sb.show:not(.out) .sb-in{opacity:1}
+#bp .bp-sr svg{transition:color .2s,opacity .2s}
+#bp.top-f .bp-sr,.scr-srch .bp-sr{background:none!important;box-shadow:none!important;padding:0 .6vh!important}
+#bp.top-f .bp-sr svg,.scr-srch .bp-sr svg{color:#111;opacity:0;transition:color .1s,opacity .2s ease .25s}
+#bp.top-f .bp-sr span{display:none}
+.bp-sr{position:relative;z-index:6}
+.top-f .bp-cw,.scr-srch .bp-cw{visibility:hidden}
+/* logos no Big Picture: sem sombra e sem limite de tamanho */
+#bp .bi-lg{filter:none!important;max-width:none!important;max-height:none!important;object-fit:contain}
+#bp .bi-t,#bp .bp-info,#bp .dt-c{overflow:visible!important}
