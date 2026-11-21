@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell, utilityProcess } = require('electron');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
 const LCH = require('./launchers'), STL = require('./steamlib');
 process.env.RG_DIAG = ''; app.whenReady().then(() => { process.env.RG_DIAG = path.join(app.getPath('userData'), 'epic-diagnostico.txt'); });
@@ -892,6 +892,8 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando';
       g.last_played = now(); save(); setTimeout(track, 4000); return { ok: true };
     }
+    case 'bp_full': if (win) { win.setFullScreen(!!b.on); } return { ok: true };
+    case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
     case 'stop': {
       if (!g || !g.exe) return { error: 'Esse jogo não tem .exe vinculado.' };
       const pn = (g.proc || path.win32.basename(g.exe)).replace(/"/g, '');
@@ -1041,6 +1043,32 @@ ipcMain.handle('api', async (_e, p, b) => {
   }
 });
 
+// ---- Controles (SDL3 num processo separado) ----
+const PAD = { ok: false, err: '', sdl: '', pads: [], proc: null, tries: 0 };
+function padStart() {
+  try {
+    const pr = utilityProcess.fork(path.join(__dirname, 'pad.js'), [], { serviceName: 'Registrando Games - Controles', stdio: 'ignore' });
+    PAD.proc = pr;
+    pr.on('message', m => {
+      if (!m || !m.t) return;
+      if (m.t === 'ok') { PAD.ok = true; PAD.sdl = m.sdl || ''; return; }
+      if (m.t === 'fail') { PAD.ok = false; PAD.err = m.err || 'falhou'; PAD.tries = 99; return; }
+      if (m.t === 'conn') { PAD.pads = PAD.pads.filter(x => x.id !== m.id).concat({ id: m.id, name: m.name, type: m.type, south: m.south }); }
+      if (m.t === 'disc') { PAD.pads = PAD.pads.filter(x => x.id !== m.id); }
+      if (!win || win.isDestroyed()) return;
+      if (m.t === 'down' && m.b === 'guide') {
+        // Botao Home: com um jogo aberto pelo app e a janela em segundo plano, nao rouba o foco do jogo
+        if (!win.isFocused() && running.size) return;
+        if (!win.isFocused()) { show(); win.webContents.send('pad', { t: 'bp', on: true }); return; }
+      }
+      // So repassa os botoes quando o app esta em primeiro plano (para nao agir enquanto se joga outra coisa)
+      if ((m.t === 'down' || m.t === 'up') && !win.isFocused()) return;
+      win.webContents.send('pad', m);
+    });
+    pr.on('exit', () => { PAD.ok = false; PAD.proc = null; PAD.pads = []; if (++PAD.tries <= 3 && !quitting) setTimeout(padStart, 3000); });
+  } catch (e) { PAD.err = String((e && e.message) || e); }
+}
+
 function show() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', show);
@@ -1061,8 +1089,9 @@ app.whenReady().then(() => {
   tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Abrir', click: show }, { label: 'Sair', click: () => { quitting = true; save(); app.quit(); } }]));
   tray.on('click', show);
   setInterval(track, 5000);
+  padStart();
   scanSteam(); setInterval(scanSteam, 60000); setInterval(launcherInstCheck, 90000);
 
   fillInfo();
 });
-app.on('before-quit', () => { quitting = true; try { save(); } catch {} });
+app.on('before-quit', () => { quitting = true; try { if (PAD.proc) PAD.proc.kill(); } catch {} try { save(); } catch {} });
