@@ -5,7 +5,7 @@ const BP={on:false,th:'orig',scr:'home',hist:[],style:'kb',padOk:null,
  home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:'',sort:'name',f:{}},det:{g:null,f:0},cfg:{i:0},ed:{i:1},dev:{i:0,bt:null,t:0},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
 try{const t=localStorage.getItem('bpth');if(t==='ps')BP.th=t}catch{}
 const BPTH=[['orig','Registrando Games'],['ps','PlayStation']];
-BP.pads={};BP.cz=100;try{const o=JSON.parse(localStorage.getItem('bplib')||'{}');if(o.sort)BP.lib.sort=o.sort;if(o.f)BP.lib.f=o.f}catch{}try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
+BP.pads={};BP.cz=100;BP.sq=false;try{BP.sq=localStorage.getItem('bpsq')==='1'}catch{}try{const o=JSON.parse(localStorage.getItem('bplib')||'{}');if(o.sort)BP.lib.sort=o.sort;if(o.f)BP.lib.f=o.f}catch{}try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
 const SV=(d,f)=>`<svg viewBox="0 0 24 24" ${f?'fill="currentColor"':'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true">${d}</svg>`;
 const BPI={
  play:SV('<path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/>',1),
@@ -57,7 +57,7 @@ const glyph=k=>{const P=BP.style==='ps5'||BP.style==='ps4';
 function bpStyleFrom(m){const t=String(m.type||'').toLowerCase(),s=String(m.south||'').toLowerCase();
  const st=/ps3|ps4|dualshock/.test(t)?'ps4':/ps5|playstation|dualsense/.test(t)||s==='cross'?'ps5':/nintendo|switch|joycon/.test(t)||s==='b'?'nin':'xbox';
  if(st!==BP.style){BP.style=st;bpClass();bpFoot();if(BP.ov)ovRender();if(BP.kb)kbRender()}}
-function bpClass(){bpEl.className='th-'+BP.th+' st-'+BP.style+' scr-'+BP.scr+(BP.side.open?' side-on':'')+(BP.kb?' kb-on':'')+(bpEl.classList.contains('nocur')?' nocur':'')}
+function bpClass(){bpEl.className='th-'+BP.th+' st-'+BP.style+' scr-'+BP.scr+(BP.side.open?' side-on':'')+(BP.kb?' kb-on':'')+(bpEl.classList.contains('nocur')?' nocur':'')+(BP.sq?' sqm':'')+(bpEl.classList.contains('ov-light')?' ov-light':'')+(bpEl.classList.contains('tab-f')?' tab-f':'')+(bpEl.classList.contains('top-f')?' top-f':'')}
 
 // ---- utilidades de jogo ----
 const vis=()=>S.games.filter(g=>!g.hidden);
@@ -65,7 +65,8 @@ const bpRec=l=>[...l].sort((a,b)=>(b.last_played||0)-(a.last_played||0)||NC(a,b)
 function bpAct(g){const run=S.running.includes(g.id),ins=(S.inst||[]).includes(g.id),ok=(g.appid||g.lkey)?ins:!!(g.exe||g.rom);
  if(run&&(g.exe||g.proc))return ['stop','Parar',BPI.stop];if(run||LAUNCH[g.id]>Date.now()-60000)return ['playing','Jogando',BPI.play];
  if(!ok)return ['inst','Instalar',BPI.inst];return ['play','Jogar',BPI.play]}
-function bpTile(g,j){const cv=coverSrc(g),run=S.running.includes(g.id);
+const sqSrc=g=>g.sq?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.sq):'';
+function bpTile(g,j,home){const cv=(home&&BP.sq&&sqSrc(g))||coverSrc(g),run=S.running.includes(g.id);
  return `<div class="bt" data-bi="${j}"><div class="bi">${cv?`<img src="${esc(cv)}" loading="lazy" decoding="async" alt="" onerror="this.remove()">`:''}<span class="bn">${esc(g.name)}</span></div>${run?'<i class="rn" title="Rodando"></i>':''}<span class="nm">${esc(g.name)}</span></div>`}
 let BGT=0,BGF=0,BGK=0,BGL='';
 function bpBg(g){const sig=g?g.id+'|'+wallSrc(g)+'|'+coverSrc(g):'';if(sig===BGL)return;BGL=sig;clearTimeout(BGT);const k=++BGK;
@@ -94,11 +95,11 @@ function bpPaint(full){if(!BP.on)return;({home:homeRender,lib:libRender,det:detR
 
 // Inicio: so jogos instalados ou jogados recentemente
 function homeRender(full){const H=BP.home,A=bpRec(vis().filter(g=>g.last_played)),L=A.slice(0,20);if(A.length>20)L.push({id:'__more',more:true,name:'Veja mais na sua biblioteca'});H.list=L;
- const key=L.map(g=>g.id+(S.running.includes(g.id)?'r':'')+(g.cover||'')).join(',');
- if(full||key!==H.rk){H.rk=key;bq('#bptrk').innerHTML=L.length?L.map((g,j)=>g.more?`<div class="bt bmore" data-bi="${j}"><div class="bi"><span class="mr">${BPI.lib}<b>Veja mais na sua biblioteca</b></span></div></div>`:bpTile(g,j)).join(''):'<div class="bp-empty">Nenhum jogo jogado recentemente.<br>Aperte o botão Home para abrir a Biblioteca.</div>'}
+ const key=(BP.sq?'q':'')+L.map(g=>g.id+(S.running.includes(g.id)?'r':'')+(g.cover||'')+(BP.sq?g.sq||'':'')).join(',');
+ if(full||key!==H.rk){H.rk=key;bq('#bptrk').innerHTML=L.length?L.map((g,j)=>g.more?`<div class="bt bmore" data-bi="${j}"><div class="bi"><span class="mr">${BPI.lib}<b>Veja mais na sua biblioteca</b></span></div></div>`:bpTile(g,j,1)).join(''):'<div class="bp-empty">Nenhum jogo jogado recentemente.<br>Aperte o botão Home para abrir a Biblioteca.</div>'}
  homeSel(Math.max(0,L.findIndex(g=>g.id===H.sel)),true)}
-const TG={orig:{w:15,ws:18,g:1.4},ps:{w:11,ws:15.5,g:1.1}};
-function homeGeo(){const t=TG[BP.th]||TG.orig,vh=innerHeight/100,vw=innerWidth/100,z=BP.cz/100;return{w:t.w*vh*z,ws:t.ws*vh*z,g:t.g*vw,pad:4*vw}}
+const TG={orig:{w:15,ws:18,g:1.4},ps:{w:11,ws:15.5,g:1.1},sq:{w:20,ws:24,g:1.4}};
+function homeGeo(){const t=(BP.sq&&BP.th==='orig'?TG.sq:TG[BP.th])||TG.orig,vh=innerHeight/100,vw=innerWidth/100,z=BP.cz/100;return{w:t.w*vh*z,ws:t.ws*vh*z,g:t.g*vw,pad:4*vw}}
 function homeTx(i,mouse){const H=BP.home,G=homeGeo(),st=G.w+G.g;if(!mouse){H.tx=-i*st}else{const x=G.pad+i*st+(H.tx||0),R=innerWidth-G.pad*0.5,Lm=G.pad*0.5;if(x+G.ws>R)H.tx=(H.tx||0)-(x+G.ws-R);else if(x<Lm)H.tx=(H.tx||0)+(Lm-x);H.tx=Math.min(0,H.tx||0)}bq('#bptrk').style.transform=`translateX(${H.tx}px)`}
 function homeSel(i,force,mouse){const H=BP.home,L=H.list;if(!L.length){bq('#bpinfo').innerHTML='';bpBg(null);return}i=Math.max(0,Math.min(L.length-1,i));
  if(i===H.idx&&!force&&H.sel===L[i].id)return;H.idx=i;H.sel=L[i].id;
@@ -183,7 +184,7 @@ function detPress(){const g=detGame();if(!g)return;const b=detBtns(g)[BP.det.f];
 function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••••'+v.slice(-4):'••••'):'Não preenchido';
  const txt=(n,k,ph,sec)=>({t:'txt',n,v:c[k]||'',show:sec?mask(c[k]):(c[k]||'Não preenchido'),fn:()=>kbOpen(n,c[k]||'',ph,async v=>{c[k]=v;await saveCfgBP();bpToast('Salvo')})});
  const tog=(n,on,fn)=>({t:'tog',n,on,fn});
- return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'act',n:'Tamanho das capas no Início',show:BP.cz+'%',fn:czOpen},
+ return [{t:'h',n:'Dispositivos'},{t:'act',n:'Controles e fones de ouvido',show:'Ver bateria',fn:()=>{BP.dev.i=0;bpGo('dev');devLoad(true)}},{t:'h',n:'Big Picture'},{t:'ch',n:'Tema',show:(BPTH.find(x=>x[0]===BP.th)||BPTH[0])[1],fn:themeMenu},{t:'act',n:'Capas no Início (tamanho e formato)',show:BP.cz+'% · '+(BP.sq?'Quadrado 1:1':'Vertical 2:3'),fn:czOpen},
   {t:'h',n:'Sons da interface'},{t:'tog',n:'Sons da interface',on:BP.snd.on,fn:v=>{BP.snd.on=v;sndSave();cfgRender()},local:1},{t:'num',n:'Volume dos sons',show:BP.snd.vol+'%',fn:d=>{BP.snd.vol=Math.max(0,Math.min(100,BP.snd.vol+10*d));sndSave();cfgRender();sndPreset('tick')}},
   {t:'ch',n:'Som de cada ação',show:SNDE.length+' ações',fn:sndList},
   {t:'h',n:'Geral'},tog('Iniciar com o Windows',!!c.startup,v=>api('startup_set',{on:v,min:c.startMin!==false})),tog('Abrir minimizado ao iniciar com o Windows',c.startMin!==false,v=>api('startup_set',{on:!!c.startup,min:v})),
@@ -199,7 +200,8 @@ function cfgRender(){const R=cfgRows(),C=BP.cfg;if(R[C.i]&&R[C.i].t==='h')C.i++;
  bq('#bcl').innerHTML=R.map((r,i)=>r.t==='h'?`<div class="bc-h">${esc(r.n)}</div>`:`<div class="bc-r${i===C.i?' f':''}" data-ci="${i}"><span class="bc-n">${esc(r.n)}</span><span class="bc-v">${r.t==='tog'?`<i class="bsw${r.on?' on':''}"><i></i></i>`:r.t==='num'?`<b class="bc-go">‹</b><b class="sc">${esc(r.show)}</b><b class="bc-go">›</b>`:r.t==='act'?`${r.show?`<small>${esc(r.show)}</small>`:''}<b class="bc-go">›</b>`:`${esc(r.show)}<b class="bc-go">›</b>`}</span></div>`).join('');
  scrV(bq('#bcl'),bq('.bc-r.f'),true);bpBg(null)}
 async function cfgPress(d=0){const r=cfgRows()[BP.cfg.i];if(!r||r.t==='h')return;if(r.t==='num'){r.fn(d||1);return}if(d)return;if(r.t==='tog'){snd('toggle');await r.fn(!r.on);if(!r.local)await load();return}r.fn()}
-function czOpen(){bpGo('home',false);const o={type:'cz',title:'Tamanho das capas no Início',v:BP.cz,v0:BP.cz};ovOpen(o);bpEl.classList.add('ov-light')}
+function czOpen(){bpGo('home',false);const o={type:'cz',title:'Capas no Início',v:BP.cz,v0:BP.cz,q0:BP.sq};ovOpen(o);bpEl.classList.add('ov-light')}
+function bpSq(){bpEl.classList.toggle('sqm',BP.sq);BP.home.rk='';if(BP.on&&BP.scr==='home')homeRender(true)}
 function bpZoom(){bpEl.style.setProperty('--bpz',BP.cz/100);if(BP.on&&BP.scr==='home')homeTx(BP.home.idx)}
 function cfgMove(d){const R=cfgRows();let i=BP.cfg.i;do{i+=d}while(R[i]&&R[i].t==='h');if(i<0||i>=R.length)return;BP.cfg.i=i;cfgRender()}
 
@@ -224,14 +226,14 @@ function bpOpts(){const g=curGame();if(!g)return;const a=bpAct(g),it=[];
  if(BP.scr!=='edit')it.push({n:'Editar jogo',fn:()=>{ovClose(true);edOpen(g)}});
  if(a[0]==='stop')it.push({n:'Fechar o jogo',dl:1,fn:()=>bpConfirmStop(g)});
  it.push({n:g.fav?'Remover dos favoritos':'Adicionar aos favoritos',fn:()=>{ovClose(true);bpFav(g)}});
- it.push({n:'Trocar capa',ar:1,fn:()=>bpCovers(g,'cover')});
+ it.push({n:'Trocar capa',ar:1,fn:()=>ovOpen({type:'menu',title:'Trocar capa',sub:g.name,items:[{n:'Capa vertical',ar:1,fn:()=>bpCovers(g,'cover')},{n:'Capa quadrada (1:1)',ar:1,fn:()=>bpCovers(g,'square')},...(g.sq?[{n:'Remover a capa quadrada',dl:1,fn:async()=>{await api('sq_clear',{id:g.id});ovClose(true);await load();bpPaint(true);bpToast('Capa quadrada removida')}}]:[])]},true)});
  it.push({n:'Logo',ar:1,fn:()=>bpLogoMenu(g)});
  it.push({n:'Papel de parede',ar:1,fn:()=>ovOpen({type:'menu',title:'Papel de parede',sub:g.name,items:[{n:'Buscar no Google Imagens',ar:1,fn:()=>wallGoogle(g)},...(g.wall?[{n:'Remover o papel de parede',dl:1,fn:async()=>{await api('wall_clear',{id:g.id});ovClose(true);BGL='';await load();bpPaint(true);bpToast('Papel de parede removido')}}]:[])]},true)});
  it.push({n:'Mudar status',ar:1,fn:()=>ovOpen({type:'menu',title:'Status',items:ST.map(s=>({n:stN(s),ck:g.status===s,fn:async()=>{const b={id:g.id,status:s};if(s==='Zerado'&&!g.finished)b.finished=Math.floor(Date.now()/1000);await api('save',b);ovClose(true);bpToast('Status: '+stN(s));await load()}}))},true)});
  if((g.review||'').trim())it.push({n:'Ler review',ar:1,fn:()=>ovOpen({type:'text',title:g.name,text:g.review},true)});
  ovOpen({type:'menu',title:g.name,items:it})}
 function themeMenu(){ovOpen({type:'menu',title:'Tema do Big Picture',items:BPTH.map(([k,n])=>({n,ck:BP.th===k,fn:()=>{BP.th=k;try{localStorage.setItem('bpth',k)}catch{}bpClass();ovClose(true);bpPaint(true);bpToast('Tema: '+n)}}))},!!BP.ov)}
-const KTIT={cover:'Trocar capa',logo:'Trocar logo',hero:'Trocar papel de parede'};
+const KTIT={square:'Capa quadrada (1:1)',cover:'Trocar capa',logo:'Trocar logo',hero:'Trocar papel de parede'};
 async function bpCovers(g,kind='cover'){if(!S.config.sgdb){bpToast('Para trocar imagens, coloque a chave do SteamGridDB nas Configurações.');return}
  const ov={type:'grid',kind,title:KTIT[kind],sub:g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
 function bpLogoMenu(g){g=S.games.find(x=>x.id===g.id)||g;ovOpen({type:'menu',title:'Logo',sub:g.name,items:[
@@ -247,7 +249,7 @@ async function bpCovMore(ov){if(ov.loading||!ov.more)return;ov.loading=true;ovRe
  try{const r=await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover'});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
  ov.loading=false;if(BP.ov===ov)ovRender()}
 async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Aplicando a capa…');
- try{if(ov.kind==='logo'||ov.kind==='hero'){const r=await api(ov.kind==='logo'?'logo_set':'wall_sgdb',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
+ try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_sgdb',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
 
 // ---- barra lateral (botao Home) ----
 const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];BP.home.sel=null;BP.home.idx=-1;bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];bpGo('lib',false)}},
@@ -266,7 +268,7 @@ function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('a
  const ft=`<div class="bo-f">${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span data-fk="a">${glyph('a')}Selecionar</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div>`;
  if(o.type==='menu'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-l'),el.querySelector('.bo-i.on'),false)}
  else if(o.type==='ico'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g bo-ic">${o.items.map(([k,n],j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><span>${k===''?((d=>(d&&ICO[d])||BPI.lib)(BRAND[o.c.id]||(CONSOLES.some(x=>x.n===o.c.id)?CSLUG(o.c.id):null))):k==='__pc'?SV('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'):ICO[k]}</span><b>${esc(n)}</b></div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}
- else if(o.type==='cz')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-70)/90*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
+ else if(o.type==='cz')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-70)/90*100}%"></i></div><span>${glyph('rb')}</span></div><div class="czf" data-fk="x"><span>Formato</span><b class="${BP.sq?'':'on'}">Vertical 2:3</b><b class="${BP.sq?'on':''}">Quadrado 1:1</b></div><div class="bo-f"><span>←/→ Ajustar</span><span data-fk="x">${glyph('x')}Formato</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='logo')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}</div>${LGR.map((r,i)=>`<div class="lgr${i===o.f?' f':''}" data-lf="${i}"><span>${r.n}</span><div class="szt"><i style="width:${(o.v[i]-r.min)/(r.max-r.min)*100}%"></i></div><b>${o.v[i]}${r.u}</b></div>`).join('')}<div class="bo-f"><span>↑/↓ Escolher · ←/→ Ajustar</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='size')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-40)/220*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='date'||o.type==='hm'){const lab=o.type==='date'?['Dia','Mês','Ano']:['Horas','Minutos'],val=o.type==='date'?[String(o.v[0]).padStart(2,'0'),String(o.v[1]).padStart(2,'0'),o.v[2]]:[o.v[0],String(o.v[1]).padStart(2,'0')];
@@ -275,9 +277,9 @@ function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('a
  else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g k-${o.kind||'cover'}">${o.items.map((it,j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" alt=""></div>`).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
   scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}}
 function ovIn(k){const o=BP.ov;
- if(o.type==='cz'){if(k==='b'||k==='back'){BP.cz=o.v0;bpZoom();ovClose();BP.hist=['home'];bpGo('cfg',false);return}
-  if(k==='left'||k==='lb')o.v=Math.max(70,o.v-5);else if(k==='right'||k==='rb')o.v=Math.min(160,o.v+5);else if(k==='y')o.v=100;
-  else if(k==='a'){try{localStorage.setItem('bpcz',BP.cz)}catch{}ovClose();bpToast('Tamanho salvo: '+BP.cz+'%');BP.hist=['home'];bpGo('cfg',false);return}else return;BP.cz=o.v;bpZoom();ovRender();return}
+ if(o.type==='cz'){if(k==='b'||k==='back'){BP.cz=o.v0;BP.sq=o.q0;bpSq();bpZoom();ovClose();BP.hist=['home'];bpGo('cfg',false);return}
+  if(k==='left'||k==='lb')o.v=Math.max(70,o.v-5);else if(k==='right'||k==='rb')o.v=Math.min(160,o.v+5);else if(k==='y')o.v=100;else if(k==='x'){BP.sq=!BP.sq;bpSq();ovRender();return}
+  else if(k==='a'){try{localStorage.setItem('bpcz',BP.cz);localStorage.setItem('bpsq',BP.sq?'1':'0')}catch{}ovClose();bpToast('Tamanho salvo: '+BP.cz+'%');BP.hist=['home'];bpGo('cfg',false);return}else return;BP.cz=o.v;bpZoom();ovRender();return}
  if(o.type==='logo'){if(k==='b'||k==='back'){o.v=[...o.v0];logoLive(o);ovClose();return}
   const r=LGR[o.f];if(k==='up')o.f=(o.f+2)%3;else if(k==='down')o.f=(o.f+1)%3;else if(k==='left'||k==='lb')o.v[o.f]=Math.max(r.min,o.v[o.f]-r.st);else if(k==='right'||k==='rb')o.v[o.f]=Math.min(r.max,o.v[o.f]+r.st);
   else if(k==='y'){o.v=[120,0,0]}else if(k==='a'){api('save',{id:o.g.id,bpLogoSize:o.v[0],bpLogoX:o.v[1],bpLogoY:o.v[2]}).then(load);ovClose(true);bpToast('Logo salva');return}else return;logoLive(o);ovRender();return}
@@ -532,6 +534,6 @@ bpEl.addEventListener('wheel',e=>{if(BP.ov||BP.kb||BP.side.open)return;if(BP.scr
    const p=prev[gp.index]||{},type=/09cc|05c4|dualshock|wireless controller/i.test(gp.id)?'ps4':/054c|dualsense|playstation/i.test(gp.id)?'ps5':/057e|nintendo|pro controller/i.test(gp.id)?'nintendo':'xbox';
    for(const n in st)if(st[n]!==!!p[n])bpPad({t:st[n]?'down':'up',b:n,type});prev[gp.index]=st}}
  setTimeout(async()=>{try{const r=await api('pad_info');BP.padOk=!!r.ok;for(const p of r.pads||[])BP.pads[p.id]=p;batRender()}catch{BP.padOk=false}if(!BP.padOk){on=true;requestAnimationFrame(loop)}},2500)})();
-bpZoom();
+bpZoom();bpEl.classList.toggle('sqm',BP.sq);
 window.bpSet=bpSet;
 })();

@@ -169,6 +169,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
 function save() { const f = U('backlog_data.json'); fs.writeFileSync(f + '.tmp', JSON.stringify(data, null, 1)); fs.renameSync(f + '.tmp', f); }
 const rmLogo = g => { if (g.logo) try { fs.unlinkSync(path.join(COVERS(), g.logo)); } catch {} g.logo = ''; };
 const rmWall = g => { if (g.wall) try { fs.unlinkSync(path.join(COVERS(), g.wall)); } catch {} g.wall = ''; };
+const rmSq = g => { if (g.sq) try { fs.unlinkSync(path.join(COVERS(), g.sq)); } catch {} g.sq = ''; };
 const rmCover = g => { if (g.cover) try { fs.unlinkSync(path.join(COVERS(), g.cover)); } catch {} g.cover = ''; };
 
 // Rastreio: a cada 5s confere se o .exe de algum jogo esta aberto (Windows)
@@ -637,10 +638,10 @@ const sg = async p => (await sgRaw(p)).data || [];
 const sgBase = {};
 // Uma pagina de capas 600x900 do SteamGridDB (50 por pagina)
 async function sgPage(g, page, kind) {
-  const L = kind === 'logo', H = kind === 'hero', pre = L ? '/logos' : H ? '/heroes' : '/grids';
+  const L = kind === 'logo', H = kind === 'hero', Q = kind === 'square', pre = L ? '/logos' : H ? '/heroes' : '/grids';
   const key = g.id + '|' + g.name + '|' + (g.appid || '') + '|' + (L ? 'L' : H ? 'H' : 'G');
   // capas verticais: 600x900 e tambem 342x482 / 660x930 (o site mostra todas); humor e epilepsia incluidos, NSFW fica de fora
-  const get = b => sgRaw(`${b}?${L || H ? '' : 'dimensions=600x900,342x482,660x930&'}humor=any&epilepsy=any&nsfw=false&page=${page}`);
+  const get = b => sgRaw(`${b}?${L || H ? '' : Q ? 'dimensions=512x512,1024x1024&' : 'dimensions=600x900,342x482,660x930&'}humor=any&epilepsy=any&nsfw=false&page=${page}`);
   let base = sgBase[key], j = null;
   if (base === undefined) {
     base = null;
@@ -674,9 +675,10 @@ async function wallSave(g, src, kind = 'wall') {
   if (!buf || buf.length < (kind === 'logo' ? 800 : 5000) || buf.length > 60e6) return { error: 'Imagem inválida ou grande demais.' };
   fs.mkdirSync(COVERS(), { recursive: true });
   if (kind === 'cover') { rmCover(g); g.cover = `${g.id}-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.cover), buf); }
+  else if (kind === 'sq') { rmSq(g); g.sq = `${g.id}-sq-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.sq), buf); }
   else if (kind === 'logo') { rmLogo(g); g.logo = `${g.id}-lg-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.logo), buf); }
   else { rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${ext}`; fs.writeFileSync(path.join(COVERS(), g.wall), buf); }
-  save(); return { ok: true, file: kind === 'logo' ? g.logo : kind === 'cover' ? g.cover : g.wall };
+  save(); return { ok: true, file: kind === 'sq' ? g.sq : kind === 'logo' ? g.logo : kind === 'cover' ? g.cover : g.wall };
 }
 
 
@@ -793,10 +795,10 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'games_del': {
       const ids = new Set((b.ids || []).map(String));
-      for (const x of data.games) if (ids.has(x.id)) { rmCover(x); rmWall(x); rmLogo(x); if (x.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), x.lkey])]; if (x.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + x.appid])]; }
+      for (const x of data.games) if (ids.has(x.id)) { rmCover(x); rmWall(x); rmLogo(x); rmSq(x); if (x.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), x.lkey])]; if (x.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + x.appid])]; }
       data.games = data.games.filter(x => !ids.has(x.id)); data.lists.forEach(l => l.ids = l.ids.filter(i => !ids.has(i))); save(); return { ok: true, n: ids.size };
     }
-    case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; if (g.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + g.appid])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
+    case 'delete': if (g) { rmCover(g); rmWall(g); rmLogo(g); rmSq(g); if (g.lkey) data.lIgnored = [...new Set([...(data.lIgnored || []), g.lkey])]; if (g.appid) data.lIgnored = [...new Set([...(data.lIgnored || []), 'steam:' + g.appid])]; } data.games = data.games.filter(x => x.id !== b.id); data.lists.forEach(l => l.ids = l.ids.filter(i => i !== b.id)); save(); return { ok: true };
     case 'config': data.config = { key: String(b.key || '').trim(), steamid: String(b.steamid || '').trim(), sgdb: b.sgdb || '', fam: b.fam || '', famOn: !!b.famOn, gh: b.gh || '', ghRepo: (b.ghRepo || '').trim() }; save(); return { ok: true };
     case 'sync': if (!data.config.key || !data.config.steamid) { msg = 'Preencha a chave da API e o SteamID da Steam.'; return { ok: true }; } msg = 'Sincronizando...'; steamSync(); return { ok: true };
     case 'refresh_stop': if (refreshing || busy) { stopRefresh = true; msg = 'Parando...'; } return { ok: true };
@@ -994,6 +996,8 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
     case 'wall_attach': { if (!g || !/^tmp-wp-\d+\.\w+$/.test(String(b.file || ''))) return { ok: false }; const src = path.join(COVERS(), b.file); if (!fs.existsSync(src)) return { ok: false }; rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${path.extname(b.file)}`; fs.renameSync(src, path.join(COVERS(), g.wall)); save(); return { ok: true }; }
     case 'img_local': { if (!g) return { error: 'Salve o jogo primeiro.' }; if (!/^data:image\//.test(String(b.data || '')) || !['logo', 'wall'].includes(b.kind)) return { error: 'Imagem inválida.' }; return await wallSave(g, b.data, b.kind); }
+    case 'sq_sgdb': { if (!g) return { error: 'Jogo não encontrado.' }; if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; return await wallSave(g, b.url, 'sq'); }
+    case 'sq_clear': if (g) { rmSq(g); save(); } return { ok: true };
     case 'wall_sgdb': { if (!g) return { error: 'Jogo não encontrado.' }; if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; return await wallSave(g, b.url, 'wall'); }
     case 'logo_clear': if (g) { rmLogo(g); g.sgl = 1; save(); } return { ok: true };
     case 'wall_clear': if (g) { rmWall(g); save(); } return { ok: true };
