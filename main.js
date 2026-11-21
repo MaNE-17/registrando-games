@@ -1057,7 +1057,8 @@ function padStart() {
       if (!m || !m.t) return;
       if (m.t === 'ok') { PAD.ok = true; PAD.sdl = m.sdl || ''; return; }
       if (m.t === 'fail') { PAD.ok = false; PAD.err = m.err || 'falhou'; PAD.tries = 99; return; }
-      if (m.t === 'conn') { PAD.pads = PAD.pads.filter(x => x.id !== m.id).concat({ id: m.id, name: m.name, type: m.type, south: m.south }); }
+      if (m.t === 'conn') { PAD.pads = PAD.pads.filter(x => x.id !== m.id).concat({ id: m.id, name: m.name, type: m.type, south: m.south, power: m.power || null }); }
+      if (m.t === 'pow') { const x = PAD.pads.find(y => y.id === m.id); if (x) x.power = m.power; }
       if (m.t === 'disc') { PAD.pads = PAD.pads.filter(x => x.id !== m.id); }
       if (!win || win.isDestroyed()) return;
       // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela

@@ -17,6 +17,7 @@ const v = sdl.info && sdl.info.version && sdl.info.version.runtime;
 send({ t: 'ok', sdl: v ? `${v.major}.${v.minor}.${v.patch}` : '' });
 
 const open = new Map();
+const pw = p => { try { const x = p && p.power; return x ? { state: x.state || null, percent: x.percent == null ? null : x.percent } : null; } catch { return null; } };
 const info = (d, p) => ({ id: d.id, name: d.name || 'Controle', type: d.type || '', south: (p && p.buttonLabels && p.buttonLabels.south) || '' });
 
 function attach(d) {
@@ -38,9 +39,11 @@ function attach(d) {
       case 'rightTrigger': if (x > ON) vset('rt', true); else if (x < OFF) vset('rt', false); break;
     }
   });
+  p.on('powerUpdate', e => send({ t: 'pow', id: d.id, power: (e && e.power) || pw(p) }));
   p.on('close', () => { open.delete(d.id); send({ t: 'disc', ...info(d) }); });
   p.on('error', () => {});
-  send({ t: 'conn', ...info(d, p) });
+  send({ t: 'conn', ...info(d, p), power: pw(p) });
+  setTimeout(() => send({ t: 'pow', id: d.id, power: pw(p) }), 1500);
 }
 
 try { for (const d of sdl.gamepad.devices) attach(d); } catch {}

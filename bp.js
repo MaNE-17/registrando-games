@@ -5,7 +5,7 @@ const BP={on:false,th:'orig',scr:'home',hist:[],style:'kb',padOk:null,
  home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:''},det:{g:null,f:0},cfg:{i:0},ed:{i:1},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
 try{const t=localStorage.getItem('bpth');if(t==='ps')BP.th=t}catch{}
 const BPTH=[['orig','Registrando Games'],['ps','PlayStation']];
-BP.cz=100;try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
+BP.pads={};BP.cz=100;try{BP.cz=Math.max(70,Math.min(160,+localStorage.getItem('bpcz')||100))}catch{}
 const SV=(d,f)=>`<svg viewBox="0 0 24 24" ${f?'fill="currentColor"':'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true">${d}</svg>`;
 const BPI={
  play:SV('<path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/>',1),
@@ -24,7 +24,8 @@ const BPI={
  pad:SV('<path d="M6 11h4M8 9v4"/><path d="M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15.6A3 3 0 0 0 5 19c1 0 1.9-.5 2.4-1.3L9 15h6l1.6 2.7A2.8 2.8 0 0 0 19 19a3 3 0 0 0 3-3.4l-.7-7A4 4 0 0 0 17.3 5z"/>')};
 const bpEl=document.createElement('div');bpEl.id='bp';bpEl.hidden=true;
 bpEl.innerHTML=`<div class="bp-bg"><div class="bp-bgi"></div><div class="bp-bgi"></div></div><div class="bp-sh"></div>
-<div class="bp-top"><div class="bp-av">${BPI.pad}</div><div class="bp-cw"><div class="bp-cats" id="bpcats"></div></div><button class="bp-sr" id="bpsr" title="Pesquisar jogo" aria-label="Pesquisar jogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Pesquisar</span></button><div class="bp-clk" id="bpclk"></div></div>
+<div class="bp-top"><div class="bp-av">${BPI.pad}</div><div class="bp-cw"><div class="bp-cats" id="bpcats"></div></div><button class="bp-sr" id="bpsr" title="Pesquisar jogo" aria-label="Pesquisar jogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Pesquisar</span></button><div class="bp-clk" id="bpclk"></div><div class="bp-bat" id="bpbat"></div></div>
+<div class="bp-sb" id="bpsb"><div class="sb-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span id="bpsbt"></span></div><div class="bp-bat sb-bat" id="bpsbat"></div></div>
 <section class="bp-scr" id="bps-home"><div class="bp-sec" id="bpsec">Jogados recentemente</div><div class="bp-row"><div class="bp-trk" id="bptrk"></div></div><div class="bp-info" id="bpinfo"></div></section>
 <section class="bp-scr" id="bps-lib" hidden><div class="bl-tabs" id="bltabs"></div><div class="bl-g" id="blg"></div></section>
 <section class="bp-scr" id="bps-det" hidden></section>
@@ -255,7 +256,7 @@ const KBL={abc:[['1','2','3','4','5','6','7','8','9','0'],['q','w','e','r','t','
  sym:[['1','2','3','4','5','6','7','8','9','0'],['!','@','#','$','%','&','*','(',')','='],['/',':',';','_','+','?','\'','"','[',']'],['<','>','{','}','|','\\','~','^','`','.'],['⇧','abc','espaço','⌫','Colar','OK']]};
 function kbOpen(title,val,ph,done,live){BP.kb={title,v:val||'',ph:ph||'',done,live,lay:'abc',up:false,r:1,c:0};bpClass();kbRender()}
 function kbClose(){BP.kb=null;bq('#bpkb').hidden=true;bpClass();bpFoot()}
-function kbRender(){const K=BP.kb,el=bq('#bpkb');bpFoot();if(!K){el.hidden=true;return}el.hidden=false;const L=KBL[K.lay];
+function kbRender(){const K=BP.kb,el=bq('#bpkb');bpFoot();if(BP.scr==='srch')sbText();if(!K){el.hidden=true;return}el.hidden=false;const L=KBL[K.lay];
  el.innerHTML=`<div class="kb-p"><div class="kb-t">${esc(K.title)}</div><div class="kb-v">${K.v?esc(K.v):`<span class="ph">${esc(K.ph)}</span>`}<i class="kb-cur"></i></div><div class="kb-k">${L.map((row,r)=>`<div class="kb-row">${row.map((k,c)=>`<span class="kk${r===K.r&&c===K.c?' f':''}${k.length>1&&k!=='⌫'&&k!=='⇧'?' w':''}${k==='espaço'?' sp':''}${k==='OK'?' ok':''}${k==='⇧'&&K.up?' on':''}" data-kr="${r}" data-kc="${c}">${esc(K.up&&k.length===1?k.toUpperCase():k)}</span>`).join('')}</div>`).join('')}</div></div>`}
 async function kbKey(k){const K=BP.kb;if(!K)return;
  if(k==='⌫')K.v=K.v.slice(0,-1);else if(k==='espaço')K.v+=' ';else if(k==='⇧')K.up=!K.up;else if(k==='?123'){K.lay='sym';K.c=Math.min(K.c,KBL.sym[K.r].length-1)}else if(k==='abc')K.lay='abc';
@@ -268,13 +269,23 @@ function kbIn(k){const K=BP.kb,L=KBL[K.lay];
  if(k==='left')K.c=(K.c-1+L[K.r].length)%L[K.r].length;else if(k==='right')K.c=(K.c+1)%L[K.r].length;
  else if(k==='up'||k==='down'){const fr=K.c/L[K.r].length;K.r=(K.r+(k==='up'?-1:1)+L.length)%L.length;K.c=Math.min(L[K.r].length-1,Math.floor(fr*L[K.r].length))}else return;kbRender()}
 
+// ---- bateria dos controles ----
+function batRender(){const L=Object.values(BP.pads),h=L.map(p=>{const pw=p.power||{},st=pw.state,pc=pw.percent;
+  const wired=st==='wired'||st==='noBattery',chg=st==='charging',lv=pc!=null?pc:st==='full'?100:st==='medium'?60:st==='low'?20:st==='empty'?5:null;
+  const col=lv==null?'#9aa3b2':lv>50?'#3fd16f':lv>20?'#f5b301':'#e5484d';
+  const bat=wired?`<svg class="bt-pl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M7 8h10v4a5 5 0 0 1-10 0z"/><path d="M12 17v5"/></svg>`:
+   `<span class="btb"><i style="height:${lv==null?0:Math.max(6,lv)}%;background:${col}"></i>${chg?'<b>⚡</b>':''}</span>`;
+  return `<span class="bt-c" title="${esc(p.name||'Controle')}${lv!=null&&!wired?' · '+lv+'%':''}">${BPI.pad}${bat}${lv!=null&&!wired?`<small>${lv}%</small>`:''}</span>`}).join('');
+ bq('#bpbat').innerHTML=h;bq('#bpsbat').innerHTML=h;bpEl.classList.toggle('has-bat',!!L.length)}
+
 // ---- pesquisa (lupa ao lado do relogio, como na Steam) ----
-function topUi(){const on=BP.topF&&(BP.scr==='home'||BP.scr==='lib');bpEl.classList.toggle('top-f',on);bq('#bpsr').hidden=!(BP.scr==='home'||BP.scr==='lib')}
+function topUi(){const on=BP.topF&&(BP.scr==='home'||BP.scr==='lib');bpEl.classList.toggle('top-f',on);bq('#bpsr').hidden=!(BP.scr==='home'||BP.scr==='lib');sbText()}
+function sbText(){const q=BP.scr==='srch'?BP.srch.q:'';bq('#bpsbt').innerHTML=q?esc(q)+(BP.kb?'<i class="kb-cur"></i>':''):`<em>Busque jogos…</em>`}
 function srchOpen(){BP.topF=false;BP.srch.idx=0;bpGo('srch');srchKb()}
 function srchKb(){kbOpen('Pesquisar jogo',BP.srch.q,'Digite o nome do jogo',v=>{BP.srch.q=v;srchRender(true)},v=>{BP.srch.q=v;srchRender(true)});BP.kb.cancel=()=>{if(!BP.srch.q)bpBack()}}
 function srchRender(full){const q=nz(BP.srch.q).trim(),W=q.split(/\s+/).filter(Boolean);
  const L=W.length?vis().filter(g=>{const n=nz(g.name)+' '+nz(g.sortname||'');return W.every(w=>n.includes(w))}).sort((a,b)=>(nz(b.name).startsWith(q)-nz(a.name).startsWith(q))||NC(a,b)):[];
- BP.srch.list=L;bq('#srq').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>${BP.srch.q?esc(BP.srch.q):'<i>Digite o nome do jogo</i>'}</span><em>${W.length?L.length+' jogo'+(L.length===1?'':'s'):''}</em>`;
+ BP.srch.list=L;sbText();bq('#srq').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>${BP.srch.q?esc(BP.srch.q):'<i>Digite o nome do jogo</i>'}</span><em>${W.length?L.length+' jogo'+(L.length===1?'':'s'):''}</em>`;
  bq('#srg').innerHTML=L.map(bpTile).join('')||(W.length?'<div class="bp-empty">Nenhum jogo encontrado.</div>':'');srchSel(Math.min(BP.srch.idx,Math.max(0,L.length-1)),true)}
 function srchSel(i,force,mouse){const L=BP.srch.list;if(!L.length)return;i=Math.max(0,Math.min(L.length-1,i));BP.srch.idx=i;const G=bq('#srg');G.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=G.children[i];if(t){if(!BP.kb)t.classList.add('on');if(!mouse)scrV(G,t,!force)}bpBg(L[i])}
 const gridCols=G=>{const c=G.children;if(c.length<2)return 1;const y=c[0].offsetTop;let n=0;for(const e of c){if(e.offsetTop!==y)break;n++}return n||1};
@@ -346,8 +357,9 @@ const REP={},RPT=new Set(['up','down','left','right','sup','sdown','lt','rt']);
 function padDown(k){bpIn(k);if(RPT.has(k)){clearTimeout(REP[k]);const r=()=>{bpIn(k);REP[k]=setTimeout(r,k==='lt'||k==='rt'?220:85)};REP[k]=setTimeout(r,380)}}
 function padUp(k){clearTimeout(REP[k]);delete REP[k]}
 function bpPad(m){
- if(m.t==='conn'){bpStyleFrom(m);if(BP.on)bpToast('Controle conectado: '+(m.name||''));return}
- if(m.t==='disc'){if(BP.on)bpToast('Controle desconectado');return}
+ if(m.t==='conn'){BP.pads[m.id]={name:m.name,type:m.type,power:m.power};batRender();bpStyleFrom(m);if(BP.on)bpToast('Controle conectado: '+(m.name||''));return}
+ if(m.t==='disc'){delete BP.pads[m.id];batRender();if(BP.on)bpToast('Controle desconectado');return}
+ if(m.t==='pow'){if(BP.pads[m.id]){BP.pads[m.id].power=m.power;batRender()}return}
  const k=BPMAP[m.b];if(!k)return;
  if(m.t==='down'){bpStyleFrom(m);bpEl.classList.add('nocur');if(k==='guide'&&!BP.on){bpSet(true);return}if(!BP.on)return;padDown(k)}
  else if(m.t==='up')padUp(k)}
@@ -378,7 +390,7 @@ bpEl.addEventListener('click',e=>{
  const ci=e.target.closest('[data-ci]');if(ci){BP.cfg.i=+ci.dataset.ci;cfgRender();cfgPress();return}
  const ei=e.target.closest('[data-ei]');if(ei){BP.ed.i=+ei.dataset.ei;edRender();edPress(0);return}
  const df=e.target.closest('[data-df]');if(df&&BP.ov){BP.ov.f=+df.dataset.df;ovRender();return}
- if(e.target.closest('#bpsr')){srchOpen();return}
+ if(e.target.closest('#bpsr')||(e.target.closest('#bpsb')&&BP.scr!=='srch')){srchOpen();return}if(e.target.closest('#bpsb')&&BP.scr==='srch'){srchKb();return}
  const fk=e.target.closest('[data-fk]');if(fk&&fk.dataset.fk){bpIn(fk.dataset.fk);return}});
 // mouse: passar por cima ja seleciona (sem rolar a tela)
 let MMX=-1,MMY=-1,EDT=0,EDD=0;
@@ -406,7 +418,7 @@ bpEl.addEventListener('wheel',e=>{if(BP.ov||BP.kb||BP.side.open)return;if(BP.scr
    const [x,y]=gp.axes;st.lsLeft=x<-.55;st.lsRight=x>.55;st.lsUp=y<-.55;st.lsDown=y>.55;st.rsUp=gp.axes[3]<-.55;st.rsDown=gp.axes[3]>.55;
    const p=prev[gp.index]||{},type=/09cc|05c4|dualshock|wireless controller/i.test(gp.id)?'ps4':/054c|dualsense|playstation/i.test(gp.id)?'ps5':/057e|nintendo|pro controller/i.test(gp.id)?'nintendo':'xbox';
    for(const n in st)if(st[n]!==!!p[n])bpPad({t:st[n]?'down':'up',b:n,type});prev[gp.index]=st}}
- setTimeout(async()=>{try{const r=await api('pad_info');BP.padOk=!!r.ok}catch{BP.padOk=false}if(!BP.padOk){on=true;requestAnimationFrame(loop)}},2500)})();
+ setTimeout(async()=>{try{const r=await api('pad_info');BP.padOk=!!r.ok;for(const p of r.pads||[])BP.pads[p.id]=p;batRender()}catch{BP.padOk=false}if(!BP.padOk){on=true;requestAnimationFrame(loop)}},2500)})();
 bpZoom();
 window.bpSet=bpSet;
 })();
