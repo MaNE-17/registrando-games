@@ -66,8 +66,8 @@ function bpAct(g){const run=S.running.includes(g.id),ins=(S.inst||[]).includes(g
  if(run&&(g.exe||g.proc))return ['stop','Parar',BPI.stop];if(run||LAUNCH[g.id]>Date.now()-60000)return ['playing','Jogando',BPI.play];
  if(!ok)return ['inst','Instalar',BPI.inst];return ['play','Jogar',BPI.play]}
 const sqSrc=g=>g.sq?encodeURI('file:///'+S.coversDir.replace(/\\/g,'/')+'/'+g.sq):'';
-function bpTile(g,j,home){const cv=(home&&BP.sq&&sqSrc(g))||coverSrc(g),run=S.running.includes(g.id);
- return `<div class="bt" data-bi="${j}"><div class="bi">${cv?`<img src="${esc(cv)}" loading="lazy" decoding="async" alt="" onerror="this.remove()">`:''}<span class="bn">${esc(g.name)}</span></div>${run?'<i class="rn" title="Rodando"></i>':''}<span class="nm">${esc(g.name)}</span></div>`}
+function bpTile(g,j,home){const cv=(home&&(BP.sq||BP.th==='ps')&&sqSrc(g))||coverSrc(g),run=S.running.includes(g.id);
+ return `<div class="bt" data-bi="${j}"><div class="bi">${cv?`<img src="${esc(cv)}" loading="lazy" decoding="async" alt="" onerror="this.remove()">`:''}<span class="bn">${esc(g.name)}</span></div>${run?'<i class="rn" title="Rodando"></i>':''}<span class="nm">${home?plIco(g):''}<b>${esc(g.name)}</b></span></div>`}
 let BGT=0,BGF=0,BGK=0,BGL='';
 function bpBg(g){const sig=g?g.id+'|'+wallSrc(g)+'|'+coverSrc(g):'';if(sig===BGL)return;BGL=sig;clearTimeout(BGT);const k=++BGK;
  BGT=setTimeout(()=>{const L=bpEl.querySelectorAll('.bp-bgi');
@@ -95,7 +95,7 @@ function bpPaint(full){if(!BP.on)return;({home:homeRender,lib:libRender,det:detR
 
 // Inicio: so jogos instalados ou jogados recentemente
 function homeRender(full){const H=BP.home,A=bpRec(vis().filter(g=>g.last_played)),L=A.slice(0,20);if(A.length>20)L.push({id:'__more',more:true,name:'Veja mais na sua biblioteca'});H.list=L;
- const key=(BP.sq?'q':'')+L.map(g=>g.id+(S.running.includes(g.id)?'r':'')+(g.cover||'')+(BP.sq?g.sq||'':'')).join(',');
+ const key=BP.th+(BP.sq?'q':'')+L.map(g=>g.id+(S.running.includes(g.id)?'r':'')+(g.cover||'')+(g.sq||'')).join(',');
  if(full||key!==H.rk){H.rk=key;bq('#bptrk').innerHTML=L.length?L.map((g,j)=>g.more?`<div class="bt bmore" data-bi="${j}"><div class="bi"><span class="mr">${BPI.lib}<b>Veja mais na sua biblioteca</b></span></div></div>`:bpTile(g,j,1)).join(''):'<div class="bp-empty">Nenhum jogo jogado recentemente.<br>Aperte o botão Home para abrir a Biblioteca.</div>'}
  homeSel(Math.max(0,L.findIndex(g=>g.id===H.sel)),true)}
 const TG={orig:{w:15,ws:18,g:1.4},ps:{w:11,ws:15.5,g:1.1},sq:{w:20,ws:24,g:1.4}};

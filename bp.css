@@ -453,3 +453,11 @@ body.bpon{overflow:hidden}
 #bp ::-webkit-scrollbar-thumb{background:var(--bpa);border-radius:99px;min-height:4vh}
 #bp .bc-l{width:min(72vw,124vh);padding-right:2.2vh}
 #bp .bl-g{padding-right:3vw}
+/* tema PlayStation: capas 1:1, nome embaixo com icone da plataforma */
+.th-ps #bps-home .bt.on{margin-right:0!important}
+.th-ps #bps-home .bt.on .nm{display:flex!important;align-items:center;gap:1vh;position:absolute;left:0;top:calc(100% + 1.6vh);transform:none;width:max-content;max-width:40vw;font-size:2.2vh;font-weight:500;white-space:nowrap}
+.th-ps #bps-home .bt .nm b{font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.th-ps #bps-home .bt .nm .pli{display:grid!important;position:static!important;opacity:1!important;width:2.6vh;height:2.6vh;background:none!important;place-items:center;flex:none}
+.th-ps #bps-home .bt .nm .pli svg{width:2.4vh!important;height:2.4vh!important;color:#fff!important}
+.th-ps .bp-info{top:calc(42vh + 15.5vh*var(--bpz))}
+.th-ps .czf{display:none}
