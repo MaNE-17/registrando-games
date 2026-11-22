@@ -161,6 +161,7 @@ function libRender(full){const B=BP.lib,T=B.tabs=libTabs();if(B.tab>=T.length)B.
  bq('#bltabs').innerHTML=`<span class="tg">${glyph('lb')}</span>`+T.map((t,i)=>`<span class="tb${i===B.tab?' on':''}" data-lt="${i}">${esc(t.n)}${t.sub?`<b class="tsub">› ${esc(t.sub.name)}</b>`:''}<em>${t.sub?t.g.length:t.cnt!=null?t.cnt:t.g.length}</em></span>`).join('')+`<span class="tg">${glyph('rb')}</span>`;
  scrH(bq('#bltabs'),bq('#bltabs .tb.on'));if(B.tf){const t=bq('#bltabs .tb.on');t&&t.classList.add('f')}
  const key=C.k+'|'+C.g.map(g=>g.id+(g.cover||'')).join(',');
+ const chg=B.lastK!==C.k;if(chg&&!B.keep)delete B.sel[C.k];B.keep=false;
  if(full||key!==B.rk){B.rk=key;const G=bq('#blg');G.classList.toggle('cols',!!C.grp);G.innerHTML=(C.grp?C.g.map(grpTile):C.g.map(bpTile)).join('')||'<div class="bp-empty">Nenhum jogo aqui.</div>';if(B.lastK!==C.k){G.scrollTop=0;G._ty=null;B.lastK=C.k}}
  libSel(Math.max(0,C.g.findIndex(g=>g.id===B.sel[C.k])),true)}
 function libSel(i,force,mouse){const B=BP.lib,C=B.tabs[B.tab];if(!C||!C.g.length){bpBg(null);return}i=Math.max(0,Math.min(C.g.length-1,i));
@@ -268,7 +269,7 @@ async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Apl
  try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'||ov.kind==='abyss'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_url',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='abyss'?'Papel de parede trocado!':ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
 
 // ---- barra lateral (botao Home) ----
-const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];BP.home.sel=null;BP.home.idx=-1;bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];bpGo('lib',false)}},
+const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];BP.home.sel=null;BP.home.idx=-1;bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];BP.lib.lastK=null;BP.lib.open=null;BP.lib.sel={};bpGo('lib',false)}},
  {k:'theme',n:'Tema',ic:BPI.theme,fn:themeMenu},{k:'sync',n:'Atualizar e sincronizar',ic:BPI.sync,fn:()=>{refreshAll();bpToast('Atualizando a biblioteca…')}},
  {k:'cfg',n:'Configurações',ic:BPI.cfg,fn:()=>{BP.hist=['home'];BP.cfg.i=1;bpGo('cfg',false)}},{k:'exit',n:'Sair do Big Picture',ic:BPI.exit,fn:()=>bpSet(false)}];
 function sideRender(){const L=SIDE();bq('#bpside').innerHTML=`<div class="sd-h">${BPI.pad}<b>Registrando Games</b></div>`+L.map((x,i)=>`<div class="sd-i${i===BP.side.i?' f':''}${x.k===BP.scr?' cur':''}" data-si="${i}">${x.ic}<span>${x.n}</span></div>`).join('')}
@@ -465,9 +466,9 @@ function bpIn(k){if(!BP.on)return;LIN=performance.now();if(!(BP.ov&&BP.ov.type==
  if(BP.topF){if(k==='a'){srchOpen();return}if(k==='down'||k==='b'){BP.topF=false;topUi();return}return}
  if(BP.scr==='lib'&&BP.lib.mv){if(k==='left'||k==='lb')tabMove(-1);else if(k==='right'||k==='rb')tabMove(1);else if(k==='a'||k==='b'){BP.lib.mv=false;bpEl.classList.remove('tab-mv');bpFoot();bpToast('Posição das abas salva')}return}
  if(k==='start'){if(BP.scr==='lib'){if(BP.lib.tf){tabsMenu();return}const C=BP.lib.tabs[BP.lib.tab],x=C&&C.g[BP.lib.idx];if(x&&x.kind==='col'){colIconMenu(x);return}if(x&&x.kind)return}if(BP.scr!=='cfg'&&BP.scr!=='edit')bpOpts();return}
- if(k==='b'){if(BP.scr==='home')sideToggle(true);else if(BP.scr==='lib'&&BP.lib.open){const o=BP.lib.open;BP.lib.open=null;BP.lib.sel[o.k]=o.id;BP.lib.rk='';libRender(true)}else bpBack();return}
+ if(k==='b'){if(BP.scr==='home')sideToggle(true);else if(BP.scr==='lib'&&BP.lib.open){const o=BP.lib.open;BP.lib.open=null;BP.lib.sel[o.k]=o.id;BP.lib.keep=true;BP.lib.rk='';libRender(true)}else bpBack();return}
  if(BP.scr==='home'){if(k==='up'){BP.topF=true;topUi();return}if(k==='left')homeSel(BP.home.idx-1);else if(k==='right')homeSel(BP.home.idx+1);else if(k==='lt')homeSel(BP.home.idx-10);else if(k==='rt')homeSel(BP.home.idx+10);
-  else if(k==='a'){const x=BP.home.list[BP.home.idx];if(x&&x.more){BP.hist=['home'];bpGo('lib',false)}else if(x)detOpen(x)}return}
+  else if(k==='a'){const x=BP.home.list[BP.home.idx];if(x&&x.more){BP.hist=['home'];BP.lib.lastK=null;BP.lib.open=null;BP.lib.sel={};bpGo('lib',false)}else if(x)detOpen(x)}return}
  if(BP.scr==='lib'&&BP.lib.tf&&(k==='x'||k==='y')){k==='y'?sortMenu():filtMenu();return}
  if(BP.scr==='lib'&&BP.lib.tf){const B=BP.lib,n=B.tabs.length;if(k==='left'||k==='right'||k==='lb'||k==='rb'){B.open=null;B.tab=(B.tab+(k==='left'||k==='lb'?-1:1)+n)%n;libRender(true);tabFocus(true)}else if(k==='up'){tabFocus(false);BP.topF=true;topUi()}else if(k==='down'||k==='a'){tabFocus(false)}return}
  if(BP.scr==='lib'){const B=BP.lib,c=libCols();if(k==='left')libSel(B.idx-1);else if(k==='right')libSel(B.idx+1);else if(k==='up'){if(B.idx<c)tabFocus(true);else libSel(B.idx-c)}else if(k==='down')libSel(B.idx+c);
