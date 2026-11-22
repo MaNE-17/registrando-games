@@ -112,7 +112,7 @@ function homeSel(i,force,mouse){const H=BP.home,L=H.list;if(!L.length){bq('#bpin
  const T=bq('#bptrk'),K=T.children;for(let q=0;q<K.length;q++){const c=K[q];c.classList.toggle('on',q===i);c.classList.toggle('aft',q>i)}const t=K[i];
  if(t)homeTx(i,mouse)
  const g=L[i];if(g.more){const IE=bq('#bpinfo');if(IE._id!=='__more'){IE._id='__more';IE._k='';IE.innerHTML=`<div class="bi-t"><h1>Biblioteca</h1></div>`}return}const lg=logoSrc(g)&&!g.logoHide?logoSrc(g):'';
- const IE=bq('#bpinfo'),IK=g.id+'|'+lg+'|'+lgStyle(g)+'|'+g.name;if(IE._k===IK)return;const nw=IE._id!==g.id;IE._k=IK;IE._id=g.id;if(nw){IE.classList.remove('fi');void IE.offsetWidth;IE.classList.add('fi')}IE.innerHTML=`<div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>`;bpBg(g)}
+ bpBg(g);const IE=bq('#bpinfo'),IK=g.id+'|'+lg+'|'+lgStyle(g)+'|'+g.name;if(IE._k===IK)return;const nw=IE._id!==g.id;IE._k=IK;IE._id=g.id;if(nw){IE.classList.remove('fi');void IE.offsetWidth;IE.classList.add('fi')}IE.innerHTML=`<div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>`;bpBg(g)}
 
 // Biblioteca: abas como na Steam (Todos, Instalados, Favoritos, launchers/plataformas, listas)
 const libSave=()=>{try{localStorage.setItem('bplib',JSON.stringify({sort:BP.lib.sort,f:BP.lib.f}))}catch{}};
