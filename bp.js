@@ -135,7 +135,7 @@ function libTabs(){const v=vis().filter(libPass),T=BP.ltab,t=[],by=byPlat(v);
  const O=BP.tord,ix=x=>{const i=O.indexOf(x.base||x.k);return i<0?999:i};return t.map((x,i)=>[x,i]).sort((a,b)=>ix(a[0])-ix(b[0])||a[1]-b[1]).map(x=>x[0])}
 function colIcon(p){const c=BP.colIco[p];if(c&&c.startsWith('data:'))return `<img class="cli" src="${esc(c)}" alt="">`;const k=c||(BRAND[p]||(CONSOLES.some(x=>x.n===p)?CSLUG(p):null));return (k&&ICO[k])||BPI.lib}
 function grpTile(c,j){if(c.kind==='list'){const cv=c.games.slice(0,4).map(g=>coverSrc(g)).filter(Boolean);
-  return `<div class="bt bcol blst" data-bi="${j}"><div class="bi"><span class="fan">${cv.map((u,i)=>`<img src="${esc(u)}" style="--i:${i}" alt="" loading="lazy">`).join('')}</span><span class="cl"><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
+  return `<div class="bt bcol blst" data-bi="${j}"><div class="bi"><span class="mos n${cv.length}">${cv.map(u=>`<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</span><span class="cl"><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
  return `<div class="bt bcol" data-bi="${j}"><div class="bi"><span class="cl"><span class="ci">${colIcon(c.id)}</span><b>${esc(c.name)}</b><em>${c.games.length} jogo${c.games.length===1?'':'s'}</em></span></div></div>`}
 const tabSave=()=>{try{localStorage.setItem('bptabs',JSON.stringify(BP.ltab))}catch{}};
 function tabMove(d){const B=BP.lib,T=B.tabs,ks=T.map(x=>x.base||x.k),i=B.tab,j=i+d;if(j<0||j>=ks.length)return;[ks[i],ks[j]]=[ks[j],ks[i]];
