@@ -234,19 +234,19 @@ function bpOpts(){const g=curGame();if(!g)return;const a=bpAct(g),it=[];
  it.push({n:g.fav?'Remover dos favoritos':'Adicionar aos favoritos',fn:()=>{ovClose(true);bpFav(g)}});
  it.push({n:'Trocar capa',ar:1,fn:()=>ovOpen({type:'menu',title:'Trocar capa',sub:g.name,items:[{n:'Capa vertical',ar:1,fn:()=>bpCovers(g,'cover')},{n:'Capa quadrada (1:1)',ar:1,fn:()=>bpCovers(g,'square')},...(g.sq?[{n:'Remover a capa quadrada',dl:1,fn:async()=>{await api('sq_clear',{id:g.id});ovClose(true);await load();bpPaint(true);bpToast('Capa quadrada removida')}}]:[])]},true)});
  it.push({n:'Logo',ar:1,fn:()=>bpLogoMenu(g)});
- it.push({n:'Papel de parede',ar:1,fn:()=>ovOpen({type:'menu',title:'Papel de parede',sub:g.name,items:[{n:'Buscar no Google Imagens',ar:1,fn:()=>wallGoogle(g)},...(g.wall?[{n:'Remover o papel de parede',dl:1,fn:async()=>{await api('wall_clear',{id:g.id});ovClose(true);BGL='';await load();bpPaint(true);bpToast('Papel de parede removido')}}]:[])]},true)});
+ it.push({n:'Papel de parede',ar:1,fn:()=>ovOpen({type:'menu',title:'Papel de parede',sub:g.name,items:[{n:'Buscar no SteamGridDB',ar:1,fn:()=>bpCovers(g,'hero')},{n:'Buscar no Wallpaper Abyss',ar:1,fn:()=>bpCovers(g,'abyss')},...(g.wall?[{n:'Remover o papel de parede',dl:1,fn:async()=>{await api('wall_clear',{id:g.id});ovClose(true);BGL='';await load();bpPaint(true);bpToast('Papel de parede removido')}}]:[])]},true)});
  it.push({n:'Mudar status',ar:1,fn:()=>ovOpen({type:'menu',title:'Status',items:ST.map(s=>({n:stN(s),ck:g.status===s,fn:async()=>{const b={id:g.id,status:s};if(s==='Zerado'&&!g.finished)b.finished=Math.floor(Date.now()/1000);await api('save',b);ovClose(true);bpToast('Status: '+stN(s));await load()}}))},true)});
  if((g.review||'').trim())it.push({n:'Ler review',ar:1,fn:()=>ovOpen({type:'text',title:g.name,text:g.review},true)});
  ovOpen({type:'menu',title:g.name,items:it})}
 function themeMenu(){ovOpen({type:'menu',title:'Tema do Big Picture',items:BPTH.map(([k,n])=>({n,ck:BP.th===k,fn:()=>{BP.th=k;try{localStorage.setItem('bpth',k)}catch{}bpClass();ovClose(true);bpPaint(true);bpToast('Tema: '+n)}}))},!!BP.ov)}
-const KTIT={square:'Capa quadrada (1:1)',cover:'Trocar capa',logo:'Trocar logo',hero:'Trocar papel de parede'};
-async function bpCovers(g,kind='cover'){if(!S.config.sgdb){bpToast('Para trocar imagens, coloque a chave do SteamGridDB nas Configurações.');return}
- const ov={type:'grid',kind,title:KTIT[kind],sub:g.sgname||g.name,q:g.sgname||g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
+const KTIT={abyss:'Wallpaper Abyss',square:'Capa quadrada (1:1)',cover:'Trocar capa',logo:'Trocar logo',hero:'Trocar papel de parede'};
+async function bpCovers(g,kind='cover'){if(kind!=='abyss'&&!S.config.sgdb){bpToast('Para trocar imagens, coloque a chave do SteamGridDB nas Configurações.');return}
+ const ov={type:'grid',kind,title:KTIT[kind],sub:(kind==='abyss'?g.wpname:g.sgname)||g.name,q:(kind==='abyss'?g.wpname:g.sgname)||g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
 function covRename(ov){kbOpen('Nome usado na busca do SteamGridDB',ov.q,'Ex.: o nome em inglês',v=>{v=v.trim();if(!v)return;ov.q=v;ov.sub=v;ov.items=[];ov.i=0;ov.page=-1;ov.more=true;ovRender();bpCovMore(ov)})}
 async function covPc(ov){const r=await api('pick_img');if(!r||!r.data)return;bpToast('Aplicando a imagem…');
  try{const g=ov.g;if(ov.kind==='cover'){await api('cover_data',{id:g.id,data:await toCover(r.data)})}
   else if(ov.kind==='square'){const d=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),z=Math.min(im.width,im.height),o=Math.min(1024,z);c.width=c.height=o;c.getContext('2d').drawImage(im,(im.width-z)/2,(im.height-z)/2,z,z,0,0,o,o);ok(c.toDataURL('image/jpeg',.92))};im.onerror=no;im.src=r.data});const x=await api('img_local',{id:g.id,kind:'sq',data:d});if(x&&x.error)throw 0}
-  else{const x=await api('img_local',{id:g.id,kind:ov.kind==='hero'?'wall':'logo',data:r.data});if(x&&x.error)throw 0}
+  else{const x=await api('img_local',{id:g.id,kind:ov.kind==='hero'||ov.kind==='abyss'?'wall':'logo',data:r.data});if(x&&x.error)throw 0}
   ovClose(true);BGL='';await load();bpPaint(true);bpToast('Imagem aplicada!')}catch{bpToast('Não consegui usar essa imagem.')}}
 function bpLogoMenu(g){g=S.games.find(x=>x.id===g.id)||g;ovOpen({type:'menu',title:'Logo',sub:g.name,items:[
   {n:'Ajustar tamanho e posição',ar:1,fn:()=>bpLogoSize(g)},{n:'Trocar logo',ar:1,fn:()=>bpCovers(g,'logo')},
@@ -258,10 +258,10 @@ function bpLogoSize(g){if(!(BP.scr==='home'||BP.scr==='det'))detOpen(g);const v=
 const LGR=[{n:'Tamanho',min:40,max:260,st:5,u:'%'},{n:'Horizontal',min:0,max:50,st:1,u:''},{n:'Vertical',min:-20,max:30,st:1,u:''}];
 function logoLive(o){const L={bpLogoSize:o.v[0],bpLogoX:o.v[1],bpLogoY:o.v[2]};bpEl.querySelectorAll('.bi-lg').forEach(im=>im.style.cssText=lgStyle(L))}
 async function bpCovMore(ov){if(ov.loading||!ov.more)return;ov.loading=true;ovRender();
- try{const r=await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover',q:ov.q});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
+ try{const r=ov.kind==='abyss'?await api('abyss',{id:ov.g.id,page:ov.page+1,q:ov.q}):await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover',q:ov.q});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
  ov.loading=false;if(BP.ov===ov)ovRender()}
 async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Aplicando a capa…');
- try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_sgdb',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
+ try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'||ov.kind==='abyss'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_url',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='abyss'?'Papel de parede trocado!':ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
 
 // ---- barra lateral (botao Home) ----
 const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];BP.home.sel=null;BP.home.idx=-1;bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];bpGo('lib',false)}},

@@ -499,3 +499,4 @@ body.bpon>header,body.bpon>.shell{visibility:hidden}
 .ov-light .bp-ov{background:none}
 .side-on .bp-scr,.side-on .bp-top,.side-on .bp-foot{filter:brightness(.4)!important}
 .bi-m .pi,.bb{backdrop-filter:none}
+.bo-g.k-abyss{grid-template-columns:repeat(3,36vh)}.bo-g.k-abyss .gc{width:36vh;height:20.25vh}

@@ -996,6 +996,33 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'logo_set': { if (!g) return { error: 'Salve o jogo primeiro.' }; try { if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; } catch {} return await wallSave(g, b.url, 'logo'); }
     case 'wall_attach': { if (!g || !/^tmp-wp-\d+\.\w+$/.test(String(b.file || ''))) return { ok: false }; const src = path.join(COVERS(), b.file); if (!fs.existsSync(src)) return { ok: false }; rmWall(g); g.wall = `${g.id}-wp-${Date.now()}${path.extname(b.file)}`; fs.renameSync(src, path.join(COVERS(), g.wall)); save(); return { ok: true }; }
     case 'img_local': { if (!g) return { error: 'Salve o jogo primeiro.' }; if (!/^data:image\//.test(String(b.data || '')) || !['logo', 'wall', 'sq'].includes(b.kind)) return { error: 'Imagem inválida.' }; return await wallSave(g, b.data, b.kind); }
+    case 'abyss': {
+      const q = String(b.q || (g && (g.wpname || g.name)) || '').trim(); if (!q) return { error: 'Digite o nome do jogo.' };
+      if (g && b.q) { if (nzn(b.q) !== nzn(g.name)) g.wpname = b.q; else delete g.wpname; save(); }
+      const pg = (b.page || 0) + 1, UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36';
+      let h = '';
+      try { const r = await fetch('https://wall.alphacoders.com/search.php?search=' + encodeURIComponent(q) + (pg > 1 ? '&page=' + pg : ''), { headers: { 'User-Agent': UA, 'Accept-Language': 'en-US,en;q=0.9', Accept: 'text/html' }, signal: AbortSignal.timeout(20000) }); if (!r.ok) return { error: 'O Wallpaper Abyss não respondeu (' + r.status + ').' }; h = await r.text(); }
+      catch (e) { return { error: 'Não consegui acessar o Wallpaper Abyss: ' + e.message }; }
+      const seen = new Set(), items = [];
+      for (const m of h.matchAll(/https?:\/\/(?:images\d*|mfiles|initiate)\.alphacoders\.com\/([\w\/]+?)\/thumb(?:big|-\d+)?-(\d+)\.(jpe?g|png|webp)/gi)) {
+        const id = m[2]; if (seen.has(id)) continue; seen.add(id);
+        const host = m[0].match(/^https?:\/\/[^/]+/)[0];
+        items.push({ thumb: m[0], url: `${host}/${m[1]}/${id}.${m[3].toLowerCase()}` });
+      }
+      const more = new RegExp('[?&]page=' + (pg + 1) + '\\b').test(h) || /rel=["']next["']/i.test(h);
+      if (!items.length && pg === 1 && /cloudflare|captcha|challenge/i.test(h)) return { error: 'O Wallpaper Abyss bloqueou a busca agora. Tente de novo em alguns minutos ou use o SteamGridDB.' };
+      return { items, page: b.page || 0, more: more && items.length > 0, total: null, pages: null };
+    }
+    case 'wall_url': {
+      const t = g || (b.id === 'novo' ? { id: 'tmp' } : null); if (!t) return { error: 'Jogo não encontrado.' };
+      const u = String(b.url || ''); if (!/^https:\/\/[a-z0-9.-]*(steamgriddb|alphacoders)\.com\//i.test(u)) return { error: 'Link não permitido.' };
+      const alts = /alphacoders/i.test(u) ? [u, ...['jpg', 'jpeg', 'png', 'webp'].map(x => u.replace(/\.\w+$/, '.' + x)).filter(x => x !== u)] : [u];
+      let r = { error: 'Não consegui baixar essa imagem.' };
+      for (const x of alts) { r = await wallSave(t, x, 'wall'); if (!r.error) break; }
+      if (r.error) return r;
+      if (t.id === 'tmp') { const f = path.join(COVERS(), r.file), n = `tmp-wp-${Date.now()}${path.extname(r.file)}`; try { fs.renameSync(f, path.join(COVERS(), n)); } catch {} return { ok: true, tmp: n }; }
+      return r;
+    }
     case 'sq_sgdb': { if (!g) return { error: 'Jogo não encontrado.' }; if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; return await wallSave(g, b.url, 'sq'); }
     case 'sq_clear': if (g) { rmSq(g); save(); } return { ok: true };
     case 'wall_sgdb': { if (!g) return { error: 'Jogo não encontrado.' }; if (!/^https:\/\/[a-z0-9.-]*steamgriddb\.com\//i.test(String(b.url))) return { error: 'Link não permitido.' }; return await wallSave(g, b.url, 'wall'); }

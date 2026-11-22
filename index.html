@@ -306,7 +306,7 @@ aside,#side{overflow-x:hidden}.nosb aside{overflow-x:hidden}
 
 .rpt h2.hl{margin:0;line-height:0}.rlogo{display:block;object-fit:contain;object-position:left bottom;filter:drop-shadow(0 4px 18px #000a)}
 .lszx{display:inline-flex;align-items:center;gap:8px;margin-left:auto;color:var(--mu);font-size:13px;background:color-mix(in srgb,var(--sf) 70%,transparent);border:1px solid var(--ln);border-radius:10px;padding:8px 12px}.lsz input{width:130px;accent-color:var(--ac)}.lsz b{color:var(--tx);min-width:38px;text-align:right}
-.sgb.logos{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.sgb.logos img{aspect-ratio:16/9;object-fit:contain;padding:12px;background:repeating-conic-gradient(#2a3040 0 25%,#222836 0 50%) 50%/20px 20px}
+.sgb.walls{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}.sgb.walls img{aspect-ratio:16/9;object-fit:cover;width:100%}.sgsrc{display:inline-flex;gap:4px;padding:3px;border-radius:10px;background:var(--sf);border:1px solid var(--ln)}.sgsrc button{border:0!important;background:none;padding:5px 10px;border-radius:7px;font-size:13px}.sgsrc button.on{background:var(--ac);color:#fff}.sgb.logos{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}.sgb.logos img{aspect-ratio:16/9;object-fit:contain;padding:12px;background:repeating-conic-gradient(#2a3040 0 25%,#222836 0 50%) 50%/20px 20px}
 
 .lmb{position:absolute;top:18px;right:20px;z-index:3;width:44px;height:44px;border-radius:12px;font-size:20px;line-height:1;opacity:.5;background:color-mix(in srgb,var(--sf) 60%,transparent);backdrop-filter:blur(6px);transition:opacity .15s}.rp:hover .lmb,.lmb:focus-visible,.lmb[aria-expanded=true]{opacity:1}
 .lmn{position:absolute;top:70px;right:20px;z-index:4;width:300px;background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px 16px;box-shadow:0 14px 36px #0008;display:flex;flex-direction:column;gap:12px}.lmn[hidden]{display:none}
@@ -430,7 +430,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="l"><div class="cv big" id="d_cv"></div>
 <div class="cvb" id="d_cvb"><button type="button" id="d_sgbtn" onclick="sgdb()">Buscar capa</button>
 <button type="button" id="d_lgbtn" onclick="sgdb('logo')">Buscar logo</button>
-<button type="button" id="d_wpbtn" onclick="wallDlg()">Buscar wallpaper</button>
+<button type="button" id="d_wpbtn" onclick="sgdb('wall')">Buscar wallpaper</button>
 <div class="two imw"><button type="button" id="im_pk" aria-haspopup="menu">Escolher arquivo</button><button type="button" id="im_rm" aria-haspopup="menu">Remover</button><div id="imm" class="gcmx" role="menu" hidden></div></div></div>
 <div class="lchips"><button type="button" class="chip" id="f_fav">♡ Favoritar</button><button type="button" class="chip" id="f_hid">Ocultar este jogo</button><button type="button" class="chip" id="f_cat" title="Tira o jogo da barra lateral. Ele aparece na busca, nos filtros de Status e Ano, nas listas e nos favoritos.">Catalogar</button></div></div>
 <div class="r">
@@ -514,7 +514,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <dialog id="wpd"><div class="sgh"><b>Wallpaper · Google Imagens</b><input id="wp_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca de wallpapers"><button id="wp_go" class="p">Buscar no Google</button><span class="sp"></span><button id="wp_rm">Remover wallpaper</button><button type="button" class="xb" onclick="WPD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="wpres" id="wp_res"></div>
 <ol class="wpinfo"><li>Escolha a resolução acima. O Google Imagens abre numa janela já filtrada nesse tamanho exato.</li><li>Clique na imagem que você gostou para abri-la e espere carregar.</li><li>Aperte <b>Usar como wallpaper</b> na barra verde que fica embaixo da janela do Google.</li></ol><p class="mu wpm" id="wp_m"></p></dialog>
-<dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span id="sg_i" class="mu"></span><span class="sp"></span><button id="sg_rmlogo" hidden>Remover logo</button>
+<dialog id="sgd"><div class="sgh"><b id="sg_t">Capas</b><input id="sg_q" placeholder="Nome usado na busca" aria-label="Nome usado na busca do SteamGridDB" title="Se a busca não achar, tente outro nome (ex.: o nome em inglês)"><button id="sg_go">Buscar</button><span class="sgsrc" id="sg_src" hidden><button type="button" data-src="sgdb" class="on">SteamGridDB</button><button type="button" data-src="abyss">Wallpaper Abyss</button></span><span id="sg_i" class="mu"></span><span class="sp"></span><button id="sg_rmlogo" hidden>Remover logo</button>
 <label class="ck"><input type="checkbox" id="sg_all">Mostrar todas</label>
 <button id="sg_prev">‹ Anterior</button><span id="sg_p" class="mu"></span><button id="sg_next">Próxima ›</button>
 <button type="button" class="xb" onclick="SGD.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="sgb" id="sg_g"></div></dialog>
@@ -940,25 +940,25 @@ function toCover(src){return new Promise((ok,no)=>{const i=new Image();i.onload=
 async function setCover(d){pendCover=null;try{await api('cover_data',{id:cur,data:await toCover(d)});await load();paintD()}catch{note('Não consegui usar essa imagem.')}}
 const SGD=$('#sgd');let SGS={gen:0};
 async function sgdb(kind){
- const g=cur?curG():{name:$('#f_name').value.trim()};if(!cur&&!g.name)return note('Digite o nome do jogo primeiro.');SGS={id:cur||'novo',kind:kind==='logo'?'logo':'cover',page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
- $('#sg_t').textContent=SGS.kind==='logo'?'Logos':'Capas';$('#sg_g').classList.toggle('logos',SGS.kind==='logo');$('#sg_rmlogo').hidden=!(cur&&SGS.kind==='logo'&&g.logo);$('#sg_q').value=g.sgname||g.name||'';$('#sg_g').innerHTML='';$('#sg_i').textContent='Buscando...';
+ const g=cur?curG():{name:$('#f_name').value.trim()};if(!cur&&!g.name)return note('Digite o nome do jogo primeiro.');SGS={id:cur||'novo',kind:kind==='logo'?'logo':kind==='wall'?'wall':'cover',src:SGS.src||(S.config.sgdb?'sgdb':'abyss'),page:0,pages:null,total:null,more:false,n:0,loading:0,gen:SGS.gen+1};
+ $('#sg_t').textContent=SGS.kind==='logo'?'Logos':SGS.kind==='wall'?'Wallpapers':'Capas';$('#sg_g').classList.toggle('logos',SGS.kind==='logo');$('#sg_g').classList.toggle('walls',SGS.kind==='wall');$('#sg_src').hidden=SGS.kind!=='wall';$('#sg_src').querySelectorAll('[data-src]').forEach(b=>b.classList.toggle('on',b.dataset.src===SGS.src));$('#sg_rmlogo').hidden=!(cur&&SGS.kind==='logo'&&g.logo);$('#sg_q').value=(SGS.kind==='wall'&&SGS.src==='abyss'?g.wpname:g.sgname)||g.name||'';$('#sg_g').innerHTML='';$('#sg_i').textContent='Buscando...';
  SGD.showModal();sgLoad(0)}
 async function sgLoad(page){
- if(page===0){const gg=S.games.find(x=>x.id===SGS.id),q=$('#sg_q').value.trim();if(gg){if(q&&nz(q)!==nz(gg.name))gg.sgname=q;else delete gg.sgname}}
+ if(page===0&&!(SGS.kind==='wall'&&SGS.src==='abyss')){const gg=S.games.find(x=>x.id===SGS.id),q=$('#sg_q').value.trim();if(gg){if(q&&nz(q)!==nz(gg.name))gg.sgname=q;else delete gg.sgname}}
  const gen=SGS.gen,all=$('#sg_all').checked;
  SGS.page=page;SGS.n=0;SGS.loading=1;$('#sg_g').innerHTML='';$('#sg_g').scrollTop=0;sgUi();
  for(let p=page;;p++){
-  const r=await api('sgdb',{id:SGS.id,page:p,q:$('#sg_q').value.trim(),kind:SGS.kind});
+  const r=SGS.kind==='wall'&&SGS.src==='abyss'?await api('abyss',{id:SGS.id,page:p,q:$('#sg_q').value.trim()}):await api('sgdb',{id:SGS.id,page:p,q:$('#sg_q').value.trim(),kind:SGS.kind==='wall'?'hero':SGS.kind});
   if(gen!==SGS.gen)return;
   if(r.error){SGS.loading=0;$('#sg_i').textContent=r.error;return}
-  $('#sg_g').insertAdjacentHTML('beforeend',(r.items||[]).map(x=>`<img src="${esc(x.thumb)}" data-u="${esc(x.url)}" loading="lazy" alt="${SGS.kind==='logo'?'Logo':'Capa'}" tabindex="0">`).join(''));
+  $('#sg_g').insertAdjacentHTML('beforeend',(r.items||[]).map(x=>`<img src="${esc(x.thumb)}" data-u="${esc(x.url)}" loading="lazy" alt="${SGS.kind==='logo'?'Logo':SGS.kind==='wall'?'Wallpaper':'Capa'}" tabindex="0">`).join(''));
   SGS.n+=(r.items||[]).length;SGS.pages=r.pages;SGS.total=r.total;SGS.more=r.more;sgUi();
   if(!all||!r.more)break}
  SGS.loading=0;sgUi();
- if(!SGS.n)$('#sg_i').textContent=SGS.kind==='logo'?'Nenhum logo encontrado para esse jogo.':'Nenhuma capa encontrada para esse jogo.'}
+ if(!SGS.n)$('#sg_i').textContent=SGS.kind==='wall'?'Nenhum wallpaper encontrado. Tente outro nome ou a outra fonte.':SGS.kind==='logo'?'Nenhum logo encontrado para esse jogo.':'Nenhuma capa encontrada para esse jogo.'}
 function sgUi(){
- const all=$('#sg_all').checked,t=SGS.total;
- if(SGS.n||t===0)$('#sg_i').textContent=t!=null?(all&&SGS.loading?`${SGS.n} de ${t} capas · carregando...`:`${t} ${SGS.kind==='logo'?'logos':'capas'}`):`${SGS.n} ${SGS.kind==='logo'?'logos':'capas'}`;
+ const all=$('#sg_all').checked,t=SGS.total,nm=SGS.kind==='logo'?'logos':SGS.kind==='wall'?'wallpapers':'capas';
+ if(SGS.n||t===0)$('#sg_i').textContent=t!=null?(all&&SGS.loading?`${SGS.n} de ${t} ${nm} · carregando...`:`${t} ${nm}`):`${SGS.n} ${nm}`;
  $('#sg_prev').hidden=$('#sg_next').hidden=$('#sg_p').hidden=all;
  $('#sg_prev').disabled=SGS.page===0||!!SGS.loading;
  $('#sg_next').disabled=!SGS.more||!!SGS.loading;
@@ -967,7 +967,9 @@ $('#sg_all').onchange=()=>{SGS.gen++;sgLoad(0)};
 $('#sg_prev').onclick=()=>{SGS.gen++;sgLoad(SGS.page-1)};
 $('#sg_next').onclick=()=>{SGS.gen++;sgLoad(SGS.page+1)};
 SGD.addEventListener('close',()=>{SGS.gen++});
+$('#sg_src').onclick=e=>{const b=e.target.closest('[data-src]');if(!b||b.dataset.src===SGS.src)return;SGS.src=b.dataset.src;const g=cur?curG():{};$('#sg_src').querySelectorAll('[data-src]').forEach(x=>x.classList.toggle('on',x===b));$('#sg_q').value=(SGS.src==='abyss'?g.wpname:g.sgname)||g.name||$('#sg_q').value;SGS.gen++;sgLoad(0)};
 $('#sg_g').onclick=async e=>{const i=e.target.closest('img[data-u]');if(!i)return;
+ if(SGS.kind==='wall'){$('#sg_i').textContent='Baixando o wallpaper...';const r=await api('wall_url',{id:SGS.id,url:i.dataset.u});if(r.error){$('#sg_i').textContent=r.error;return}SGS.gen++;SGD.close();if(r.tmp){pendWall=r.tmp;$('#look_msg').textContent='Wallpaper escolhido: será aplicado ao salvar.'}await load();if(D.open&&typeof paintD==='function')paintD();return}
  if(SGS.kind==='logo'&&SGS.id==='novo'){pendLogo=i.dataset.u;SGS.gen++;SGD.close();$('#look_msg').textContent='Logo escolhida: será aplicada ao salvar.';return}
  if(SGS.kind==='logo'){$('#sg_i').textContent='Aplicando logo...';const r=await api('logo_set',{id:SGS.id,url:i.dataset.u});if(r.error){$('#sg_i').textContent=r.error;return}SGS.gen++;SGD.close();await load();return}
  $('#sg_i').textContent='Aplicando capa...';
