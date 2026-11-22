@@ -235,7 +235,13 @@ function bpOpts(){const g=curGame();if(!g)return;const a=bpAct(g),it=[];
 function themeMenu(){ovOpen({type:'menu',title:'Tema do Big Picture',items:BPTH.map(([k,n])=>({n,ck:BP.th===k,fn:()=>{BP.th=k;try{localStorage.setItem('bpth',k)}catch{}bpClass();ovClose(true);bpPaint(true);bpToast('Tema: '+n)}}))},!!BP.ov)}
 const KTIT={square:'Capa quadrada (1:1)',cover:'Trocar capa',logo:'Trocar logo',hero:'Trocar papel de parede'};
 async function bpCovers(g,kind='cover'){if(!S.config.sgdb){bpToast('Para trocar imagens, coloque a chave do SteamGridDB nas Configurações.');return}
- const ov={type:'grid',kind,title:KTIT[kind],sub:g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
+ const ov={type:'grid',kind,title:KTIT[kind],sub:g.sgname||g.name,q:g.sgname||g.name,items:[],i:0,page:-1,more:true,loading:false,g};ovOpen(ov,true);await bpCovMore(ov)}
+function covRename(ov){kbOpen('Nome usado na busca do SteamGridDB',ov.q,'Ex.: o nome em inglês',v=>{v=v.trim();if(!v)return;ov.q=v;ov.sub=v;ov.items=[];ov.i=0;ov.page=-1;ov.more=true;ovRender();bpCovMore(ov)})}
+async function covPc(ov){const r=await api('pick_img');if(!r||!r.data)return;bpToast('Aplicando a imagem…');
+ try{const g=ov.g;if(ov.kind==='cover'){await api('cover_data',{id:g.id,data:await toCover(r.data)})}
+  else if(ov.kind==='square'){const d=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),z=Math.min(im.width,im.height),o=Math.min(1024,z);c.width=c.height=o;c.getContext('2d').drawImage(im,(im.width-z)/2,(im.height-z)/2,z,z,0,0,o,o);ok(c.toDataURL('image/jpeg',.92))};im.onerror=no;im.src=r.data});const x=await api('img_local',{id:g.id,kind:'sq',data:d});if(x&&x.error)throw 0}
+  else{const x=await api('img_local',{id:g.id,kind:ov.kind==='hero'?'wall':'logo',data:r.data});if(x&&x.error)throw 0}
+  ovClose(true);BGL='';await load();bpPaint(true);bpToast('Imagem aplicada!')}catch{bpToast('Não consegui usar essa imagem.')}}
 function bpLogoMenu(g){g=S.games.find(x=>x.id===g.id)||g;ovOpen({type:'menu',title:'Logo',sub:g.name,items:[
   {n:'Ajustar tamanho e posição',ar:1,fn:()=>bpLogoSize(g)},{n:'Trocar logo',ar:1,fn:()=>bpCovers(g,'logo')},
   {n:g.logoHide?'Mostrar a logo':'Ocultar a logo (mostrar o nome)',fn:async()=>{await api('save',{id:g.id,logoHide:!g.logoHide});ovClose(true);await load();bpPaint(true)}},
@@ -246,7 +252,7 @@ function bpLogoSize(g){if(!(BP.scr==='home'||BP.scr==='det'))detOpen(g);const v=
 const LGR=[{n:'Tamanho',min:40,max:260,st:5,u:'%'},{n:'Horizontal',min:0,max:50,st:1,u:''},{n:'Vertical',min:-20,max:30,st:1,u:''}];
 function logoLive(o){const L={bpLogoSize:o.v[0],bpLogoX:o.v[1],bpLogoY:o.v[2]};bpEl.querySelectorAll('.bi-lg').forEach(im=>im.style.cssText=lgStyle(L))}
 async function bpCovMore(ov){if(ov.loading||!ov.more)return;ov.loading=true;ovRender();
- try{const r=await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover'});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
+ try{const r=await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover',q:ov.q});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
  ov.loading=false;if(BP.ov===ov)ovRender()}
 async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Aplicando a capa…');
  try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_sgdb',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
@@ -265,7 +271,7 @@ function ovOpen(o,stack){o.i=o.i||0;o.prev=stack?BP.ov:null;BP.ov=o;o.anim=1;ovR
 function ovClose(all){BP.ov=all?null:(BP.ov&&BP.ov.prev)||null;ovRender()}
 function ovCols(){const g=bq('.bo-g');if(!g)return 6;return getComputedStyle(g).gridTemplateColumns.split(' ').length||6}
 function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('anim',!!(o&&o.anim));if(o)o.anim=0;if(!o||(o.type!=='size'&&o.type!=='logo'&&o.type!=='cz'))bpEl.classList.remove('ov-light');if(!o){el.hidden=true;el.innerHTML='';return}el.hidden=false;
- const ft=`<div class="bo-f">${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span data-fk="a">${glyph('a')}Selecionar</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div>`;
+ const ft=`<div class="bo-f">${o.type==='grid'?`<span data-fk="y">${glyph('y')}Renomear busca</span><span data-fk="x">${glyph('x')}Do PC</span>`:''}${o.type==='grid'?`<span>${glyph('lb')}${glyph('rb')}Página</span>`:''}${o.type!=='text'?`<span data-fk="a">${glyph('a')}Selecionar</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div>`;
  if(o.type==='menu'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div>${o.sub?`<div class="bo-m">${esc(o.sub)}</div>`:''}<div class="bo-l">${o.items.map((it,j)=>`<div class="bo-i${j===o.i?' on':''}${it.dl?' dl':''}" data-oi="${j}"><span class="ck">${it.ck?'✓':''}</span>${esc(it.n)}${it.ar?'<span class="ar">›</span>':''}</div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-l'),el.querySelector('.bo-i.on'),false)}
  else if(o.type==='ico'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g bo-ic">${o.items.map(([k,n],j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><span>${k===''?((d=>(d&&ICO[d])||BPI.lib)(BRAND[o.c.id]||(CONSOLES.some(x=>x.n===o.c.id)?CSLUG(o.c.id):null))):k==='__pc'?SV('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'):ICO[k]}</span><b>${esc(n)}</b></div>`).join('')}</div>${ft}</div>`;scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}
  else if(o.type==='cz')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-70)/90*100}%"></i></div><span>${glyph('rb')}</span></div><div class="czf" data-fk="x"><span>Formato</span><b class="${BP.sq?'':'on'}">Vertical 2:3</b><b class="${BP.sq?'on':''}">Quadrado 1:1</b></div><div class="bo-f"><span>←/→ Ajustar</span><span data-fk="x">${glyph('x')}Formato</span><span>${glyph('y')}Padrão</span><span data-fk="a">${glyph('a')}Salvar</span><span data-fk="b">${glyph('b')}Cancelar</span></div></div>`;
@@ -295,8 +301,10 @@ function ovIn(k){const o=BP.ov;
  if(k==='b'||k==='back'){ovClose();return}
  if(o.type==='text'){const t=bq('#botx');if(!t)return;if(k==='down'||k==='sdown')t.scrollBy({top:120,behavior:'smooth'});if(k==='up'||k==='sup')t.scrollBy({top:-120,behavior:'smooth'});return}
  if(o.type==='menu'){const n=o.items.length;if(k==='up'||k==='down'){o.i=(o.i+(k==='up'?-1:1)+n)%n;const it=o.items[o.i];if(it&&it.pv){it.pv();ovRender();return}}else if(k==='a'){const it=o.items[o.i];it&&it.fn();return}else return;ovRender();return}
+ if(o.type==='grid'&&(k==='y'||k==='x')){k==='y'?covRename(o):covPc(o);return}
  const c=ovCols(),n=o.items.length;if(!n)return;
  if(k==='left')o.i=Math.max(0,o.i-1);else if(k==='right')o.i=Math.min(n-1,o.i+1);else if(k==='up')o.i=Math.max(0,o.i-c);else if(k==='down')o.i=Math.min(n-1,o.i+c);
+ if(o.type==='grid'&&(k==='y'||k==='x')){k==='y'?covRename(o):covPc(o);return}
  else if(k==='rb'||k==='rt')o.i=Math.min(n-1,o.i+c*3);else if(k==='lb'||k==='lt')o.i=Math.max(0,o.i-c*3);else if(k==='a'){if(o.type==='ico')colIcoSet(o);else bpCovApply(o);return}else return;
  if(o.i>=n-c*2)bpCovMore(o);
  bq('.bo-g .gc.on')?.classList.remove('on');const e=bq(`.bo-g .gc[data-oi="${o.i}"]`);if(e){e.classList.add('on');scrV(bq('.bo-g'),e,true)}}
