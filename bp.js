@@ -257,9 +257,11 @@ function bpLogoSizeOld(g){ovOpen({type:'size',g,v:g.logoSize||120,g0:g.logoSize|
 function bpLogoSize(g){if(!(BP.scr==='home'||BP.scr==='det'))detOpen(g);const v=[g.bpLogoSize||120,g.bpLogoX||0,g.bpLogoY||0];ovOpen({type:'logo',g,v:[...v],v0:v,f:0,title:'Logo no Big Picture'},true);bpEl.classList.add('ov-light');logoLive(BP.ov)}
 const LGR=[{n:'Tamanho',min:40,max:260,st:5,u:'%'},{n:'Horizontal',min:0,max:50,st:1,u:''},{n:'Vertical',min:-20,max:30,st:1,u:''}];
 function logoLive(o){const L={bpLogoSize:o.v[0],bpLogoX:o.v[1],bpLogoY:o.v[2]};bpEl.querySelectorAll('.bi-lg').forEach(im=>im.style.cssText=lgStyle(L))}
-async function bpCovMore(ov){if(ov.loading||!ov.more)return;ov.loading=true;ovRender();
+const gcH=(it,j,on)=>`<div class="gc${on?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" decoding="async" alt=""></div>`;
+async function bpCovMore(ov){if(ov.loading||!ov.more)return;ov.loading=true;const first=!ov.items.length;if(first)ovRender();const n0=ov.items.length;
  try{const r=ov.kind==='abyss'?await api('abyss',{id:ov.g.id,page:ov.page+1,q:ov.q}):await api('sgdb',{id:ov.g.id,page:ov.page+1,kind:ov.kind||'cover',q:ov.q});if(r.error){bpToast(r.error);ov.more=false}else{ov.page++;ov.items.push(...(r.items||[]));ov.more=!!r.more}}catch{ov.more=false}
- ov.loading=false;if(BP.ov===ov)ovRender()}
+ ov.loading=false;if(BP.ov!==ov)return;const G=bq('#bpov .bo-g');if(first||!G){ovRender();return}
+ G.insertAdjacentHTML('beforeend',ov.items.slice(n0).map((it,j)=>gcH(it,n0+j,n0+j===ov.i)).join(''))}
 async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Aplicando a capa…');
  try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'||ov.kind==='abyss'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_url',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='abyss'?'Papel de parede trocado!':ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
 
@@ -286,7 +288,7 @@ function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('a
  else if(o.type==='date'||o.type==='hm'){const lab=o.type==='date'?['Dia','Mês','Ano']:['Horas','Minutos'],val=o.type==='date'?[String(o.v[0]).padStart(2,'0'),String(o.v[1]).padStart(2,'0'),o.v[2]]:[o.v[0],String(o.v[1]).padStart(2,'0')];
   el.innerHTML=`<div class="bo-p bo-dt"><div class="bo-h">${esc(o.title)}</div><div class="dtf">${val.map((v,i)=>`<div class="dc${i===o.f?' f':''}" data-df="${i}"><span>${lab[i]}</span><b>▲</b><strong>${v}</strong><b>▼</b></div>`).join('')}</div><div class="bo-f">${o.type==='date'?`<span>${glyph('x')}Limpar</span>`:`<span>${glyph('lb')}${glyph('rb')}±10 h</span>`}<span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`}
  else if(o.type==='text')el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div><div class="bo-tx" id="botx">${esc(o.text)}</div>${ft}</div>`;
- else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g k-${o.kind||'cover'}">${o.items.map((it,j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" alt=""></div>`).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
+ else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g k-${o.kind||'cover'}">${o.items.map((it,j)=>gcH(it,j,j===o.i)).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
   scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}}
 function ovIn(k){const o=BP.ov;
  if(o.type==='cz'){if(k==='b'||k==='back'){BP.cz=o.v0;BP.sq=o.q0;bpSq();bpZoom();ovClose();BP.hist=['home'];bpGo('cfg',false);return}

@@ -500,3 +500,8 @@ body.bpon>header,body.bpon>.shell{visibility:hidden}
 .side-on .bp-scr,.side-on .bp-top,.side-on .bp-foot{filter:brightness(.4)!important}
 .bi-m .pi,.bb{backdrop-filter:none}
 .bo-g.k-abyss{grid-template-columns:repeat(3,36vh)}.bo-g.k-abyss .gc{width:36vh;height:20.25vh}
+#bp *{scroll-behavior:auto!important}
+.bo-g .gc{content-visibility:auto;contain-intrinsic-size:auto 20vh}
+.bo-g .gc.on{content-visibility:visible}
+.bo-g{will-change:scroll-position;scroll-behavior:auto!important}
+.bo-g .gc{transition:outline-color .12s,transform .12s!important}
