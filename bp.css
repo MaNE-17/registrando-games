@@ -446,3 +446,10 @@ body.bpon{overflow:hidden}
 .czf b.on{background:var(--bpa);color:#fff}
 .bo-g.k-square{grid-template-columns:repeat(5,19vh)}
 .bo-g.k-square .gc{width:19vh;height:19vh}
+/* barras de rolagem visiveis no Big Picture */
+#bp .bc-l,#bp .bl-g,#bp .bo-g,#bp .bo-l,#bp .bo-tx,#bp .dt-r{scrollbar-width:auto!important;scrollbar-color:auto!important}
+#bp .bc-l::-webkit-scrollbar,#bp .bl-g::-webkit-scrollbar,#bp .bo-g::-webkit-scrollbar,#bp .bo-l::-webkit-scrollbar,#bp .bo-tx::-webkit-scrollbar,#bp .dt-r::-webkit-scrollbar{display:block;width:.9vh}
+#bp ::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:99px}
+#bp ::-webkit-scrollbar-thumb{background:var(--bpa);border-radius:99px;min-height:4vh}
+#bp .bc-l{width:min(72vw,124vh);padding-right:2.2vh}
+#bp .bl-g{padding-right:3vw}

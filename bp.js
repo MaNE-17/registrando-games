@@ -198,7 +198,7 @@ async function bpUpd(){bpToast('Procurando atualização…');const r=await api(
  ovOpen({type:'menu',title:'Versão nova disponível',sub:r.msg||'',items:[{n:'Instalar agora',fn:async()=>{ovClose(true);bpToast('Baixando a atualização… o app vai reiniciar sozinho.');const x=await api('upd_install');if(x&&x.msg&&!x.ok)bpToast(x.msg)}},{n:'Depois',fn:()=>ovClose(true)}]})}
 function cfgRender(){const R=cfgRows(),C=BP.cfg;if(R[C.i]&&R[C.i].t==='h')C.i++;if(C.i>=R.length)C.i=1;
  bq('#bcl').innerHTML=R.map((r,i)=>r.t==='h'?`<div class="bc-h">${esc(r.n)}</div>`:`<div class="bc-r${i===C.i?' f':''}" data-ci="${i}"><span class="bc-n">${esc(r.n)}</span><span class="bc-v">${r.t==='tog'?`<i class="bsw${r.on?' on':''}"><i></i></i>`:r.t==='num'?`<b class="bc-go">‹</b><b class="sc">${esc(r.show)}</b><b class="bc-go">›</b>`:r.t==='act'?`${r.show?`<small>${esc(r.show)}</small>`:''}<b class="bc-go">›</b>`:`${esc(r.show)}<b class="bc-go">›</b>`}</span></div>`).join('');
- scrV(bq('#bcl'),bq('.bc-r.f'),true);bpBg(null)}
+ scrV(bq('#bcl'),bq('#bcl .bc-r.f'),true);bpBg(null)}
 async function cfgPress(d=0){const r=cfgRows()[BP.cfg.i];if(!r||r.t==='h')return;if(r.t==='num'){r.fn(d||1);return}if(d)return;if(r.t==='tog'){snd('toggle');await r.fn(!r.on);if(!r.local)await load();return}r.fn()}
 function czOpen(){bpGo('home',false);const o={type:'cz',title:'Capas no Início',v:BP.cz,v0:BP.cz,q0:BP.sq};ovOpen(o);bpEl.classList.add('ov-light')}
 function bpSq(){bpEl.classList.toggle('sqm',BP.sq);BP.home.rk='';if(BP.on&&BP.scr==='home')homeRender(true)}
