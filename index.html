@@ -179,8 +179,8 @@ aside{overflow-x:hidden}
 #gcm button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:7px;color:var(--tx);font-size:14px}
 #gcm button:hover{background:color-mix(in srgb,var(--ac) 16%,transparent)!important;border:0!important}
 #gcm button svg{width:16px;height:16px;flex:none;color:var(--ac)}#gcm .dl,#gcm .dl svg{color:#e5484d}#gcm .dl:hover{background:color-mix(in srgb,#e5484d 14%,transparent)!important}
-#gcm hr{border:0;border-top:1px solid var(--ln);margin:4px 6px}#gcm .gls{max-height:240px;overflow:auto;padding-left:8px}#gcm .gls button{font-size:13px;padding:6px 10px}#gcm .gls .ck2{width:16px;color:var(--ac);font-weight:700;text-align:center;flex:none}
-#gcm .arr{margin-left:auto;color:var(--mu);transition:transform .15s}#gcm .open .arr{transform:rotate(90deg)}
+#gcm hr{border:0;border-top:1px solid var(--ln);margin:4px 6px}#gcm .gls{position:absolute;left:calc(100% + 4px);min-width:200px;max-width:280px;max-height:260px;overflow:auto;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008}#gcm .gls.fl{left:auto;right:calc(100% + 4px)}#gcm .gls button{font-size:13px;padding:6px 10px}#gcm .gls .ck2{width:16px;color:var(--ac);font-weight:700;text-align:center;flex:none}
+#gcm .arr{margin-left:auto;color:var(--mu);transition:transform .15s}#gcm .open .arr{color:var(--ac)}
 #grid.detw{display:flex;padding:0;gap:0;overflow:hidden;height:100%;position:relative}
 .dback{position:absolute;left:18px;top:16px;z-index:6;display:inline-flex;align-items:center;gap:6px;padding:8px 14px 8px 10px;border-radius:10px;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(8px);border:1px solid color-mix(in srgb,var(--tx) 14%,transparent);font-weight:600}
 .dback:hover{background:color-mix(in srgb,var(--ac) 22%,var(--bg))}
@@ -232,6 +232,8 @@ details.more .r2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
 button.more{padding-left:12px;padding-right:12px;align-self:center}button.more svg{vertical-align:middle;margin:-2px 0}
 .sti{flex:none;vertical-align:-2px;margin-right:6px}.m .st .sti{margin-right:4px;vertical-align:-1px}#f_sl .pdi .sti{margin:0}#f_sl .pdi .sti0{width:15px;flex:none!important}#f_sl .pdi span{text-align:left}#f_sv{display:inline-flex;align-items:center}
 .lacts{display:flex;flex-direction:column;gap:2px;align-items:flex-start}.la{display:inline-flex;align-items:center;gap:9px;border:0!important;background:none!important;padding:6px 4px;font-size:14px;color:var(--mu);box-shadow:none!important;cursor:pointer}.la:hover{color:var(--tx)}.la.on{color:var(--ac)}.la svg{flex:none}.lawrap{position:relative}#f_lsp{position:absolute;left:0;bottom:calc(100% + 4px);z-index:30;min-width:220px;max-height:260px;overflow:auto;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008;display:flex;flex-direction:column}#f_lsp[hidden]{display:none}#f_lsp button{display:flex;align-items:center;gap:8px;text-align:left;border:0!important;background:none;padding:7px 10px;border-radius:7px;font-size:14px;box-shadow:none}#f_lsp button:hover{background:color-mix(in srgb,var(--ac) 16%,transparent)}#f_lsp .ck2{width:14px;color:var(--ac);font-weight:800}
+#pie{width:min(560px,94vw)}#pie .cap{display:block;margin-bottom:6px}#pie_n{width:100%}.pieg{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-height:44vh;overflow:auto;padding:2px}.pio{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:10px;font-size:11px;color:var(--mu);border:1px solid var(--ln)!important;background:var(--sf)}.pio svg{width:22px;height:22px;color:var(--tx)!important}.pio span{line-height:1.2;text-align:center}.pio.on{border-color:var(--ac)!important;background:color-mix(in srgb,var(--ac) 18%,var(--sf));color:var(--tx)}.pio.on svg{color:var(--ac)!important}.pico{width:18px;height:18px;object-fit:contain;flex:none;border-radius:3px}.pio .pico{width:22px;height:22px}
+.exr{display:flex;align-items:center;gap:10px;padding:8px 0}.exi{display:inline-flex;width:18px;height:18px}.exi svg{width:18px;height:18px}
 .lchips{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin-top:22px}
 .prow{display:flex;gap:10px}.pdd{flex:1;min-width:0}
 .pdb{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;height:38px;padding:0 12px}.pdb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdb .chv{flex:none;color:var(--mu)}
@@ -373,7 +375,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 #c .eph{display:flex;align-items:center;justify-content:space-between;gap:10px}#c .eph b{font-size:16px}
 #c .bdg{font-size:12px;font-weight:650;padding:3px 11px;border-radius:99px;border:1px solid var(--ln);color:var(--mu)}#c .bdg.ok{color:var(--ac);border-color:color-mix(in srgb,var(--ac) 45%,transparent);background:color-mix(in srgb,var(--ac) 12%,transparent)}
 #c .ep .acts{margin-top:10px}#c .ep .mu#emu_msg{margin:8px 0 0;min-height:0}
-#cm{position:fixed;z-index:400;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008}#cm button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:7px;color:#e5484d;font-size:14px}#cm button:hover{background:color-mix(in srgb,#e5484d 14%,transparent)!important;color:#e5484d!important;border:0!important}
+#cm{position:fixed;z-index:400;background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:5px;box-shadow:0 10px 30px #0008}#cm button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:7px;color:#e5484d;font-size:14px;white-space:nowrap}#cm button svg{width:16px;height:16px;flex:none}#cm hr{border:0;border-top:1px solid var(--ln);margin:4px 6px}#cm button.nm{color:var(--tx)}#cm button.nm:hover{background:var(--sf)!important;color:var(--tx)!important}#cm button:hover{background:color-mix(in srgb,#e5484d 14%,transparent)!important;color:#e5484d!important;border:0!important}
 #c .pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#c .pgrid .pc{padding:8px 12px}
 #c .chips{display:flex;flex-wrap:wrap;gap:6px}#c .chp{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--ln);background:var(--sf);border-radius:8px;padding:2px 3px 2px 10px;font-size:13.5px}#c .chp b{font-weight:600;font-family:Consolas,monospace;font-size:13px}#c .chp button{border:0;background:none;padding:3px 6px;color:var(--mu);border-radius:6px;font-size:13px;line-height:1}#c .chp button:hover{color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent)}#c .chp button.rm:hover{color:#e5484d;background:color-mix(in srgb,#e5484d 12%,transparent)}#c .chp.add{padding:3px 10px;border-style:dashed;color:var(--ac);cursor:pointer;background:none}#c .chg{margin-top:4px}
 #c .thr{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}#c .thr button{white-space:nowrap}
@@ -469,11 +471,15 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <div class="askb"><label class="cap" for="ask_i" id="ask_l"></label><input id="ask_i" autocomplete="off"><p class="mu" id="ask_hint"></p></div>
 <div class="acts2"><span class="sp"></span><button type="button" id="ask_no">Cancelar</button><button type="button" class="p" id="ask_ok">Confirmar</button></div></dialog>
 
+<dialog id="pie" aria-label="Editar plataforma"><div class="dh"><b id="pie_t">Editar</b><button type="button" class="xb" onclick="this.closest('dialog').close()" aria-label="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<label class="cap" for="pie_n">Nome</label><input id="pie_n" maxlength="40"><div class="mu" id="pie_h" style="font-size:12px;margin-top:4px"></div>
+<label class="cap" style="margin-top:14px">Ícone</label><div class="pieg" id="pie_g"></div>
+<div class="acts2"><span class="sp"></span><button type="button" onclick="this.closest('dialog').close()">Cancelar</button><button type="button" class="p" id="pie_ok">Salvar</button></div></dialog>
 <dialog id="c"><div class="dh" id="c_h"><b>Configurações</b><button type="button" class="xb" onclick="C.close()" aria-label="Fechar" title="Fechar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 <div class="cb"><nav class="tabs" id="tabs" role="tablist" aria-label="Seções">
 <span class="tg2">Contas</span><button class="tab on" role="tab" aria-selected="true" data-t="steam">Steam</button><button class="tab" role="tab" aria-selected="false" data-t="fam">Família Steam</button><button class="tab" role="tab" aria-selected="false" data-t="sgdb">SteamGridDB</button>
 <span class="tg2">Biblioteca</span><button class="tab" role="tab" aria-selected="false" data-t="lch">Launchers</button><button class="tab" role="tab" aria-selected="false" data-t="emu">Emuladores</button>
-<span class="tg2">Aplicativo</span><button class="tab" role="tab" aria-selected="false" data-t="gen">Geral</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></nav>
+<span class="tg2">Aplicativo</span><button class="tab" role="tab" aria-selected="false" data-t="gen">Geral</button><button class="tab" role="tab" aria-selected="false" data-t="excl">Exclusões</button><button class="tab" role="tab" aria-selected="false" data-t="upd">Atualizações</button></nav>
 <div class="tpw">
 <section class="tp" id="tp_steam"><div class="th"><h3>Steam</h3><p class="mu">Importa sua biblioteca com as horas jogadas. Seu perfil precisa ter os <b>detalhes dos jogos públicos</b> (Steam → Perfil → Editar perfil → Privacidade).</p></div>
 <div class="g2"><div><label for="c_key">Chave da API</label><input id="c_key" type="password" autocomplete="off"><p class="mu hn"><a href="https://steamcommunity.com/dev/apikey" target="_blank">Obter minha chave</a>. Em "Domain Name" escreva <i>localhost</i>.</p></div>
@@ -500,6 +506,7 @@ header .sw input{padding-right:30px}header svg{width:15px;height:15px}
 <label class="ck"><input type="checkbox" id="g_min">Abrir minimizado na barra de tarefas ao iniciar com o Windows</label>
 <label class="ck"><input type="checkbox" id="g_auto">Atualizar e sincronizar automaticamente ao abrir o app</label>
 <div class="note">Ao clicar no X, o app fica minimizado na barra de tarefas e continua contando o tempo de jogo. Para fechar de vez, use o ícone da bandeja (perto do relógio) → <b>Sair</b>.</div></section>
+<section class="tp" id="tp_excl" hidden><div class="th"><h3>Lista de exclusão</h3><p class="mu">Launchers e plataformas apagados pelo botão direito na barra lateral. Eles não são importados nem atualizados ao abrir o app ou sincronizar. Desmarque para voltar a importar.</p></div><div id="ex_l"></div></section>
 <section class="tp" id="tp_upd" hidden><div class="th"><h3>Atualizações</h3><p class="mu">Versão instalada: <b id="u_ver"></b>. Procure uma versão nova quando quiser.</p></div>
 <p class="mu" id="u_msg"></p><div id="u_bar" class="pbar" hidden><div class="pfill" id="u_fill"></div></div><div class="mu" id="u_pct" hidden></div><div id="u_notes" class="mu"></div>
 <label class="ck"><input type="checkbox" id="u_notif">Avisar quando houver uma versão nova</label>
@@ -574,7 +581,7 @@ function hprog(on){const w=$('#hprog');if(!w)return;w.hidden=!on;if(!on){const b
  if(x){const n=+x[1],t=+x[2];w.classList.remove('ind');$('#hpf').style.width=Math.max(2,Math.round(n/t*100))+'%';$('#hpn').textContent=`${n}/${t}`}
  else if(S.pending){w.classList.add('ind');$('#hpn').textContent=`${S.pending} restantes`}else{w.classList.add('ind');$('#hpn').textContent=''}}
 let RFT=null;function rfUi(){const b=$('#rfb'),on=!!(S.refreshing||S.pending);if(b)b.classList.toggle('spin',on);hprog(on)}
-async function load(){S=await api('state');rfUi();if(!document.body.classList.contains('bpon'))render();else render._dirty=1;if(window.bpOnLoad)bpOnLoad();updBanner();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=''}
+async function load(){S=await api('state');applyPlIco();rfUi();if(!document.body.classList.contains('bpon'))render();else render._dirty=1;if(window.bpOnLoad)bpOnLoad();updBanner();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=''}
 function filt(g){
  if(F.smart==='hidden'?!g.hidden:g.hidden)return 0;
  if(g.cat&&!FAV&&!F.list&&(INST||F.sp||F.smart!=='all'||!(F.status||YR||$('#q').value.trim())))return 0;
@@ -617,6 +624,9 @@ const ICO={all:IC('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y
  lists:IC('<path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>'),
  fav:IC('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>')};
 for(const[n,k]of Object.entries(BRAND))ICO[k]=IB(BRAND_D[n]);for(const c of CONSOLES)ICO[CSLUG(c.n)]=conIcon(c);
+const ICO_BASE={...ICO},PKEY=p=>BRAND[p]||(CONSOLES.some(c=>c.n===p)?CSLUG(p):null);let PICO_SIG='';
+function applyPlIco(){const o=S.plIcons||{},sig=JSON.stringify(o);if(sig===PICO_SIG)return false;PICO_SIG=sig;for(const k in ICO_BASE)ICO[k]=ICO_BASE[k];
+ for(const[p,v]of Object.entries(o)){const k=PKEY(p);if(!k)continue;ICO[k]=v.startsWith('data:')?`<img class="pico" src="${v}" alt="">`:(ICO_BASE[v]||ICO_BASE[k])}side._h=null;CC&&CC.clear&&CC.clear();return true}
 function side(){
  if(DRAGGING)return;
  const vis=S.games.filter(g=>!g.hidden&&!g.cat),ni=vis.filter(g=>(S.inst||[]).includes(g.id)).length,nf=S.games.filter(g=>!g.hidden&&g.fav).length;
@@ -643,7 +653,7 @@ $('#side').addEventListener('click',e=>{const s=e.target.closest('[data-sec]');i
   cm.innerHTML=`<button type="button" data-a="edit">${SV(I.edit)}Editar</button><button type="button" data-a="fav">${SV(I.fav)}${g.fav?'Remover dos favoritos':'Favoritar'}</button><button type="button" data-a="hid">${SV(g.hidden?I.eye:I.hid)}${g.hidden?'Reexibir':'Ocultar'}</button><button type="button" data-a="lst" class="${LOPEN?'open':''}" aria-expanded="${LOPEN}">${SV(I.lst)}Adicionar à lista<span class="arr">›</span></button>`+
    (LOPEN?`<div class="gls">${ls.map(l=>`<button type="button" data-l="${esc(l.id)}"><span class="ck2">${(l.ids||[]).includes(g.id)?'✓':''}</span>${esc(l.name)}</button>`).join('')}<button type="button" data-a="nl"><span class="ck2">+</span>Nova lista…</button></div>`:'')+
    `<hr><button type="button" data-a="del" class="dl">${SV(I.del)}Excluir</button>`};
- const place=(x,y)=>{cm.style.left=Math.max(8,Math.min(x,innerWidth-cm.offsetWidth-8))+'px';cm.style.top=Math.max(8,Math.min(y,innerHeight-cm.offsetHeight-8))+'px'};
+ const place=(x,y)=>{cm.style.left=Math.max(8,Math.min(x,innerWidth-cm.offsetWidth-8))+'px';cm.style.top=Math.max(8,Math.min(y,innerHeight-cm.offsetHeight-8))+'px';const gl=cm.querySelector('.gls'),lb=cm.querySelector('[data-a="lst"]');if(gl&&lb){const r=cm.getBoundingClientRect();gl.classList.toggle('fl',r.right+gl.offsetWidth+12>innerWidth);gl.style.top=Math.max(-r.top+8,Math.min(lb.offsetTop-5,innerHeight-r.top-gl.offsetHeight-8))+'px'}};
  document.addEventListener('contextmenu',e=>{const c=e.target.closest('#grid .card[data-id],#grid .lr[data-lid],#ld_g .li[data-id],#grid.detw #rp');if(!c){hide();return}
   e.preventDefault();GID=c.dataset.id||c.dataset.lid||DET;LOPEN=false;paint();cm.hidden=false;place(e.clientX,e.clientY);cm._x=e.clientX;cm._y=e.clientY});
  document.addEventListener('mousedown',e=>{if(!cm.hidden&&!e.target.closest('#gcm'))hide()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!cm.hidden)hide()});window.addEventListener('blur',hide);
@@ -661,35 +671,46 @@ $('#side').addEventListener('click',e=>{const s=e.target.closest('[data-sec]');i
 }
 
 // ---- Botao direito numa plataforma da barra lateral: excluir plataforma e jogos ----
-{const cm=document.createElement('div');cm.id='cm';cm.hidden=true;document.body.appendChild(cm);let CMP=null;
+{const cm=document.createElement('div');cm.id='cm';cm.hidden=true;cm.setAttribute('role','menu');document.body.appendChild(cm);let CMP=null,CML=false;
  const hide=()=>{cm.hidden=true;CMP=null};
- $('#side').addEventListener('contextmenu',e=>{const r=e.target.closest('.it[data-k="plat"]');if(!r||!(r.dataset.o||'').startsWith('co_')){hide();return}
-  e.preventDefault();CMP=r.dataset.v;cm.innerHTML=`<button type="button">Excluir plataforma e todos os jogos</button>`;cm.hidden=false;
-  cm.style.left=Math.min(e.clientX,innerWidth-cm.offsetWidth-8)+'px';cm.style.top=Math.min(e.clientY,innerHeight-cm.offsetHeight-8)+'px'});
+ $('#side').addEventListener('contextmenu',e=>{const r=e.target.closest('.it[data-k="plat"]');if(!r){hide();return}
+  e.preventDefault();CMP=r.dataset.v;CML=!!BRAND[CMP];const w=CML?'launcher':'plataforma';
+  cm.innerHTML=`<button type="button" data-a="meta" class="nm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Atualizar metadados</button><hr><button type="button" data-a="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>Apagar ${w} e todos os jogos</button>`;cm.hidden=false;
+  cm.style.left=Math.max(8,Math.min(e.clientX,innerWidth-cm.offsetWidth-8))+'px';cm.style.top=Math.max(8,Math.min(e.clientY,innerHeight-cm.offsetHeight-8))+'px'});
  document.addEventListener('click',e=>{if(!e.target.closest('#cm'))hide()});document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});window.addEventListener('blur',hide);
- cm.onclick=async()=>{const p=CMP;hide();if(!p)return;const gs=S.games.filter(g=>canonP(g.platform)===p),n=gs.length;
-  if(!await confirmX(`Excluir a plataforma "${dispP(p)}" e ${n===1?'o 1 jogo':`os ${n} jogos`} dela? Os jogos saem da biblioteca e das listas, e isso não pode ser desfeito.`,'Excluir tudo'))return;
-  if(n)await api('games_del',{ids:gs.map(g=>g.id)});
-  S.sideCons=(S.sideCons||[]).filter(x=>x!==p);await api('side_set2',{list:S.sideCons});if(F.sp===p)F={smart:'all'};await load()}}
+ cm.onclick=async e=>{const b=e.target.closest('button[data-a]');const p=CMP,isL=CML;hide();if(!b||!p)return;const gs=S.games.filter(g=>canonP(g.platform)===p),n=gs.length,w=isL?'o launcher':'a plataforma';
+  if(b.dataset.a==='meta'){if(!n)return note(`Nenhum jogo em "${dispP(p)}".`);const r=await api('meta_refresh',{ids:gs.map(g=>g.id),name:p});if(r&&r.error)return note(r.error);return load()}
+  if(!await confirmX(`Apagar ${w} "${dispP(p)}" e ${n===1?'o 1 jogo':`os ${n} jogos`} dele${isL?'':'a'}? Os jogos saem da biblioteca e das listas, e ${w} vai para a Lista de exclusão: não volta a ser importad${isL?'o':'a'} nem atualizad${isL?'o':'a'} até você desmarcar em Configurações › Exclusões.`,'Apagar tudo'))return;
+  const r=await api('platform_purge',{name:p,ids:gs.map(g=>g.id)});if(r&&r.error)return note(r.error);if(F.sp===p)F={smart:'all'};side._h=null;await load()}}
 $('#side').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[data-sec]'))e.target.click()});
 
 // ---- Launchers e plataformas na barra lateral (marcar = aparece, desmarcar = some) ----
 let PD_K='l';
-function pdItems(){return PD_K==='l'?CATALOG.map(n=>({n,g:'',ic:IB(BRAND_D[n])})):CONSOLES.map(c=>({n:c.n,g:c.g,ic:conIcon(c)}))}
+function pdItems(){return PD_K==='l'?CATALOG.map(n=>({n,g:'',ic:ICO[BRAND[n]]})):CONSOLES.map(c=>({n:c.n,g:c.g,ic:ICO[CSLUG(c.n)]}))}
 const pdHave=()=>new Set(PD_K==='l'?(S.sidePlats||SIDE_DEF):(S.sideCons||[]));
 let PD_G=false;
 function platOpen(k,fromGame){PD_K=k;PD_G=!!fromGame;$('#pd_t').textContent=k==='l'?'Adicionar launcher':'Adicionar plataforma';
  $('#pd_p').textContent=fromGame?'Marque a plataforma deste jogo: ela entra na barra lateral e já fica selecionada. Se ela já estiver lá, escolha na lista de plataformas.':k==='l'?'Marque os launchers de PC que você usa. Marcado, ele aparece na barra lateral e filtra os jogos dele. Desmarcado, some da barra lateral (os jogos continuam na biblioteca).':'Marque as plataformas que quer na barra lateral, em "Plataformas". Desmarcado, some da barra lateral (os jogos continuam na biblioteca).';
  platUi();$('#pd').showModal()}
 function pgHtml(items,have){let g=null,html='';
- for(const x of items){if(x.g!==g&&x.g){g=x.g;html+=`<div class="pgh">${esc(g)}</div>`}html+=`<button type="button" class="pc${have.has(x.n)?' sel':''}" role="checkbox" aria-checked="${have.has(x.n)}" data-pn="${esc(x.n)}">${x.ic}<em>${esc(dispP(x.n))}</em><span class="ren" role="button" tabindex="0" data-ren="${esc(x.n)}" title="Renomear" aria-label="Renomear ${esc(x.n)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="ck2">${have.has(x.n)?'✓':''}</span></button>`}
+ for(const x of items){if(x.g!==g&&x.g){g=x.g;html+=`<div class="pgh">${esc(g)}</div>`}html+=`<button type="button" class="pc${have.has(x.n)?' sel':''}" role="checkbox" aria-checked="${have.has(x.n)}" data-pn="${esc(x.n)}">${x.ic}<em>${esc(dispP(x.n))}</em><span class="ren" role="button" tabindex="0" data-ren="${esc(x.n)}" title="Renomear e trocar ícone" aria-label="Editar ${esc(x.n)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="ck2">${have.has(x.n)?'✓':''}</span></button>`}
  return html}
 function platUi(){const have=pdHave();$('#pd_l').innerHTML=pgHtml(pdItems(),have);$('#pd_n').textContent=have.size?have.size+' na barra lateral':'Nenhuma na barra lateral';lchGrid()}
-function lchGrid(){const e=$('#lch_l');if(!e)return;e.innerHTML=pgHtml(CATALOG.map(n=>({n,g:'',ic:IB(BRAND_D[n])})),new Set(S.sidePlats||SIDE_DEF))}
+function lchGrid(){const e=$('#lch_l');if(!e)return;e.innerHTML=pgHtml(CATALOG.map(n=>({n,g:'',ic:ICO[BRAND[n]]})),new Set(S.sidePlats||SIDE_DEF))}
+let PIE={n:'',ic:''};
+function plEdit(n){PIE={n,ic:(S.plIcons||{})[n]||''};$('#pie_t').textContent='Editar '+n;$('#pie_n').value=dispP(n);$('#pie_h').textContent=dispP(n)!==n?'Nome original: '+n:'';pieUi();$('#pie').showModal();$('#pie_n').focus()}
+function pieUi(){const opts=[...CATALOG.map(x=>[BRAND[x],x]),...CONSOLES.map(c=>[CSLUG(c.n),c.n])].filter(([k])=>ICO_BASE[k]);const dk=PKEY(PIE.n);
+ const pc=PIE.ic.startsWith('data:');
+ $('#pie_g').innerHTML=`<button type="button" class="pio${!PIE.ic?' on':''}" data-pi="" title="Padrão">${(dk&&ICO_BASE[dk])||ICO_BASE.all}<span>Padrão</span></button>`+opts.map(([k,n])=>`<button type="button" class="pio${PIE.ic===k?' on':''}" data-pi="${k}" title="${esc(n)}">${ICO_BASE[k]}<span>${esc(n)}</span></button>`).join('')+`<button type="button" class="pio${pc?' on':''}" data-pi="__pc" title="Imagem do PC">${pc?`<img class="pico" src="${PIE.ic}" alt="">`:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>'}<span>Imagem do PC…</span></button>`}
+$('#pie_g').onclick=async e=>{const b=e.target.closest('[data-pi]');if(!b)return;const k=b.dataset.pi;
+ if(k==='__pc'){const r=await api('pick_img');if(!r||!r.data)return;try{PIE.ic=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),m=96,z=Math.min(1,m/Math.max(im.width,im.height));c.width=Math.max(1,Math.round(im.width*z));c.height=Math.max(1,Math.round(im.height*z));c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/png'))};im.onerror=no;im.src=r.data})}catch{return note('Não consegui usar essa imagem.')}}
+ else PIE.ic=k;pieUi()};
+$('#pie_ok').onclick=async()=>{const n=PIE.n,v=$('#pie_n').value.trim()||n;if(v!==dispP(n)){await api('pl_rename',{name:n,label:v})}await api('pl_icon',{name:n,icon:PIE.ic});$('#pie').close();await load();if($('#pd').open)platUi();lchGrid()};
+$('#pie_n').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#pie_ok').click()}};
 async function plRename(n){const cur=dispP(n);const v=await ask('Renomear','Nome que aparece para "'+n+'"','',cur,cur!==n?'Para voltar ao original, digite: '+n:'');if(v===null||v===cur)return;
  await api('pl_rename',{name:n,label:v});S.plNames={...(S.plNames||{})};if(v===n)delete S.plNames[n];else S.plNames[n]=v;await load();platUi()}
-$('#pd_l').onkeydown=$('#lch_l').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('[data-ren]')){e.preventDefault();e.stopPropagation();plRename(e.target.dataset.ren)}};
-const plClick=async e=>{const rn=e.target.closest('[data-ren]');if(rn){e.stopPropagation();plRename(rn.dataset.ren);return}const b=e.target.closest('[data-pn]');if(!b)return;const n=b.dataset.pn,k=PD_K,have=pdHave();
+$('#pd_l').onkeydown=$('#lch_l').onkeydown=e=>{if(e.key==='Enter'&&e.target.matches('[data-ren]')){e.preventDefault();e.stopPropagation();plEdit(e.target.dataset.ren)}};
+const plClick=async e=>{const rn=e.target.closest('[data-ren]');if(rn){e.stopPropagation();plEdit(rn.dataset.ren);return}const b=e.target.closest('[data-pn]');if(!b)return;const n=b.dataset.pn,k=PD_K,have=pdHave();
  if(PD_G){if(have.has(n)){note('Essa plataforma já existe, selecione ela na lista de plataformas.');return}
   have.add(n);S.sideCons=[...have];side._h=null;side();$('#pd').close();fillPl(n);await api('side_set2',{list:[...have]});await load();return}
  const on=!have.has(n);on?have.add(n):have.delete(n);
@@ -992,7 +1013,9 @@ $('#sg_g').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.u)e.target.click()
 async function relGet(){const r=await api('reldate',{id:cur,name:$('#f_name').value,platform:$('#f_platform').value});if(r.error)return note(r.error);
  $('#f_rel').value=dstr(r.released);$('#rel_why').textContent='Fonte: '+r.from}
 function placePop(p,b){const r=b.getBoundingClientRect(),w=p.offsetWidth||290;p.style.right='auto';p.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';p.style.top=(r.bottom+6)+'px'}
-function cfg(){const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;emuSync();if(!EMUS.some(x=>x.id===EMU_OPEN))EMU_OPEN=EMUS.length===1?EMUS[0].id:null;emuRender();lchGrid();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;$('#u_notif').checked=c.updNotify!==false;$('#g_auto').checked=c.autoRefresh!==false;C.showModal()}
+function exclUi(){const e=$('#ex_l');if(!e)return;const L=S.exclP||[];e.innerHTML=L.length?L.map(n=>`<label class="ck exr"><input type="checkbox" checked data-ex="${esc(n)}"><span class="exi">${ICO[PKEY(n)]||ICO.all}</span>${esc(dispP(n))}</label>`).join(''):'<p class="mu">Nada na lista de exclusão.</p>'}
+$('#ex_l').onchange=async e=>{const c=e.target.closest('[data-ex]');if(!c||c.checked)return;const n=c.dataset.ex;await api('excl_set',{list:(S.exclP||[]).filter(x=>x!==n)});await load();exclUi()};
+function cfg(){exclUi();const c=S.config;$('#c_key').value=c.key;$('#c_id').value=c.steamid;$('#c_sg').value=c.sgdb;$('#c_fam').value=c.fam||'';$('#c_famon').checked=!!c.famOn;$('#u_ver').textContent=S.version;emuSync();if(!EMUS.some(x=>x.id===EMU_OPEN))EMU_OPEN=EMUS.length===1?EMUS[0].id:null;emuRender();lchGrid();$('#g_start').checked=!!c.startup;$('#g_min').checked=c.startMin!==false;$('#u_notif').checked=c.updNotify!==false;$('#g_auto').checked=c.autoRefresh!==false;C.showModal()}
 const saveCfg=()=>api('config',{key:$('#c_key').value.trim(),steamid:$('#c_id').value.trim(),sgdb:$('#c_sg').value.trim(),fam:$('#c_fam').value.trim(),famOn:$('#c_famon').checked});
 async function steamTestUi(){const b=$('#st_tb'),box=$('#st_test');b.disabled=true;b.textContent='Testando…';box.hidden=false;box.textContent='Falando com a Steam…';try{const r=await api('steam_test',{key:$('#c_key').value,steamid:$('#c_id').value});box.innerHTML=(r.lines||[]).map(l=>`<div style="color:${l.startsWith('✓')?'var(--ok,#4ade80)':'#f87171'}">${esc(l)}</div>`).join('')+(r.ok?'<div class="mu" style="margin-top:6px">Tudo certo. Clique em "Salvar e importar da Steam".</div>':'')}catch(e){box.textContent='Erro: '+e.message}b.disabled=false;b.textContent='Testar chaves'}
 async function diagUi(){const b=$('#l_diag');b.disabled=true;b.textContent='Gerando… (pode levar 1 min)';const r=await api('diag');b.disabled=false;b.textContent='Gerar diagnóstico';$('#l_msg').textContent=r.error?'Erro: '+r.error:'Pronto: o arquivo registrando-games-diagnostico.txt foi salvo na Área de Trabalho.'}

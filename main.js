@@ -447,8 +447,10 @@ async function importFamily(c) {
   save(); return n;
 }
 
+const EXCL = n => (data.exclP || []).includes(n);
 async function steamSync() {
   const c = data.config;
+  if (EXCL('Steam')) return;
   if (!c.key || !c.steamid) return; // sem API: so os instalados (steamLocalImport)
   try {
     const sid = await steamId64(c.key, c.steamid); if (!sid) throw new Error('SteamID não reconhecido');
@@ -541,6 +543,7 @@ function steamPlayRefresh(ids) {
 }
 let steamLocalInfo = '';
 async function steamLocalImport() {
+  if (EXCL('Steam')) return 0;
   await scanSteam();
   const have = new Set(data.games.filter(g => g.appid).map(g => g.appid)), ign = new Set(data.lIgnored || []);
   let novos = 0;
@@ -576,7 +579,7 @@ async function launchersImport(opt = {}) {
   lchBusy = true;
   try {
     const force = !!opt.force, side = data.sidePlats || LCH.SIDE_DEF;
-    const want = opt.only ? LCH.NAMES.filter(x => x === opt.only) : (force || opt.discover) ? LCH.NAMES : side;
+    const want = (opt.only ? LCH.NAMES.filter(x => x === opt.only) : (force || opt.discover) ? LCH.NAMES : side).filter(n => !EXCL(n));
     const found = await LCH.scanAll(want), counts = {}, inst = new Set();
     if (force) { const ks = new Set(); for (const n of want) for (const f of found[n] || []) ks.add(f.key); data.lIgnored = (data.lIgnored || []).filter(k => !ks.has(k)); }
     const ign = new Set(data.lIgnored || []);
@@ -615,7 +618,7 @@ async function launcherInstCheck() {
   if (lchBusy || refreshing) return;
   lchBusy = true;
   try {
-    const want = (data.sidePlats || LCH.SIDE_DEF).filter(n => LCH.NAMES.includes(n) && n !== 'Game Pass');
+    const want = (data.sidePlats || LCH.SIDE_DEF).filter(n => LCH.NAMES.includes(n) && n !== 'Game Pass' && !EXCL(n));
     const found = await LCH.scanAll(want, { light: true }), inst = new Set([...launcherInst].filter(k => /^xbox:/.test(k)));
     let changed = false;
     for (const n of want) for (const f of found[n] || []) {
@@ -734,6 +737,7 @@ async function emuEnrich(g) {
 async function emuImport(id) {
   const c = emuOf(id);
   if (!c) return;
+  if (EXCL(c.platform)) { msg = `${c.platform} está na lista de exclusão (Configurações).`; return; }
   if (!c.exe || !fs.existsSync(c.exe)) { msg = `${c.name}: escolha o executável do emulador primeiro.`; return; }
   if (!c.roms || !isDirP(c.roms)) { msg = `${c.name}: escolha a pasta das ROMs primeiro.`; return; }
   if (!c.exts || !c.exts.length) { msg = `${c.name}: adicione pelo menos um formato de ROM.`; return; }
@@ -756,16 +760,17 @@ async function emuImport(id) {
 }
 
 // Preenche capa e logo do SteamGridDB so nos jogos que ainda nao tem (nao mexe nos ja definidos nem refaz os ja tentados)
-async function sgFill() {
+async function sgFill(only) {
   if (!data.config.sgdb) return;
-  const todo = data.games.filter(g => (!g.cover && !g.sgc) || (!g.logo && !g.sgl));
+  const todo = (only || data.games).filter(g => (!g.cover && !g.sgc) || (!g.logo && !g.sgl) || (!g.wall && !g.sgh));
   let n = 0;
   for (const g of todo) {
     if (stopRefresh) break;
     try {
-      msg = `Buscando capas e logos no SteamGridDB... (${++n}/${todo.length})`;
+      msg = `Buscando capas, logos e papéis de parede no SteamGridDB... (${++n}/${todo.length})`;
       if (!g.cover && !g.sgc) { const r = await sgPage(g, 0, 'cover'); if (r.items[0]) await wallSave(g, r.items[0].url, 'cover'); g.sgc = 1; }
       if (!g.logo && !g.sgl) { const r = await sgPage(g, 0, 'logo'); if (r.items[0]) await wallSave(g, r.items[0].url, 'logo'); g.sgl = 1; }
+      if (!g.wall && !g.sgh) { const r = await sgPage(g, 0, 'hero'); if (r.items[0]) await wallSave(g, r.items[0].url, 'wall'); g.sgh = 1; }
       save(); await sleep(250);
     } catch (e) { if (/401|403/.test(e.message || '')) break; }
   }
@@ -784,7 +789,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), updNew: data.updNotify === false ? null : UPDNEW, top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
-      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
@@ -1062,6 +1067,25 @@ ipcMain.handle('api', async (_e, p, b) => {
       data.gHidden = [...new Set([...(data.gHidden || []), n])]; data.gExtra = (data.gExtra || []).filter(x => x !== n);
       for (const g of data.games) if ((g.genres || []).includes(n)) g.genres = g.genres.filter(x => x !== n);
       save(); return { ok: true };
+    }
+    case 'pl_icon': { const n = String(b.name || '').trim(); if (!n) return { ok: false }; data.plIcons = data.plIcons || {}; const v = String(b.icon || ''); if (!v) delete data.plIcons[n]; else if (/^data:image\//.test(v) ? v.length < 400000 : /^[\w-]{1,40}$/.test(v)) data.plIcons[n] = v; save(); return { ok: true }; }
+    case 'platform_purge': {
+      const n = String(b.name || '').trim(); if (!n) return { ok: false };
+      const ids = new Set((b.ids || []).map(String));
+      for (const x of data.games) if (ids.has(x.id)) { rmCover(x); rmWall(x); rmLogo(x); rmSq(x); }
+      data.games = data.games.filter(x => !ids.has(x.id)); data.lists.forEach(l => l.ids = l.ids.filter(i => !ids.has(i)));
+      data.exclP = [...new Set([...(data.exclP || []), n])];
+      data.sidePlats = (data.sidePlats || LCH.SIDE_DEF).filter(x => x !== n); data.sideCons = (data.sideCons || []).filter(x => x !== n);
+      save(); return { ok: true, n: ids.size };
+    }
+    case 'excl_set': { data.exclP = (b.list || []).map(String); save(); return { ok: true }; }
+    case 'meta_refresh': {
+      if (refreshing) return { error: 'Já tem uma atualização em andamento.' };
+      const ids = new Set((b.ids || []).map(String)), gs = data.games.filter(x => ids.has(x.id)); if (!gs.length) return { ok: true };
+      for (const x of gs) { delete x.sgc; delete x.sgl; delete x.sgh; delete x.mtry; if (x.appid) x.info4 = false; }
+      refreshing = true; stopRefresh = false; msg = `Atualizando ${b.name || 'jogos'}...`;
+      (async () => { try { await batchRelease(gs.filter(x => x.appid)); } catch {} try { await sgFill(gs); } catch {} try { await fillInfo(); } catch {} try { await refreshAllInfo(); } catch {} refreshing = false; msg = stopRefresh ? 'Atualização interrompida.' : `${b.name || 'Jogos'}: metadados atualizados.`; stopRefresh = false; save(); })();
+      return { ok: true };
     }
     case 'platform_del': {
       const n = (b.name || '').trim(); if (!n) return { ok: false };
