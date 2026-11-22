@@ -161,6 +161,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
   }
   data.sideOff = data.sideOff || [];
   // v1.32: Backlog deixa de ser o padrao (vira em branco) e Catalogar sai do app. Roda uma vez so.
+  if (!data.plMig1321) { data.plMig1321 = 1; data.plHidden = []; } // o X do editor escondia plataformas sem querer: volta todas
   if (!data.stMig132) { data.stMig132 = 1; for (const g of data.games || []) { if (g.status === 'Backlog') g.status = ''; if (g.cat) delete g.cat; } }
   if (!data.manMig1) { data.manMig1 = 1; for (const g of data.games || []) if (g.manual_s > 0) { g.tracked_s = (g.tracked_s || 0) + g.manual_s; g.manual_s = 0; } }
   if (!data.scoreMig1) { data.scoreMig1 = 1; for (const g of data.games || []) { if (g.rating > 0 && g.score == null) g.score = Math.min(10, g.rating * 2); delete g.rating; delete g.meta; delete g.meta_url; } }

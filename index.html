@@ -608,7 +608,7 @@ const genList=()=>{const hd=new Set(S.gHidden||[]);return [...new Set([...GDEF,.
 function fillPl(sel){$('#f_platform').value=sel||'';$('#f_pv').textContent=sel?dispP(sel):'Escolher';$('#f_pl').hidden=true}
 function plAll(){const s=$('#f_platform').value,all=plList();if(s&&!all.includes(s))all.unshift(s);return all}
 const XS='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-function plUi(){const s=$('#f_platform').value;$('#f_pl').innerHTML=plAll().map(p=>`<div class="pdi${p===s?' on':''}" role="option" tabindex="0" data-p="${esc(p)}"><span>${esc(dispP(p))}</span><button type="button" class="pdx" data-px="${esc(p)}" title="Remover esta plataforma da lista" aria-label="Remover ${esc(p)}">${XS}</button></div>`).join('')||'<div class="mu" style="padding:8px">Nenhuma plataforma. Use o +.</div>'}
+function plUi(){const s=$('#f_platform').value;$('#f_pl').innerHTML=`<div class="pdi${!s?' on':''}" role="option" tabindex="0" data-p=""><span class="mu">Sem plataforma</span></div>`+plAll().map(p=>`<div class="pdi${p===s?' on':''}" role="option" tabindex="0" data-p="${esc(p)}"><span>${esc(dispP(p))}</span></div>`).join('')}
 function plOpen(){const l=$('#f_pl'),b=$('#f_pbtn').getBoundingClientRect(),d=D.getBoundingClientRect();plUi();l.style.left=(b.left-d.left)+'px';l.style.top=(b.bottom-d.top+4)+'px';l.style.width=b.width+'px';l.hidden=false;const on=l.querySelector('.on');on&&on.scrollIntoView({block:'nearest'})}
 const IC=p=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--ac);flex:none">${p}</svg>`;
 const ICO={all:IC('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
@@ -1036,7 +1036,7 @@ $('#fxb').onchange=()=>{FXB=$('#fxb').checked;try{localStorage.setItem('fxb',FXB
 function paintBold(){document.body.classList.toggle('bold',BOLD);$('#bold').checked=BOLD}
 $('#bold').onchange=()=>{BOLD=$('#bold').checked;try{localStorage.setItem('bold',BOLD?'1':'0')}catch{}paintBold()};paintBold();
 $('#f_pbtn').onclick=e=>{e.stopPropagation();$('#f_pl').hidden?plOpen():$('#f_pl').hidden=true};
-$('#f_pl').onclick=async e=>{e.stopPropagation();const x=e.target.closest('[data-px]');if(x){await api('platform_del',{name:x.dataset.px});await load();plUi();return}const i=e.target.closest('[data-p]');if(i){fillPl(i.dataset.p);$('#f_pbtn').focus()}};
+$('#f_pl').onclick=async e=>{e.stopPropagation();const i=e.target.closest('[data-p]');if(i){fillPl(i.dataset.p);$('#f_pbtn').focus()}};
 $('#f_pl').onkeydown=e=>{if(e.key==='Enter'&&e.target.dataset.p!==undefined){e.preventDefault();e.target.click()}else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();$('#f_pl').hidden=true;$('#f_pbtn').focus()}};
 D.addEventListener('click',e=>{if(!e.target.closest('#f_pl')&&!e.target.closest('#f_pbtn'))$('#f_pl').hidden=true});
 document.querySelector('#d .dg2').addEventListener('scroll',()=>{$('#f_pl').hidden=true});
