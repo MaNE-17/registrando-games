@@ -304,7 +304,6 @@ function ovIn(k){const o=BP.ov;
  if(o.type==='grid'&&(k==='y'||k==='x')){k==='y'?covRename(o):covPc(o);return}
  const c=ovCols(),n=o.items.length;if(!n)return;
  if(k==='left')o.i=Math.max(0,o.i-1);else if(k==='right')o.i=Math.min(n-1,o.i+1);else if(k==='up')o.i=Math.max(0,o.i-c);else if(k==='down')o.i=Math.min(n-1,o.i+c);
- if(o.type==='grid'&&(k==='y'||k==='x')){k==='y'?covRename(o):covPc(o);return}
  else if(k==='rb'||k==='rt')o.i=Math.min(n-1,o.i+c*3);else if(k==='lb'||k==='lt')o.i=Math.max(0,o.i-c*3);else if(k==='a'){if(o.type==='ico')colIcoSet(o);else bpCovApply(o);return}else return;
  if(o.i>=n-c*2)bpCovMore(o);
  bq('.bo-g .gc.on')?.classList.remove('on');const e=bq(`.bo-g .gc[data-oi="${o.i}"]`);if(e){e.classList.add('on');scrV(bq('.bo-g'),e,true)}}
