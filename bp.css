@@ -469,3 +469,33 @@ body.bpon{overflow:hidden}
 .bt.blst .cl{justify-content:center;padding-bottom:6%}
 .bt.blst .cl b{font-size:2.6vh;text-shadow:0 .3vh 1.2vh rgba(0,0,0,.8)}
 .bt.blst .cl em{opacity:.85;text-shadow:0 .2vh .8vh rgba(0,0,0,.8)}
+/* ===== otimizacao: capa selecionada cresce por transform (sem recalcular layout) ===== */
+body.bpon>header,body.bpon>.shell{visibility:hidden}
+#bps-home .bt{transition:transform .32s cubic-bezier(.22,.61,.36,1),box-shadow .2s ease,opacity .2s ease!important;will-change:transform}
+.th-orig #bps-home .bt,.th-orig #bps-home .bt.on{width:calc(15vh*var(--bpz))!important;height:calc(22.5vh*var(--bpz))!important}
+.th-orig #bps-home .bt{transform-origin:left bottom}
+.th-orig #bps-home .bt.on{transform:scale(1.2)}
+.th-orig #bps-home .bt.aft{transform:translateX(calc(3vh*var(--bpz)))}
+.th-orig.sqm #bps-home .bt,.th-orig.sqm #bps-home .bt.on{width:calc(20vh*var(--bpz))!important;height:calc(20vh*var(--bpz))!important}
+.th-orig.sqm #bps-home .bt.aft{transform:translateX(calc(4vh*var(--bpz)))}
+.th-ps #bps-home .bt,.th-ps #bps-home .bt.on{width:calc(11vh*var(--bpz))!important;height:calc(11vh*var(--bpz))!important}
+.th-ps #bps-home .bt{transform-origin:left top}
+.th-ps #bps-home .bt.on{transform:scale(1.409)}
+.th-ps #bps-home .bt.aft{transform:translateX(calc(4.5vh*var(--bpz)))}
+.th-ps #bps-home .bt.on .nm{font-size:calc(2.2vh/1.409)!important;top:calc(100% + 1.1vh)!important;gap:.7vh!important}
+.th-ps #bps-home .bt .nm .pli{width:1.85vh!important;height:1.85vh!important}
+.th-ps #bps-home .bt .nm .pli svg{width:1.7vh!important;height:1.7vh!important}
+.bp-trk{will-change:transform;transition:transform .36s cubic-bezier(.22,.61,.36,1)!important}
+/* biblioteca: nao desenha capas fora da tela */
+.bl-g .bt{content-visibility:auto;contain-intrinsic-size:auto 15vh auto 22.5vh}
+.bl-g .bt.on{content-visibility:visible}
+.bl-g .bt{transition:transform .18s ease,box-shadow .18s ease!important}
+.bt img{decoding:async}
+/* menos efeitos caros durante a navegacao */
+.bp-bgi{will-change:opacity}
+.bp-bgi.blur{filter:blur(28px) saturate(1.2) brightness(.7)}
+/* sem desfoques de tela inteira (pesam a cada quadro) */
+.bp-ov{backdrop-filter:none!important;background:rgba(0,0,0,.68)}
+.ov-light .bp-ov{background:none}
+.side-on .bp-scr,.side-on .bp-top,.side-on .bp-foot{filter:brightness(.4)!important}
+.bi-m .pi,.bb{backdrop-filter:none}

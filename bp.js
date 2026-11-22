@@ -1,6 +1,7 @@
 // ===== Modo Big Picture (controle, teclado e mouse) =====
 // Usa as funcoes e o estado do index.html (S, api, play, load, coverSrc, wallSrc...).
 (()=>{
+let HOLD=false;
 const BP={on:false,th:'orig',scr:'home',hist:[],style:'kb',padOk:null,
  home:{list:[],idx:0,sel:null,rk:''},lib:{tab:0,tabs:[],idx:0,sel:{},rk:'',sort:'name',f:{}},det:{g:null,f:0},cfg:{i:0},ed:{i:1},dev:{i:0,bt:null,t:0},srch:{q:'',list:[],idx:0},topF:false,side:{open:false,i:0},ov:null,kb:null};
 try{const t=localStorage.getItem('bpth');if(t==='ps')BP.th=t}catch{}
@@ -39,8 +40,11 @@ bpEl.innerHTML=`<div class="bp-bg"><div class="bp-bgi"></div><div class="bp-bgi"
 document.body.appendChild(bpEl);
 const bq=s=>bpEl.querySelector(s);
 // rola so o container (scrollIntoView rolaria a tela inteira do Big Picture)
+// rolagem propria (rAF): segue o alvo mesmo quando ele muda a cada passo do d-pad segurado
+function scrollAnim(c,y){c._tgt=y;if(c._raf)return;const st=()=>{const cur=c.scrollTop,d=c._tgt-cur;if(Math.abs(d)<1){c.scrollTop=c._tgt;c._raf=0;return}c.scrollTop=cur+d*(HOLD?0.42:0.26);c._raf=requestAnimationFrame(st)};c._raf=requestAnimationFrame(st)}
 function scrV(c,el,smooth){if(!c||!el)return;let t=0,e=el;while(e&&e!==c){t+=e.offsetTop;e=e.offsetParent}if(e!==c){const r=el.getBoundingClientRect(),cr=c.getBoundingClientRect();t=r.top-cr.top+c.scrollTop}
- const p=Math.round(c.clientHeight*.12),b=t+el.offsetHeight,now=Date.now();let y=(c._ty!=null&&now-c._tt<450)?c._ty:c.scrollTop;const y0=y;if(t-p<y)y=t-p;else if(b+p>y+c.clientHeight)y=b+p-c.clientHeight;y=Math.max(0,Math.min(y,c.scrollHeight-c.clientHeight));if(y!==y0||y!==c.scrollTop){c._ty=y;c._tt=now;c.scrollTo({top:y,behavior:smooth?'smooth':'auto'})}}
+ const p=Math.round(c.clientHeight*.12),b=t+el.offsetHeight;let y=c._raf?c._tgt:c.scrollTop;const y0=y;if(t-p<y)y=t-p;else if(b+p>y+c.clientHeight)y=b+p-c.clientHeight;y=Math.max(0,Math.min(y,c.scrollHeight-c.clientHeight));
+ if(y===y0&&y===c.scrollTop)return;if(!smooth){if(c._raf){cancelAnimationFrame(c._raf);c._raf=0}c.scrollTop=y;c._tgt=y;return}scrollAnim(c,y)}
 function scrH(c,el){if(!c||!el)return;c.scrollTo({left:Math.max(0,el.offsetLeft-c.clientWidth/2+el.offsetWidth/2),behavior:'smooth'})}
 const lgStyle=g=>{const s=(g.bpLogoSize||120)/120,x=g.bpLogoX||0,y=g.bpLogoY||0;return `height:${(13*s).toFixed(2)}vh;width:auto;max-height:none;max-width:none;transform:translate(${x}vw,${-y}vh)`};
 
@@ -103,8 +107,8 @@ function homeGeo(){const t=(BP.sq&&BP.th==='orig'?TG.sq:TG[BP.th])||TG.orig,vh=i
 function homeTx(i,mouse){const H=BP.home,G=homeGeo(),st=G.w+G.g;if(!mouse){H.tx=-i*st}else{const x=G.pad+i*st+(H.tx||0),R=innerWidth-G.pad*0.5,Lm=G.pad*0.5;if(x+G.ws>R)H.tx=(H.tx||0)-(x+G.ws-R);else if(x<Lm)H.tx=(H.tx||0)+(Lm-x);H.tx=Math.min(0,H.tx||0)}bq('#bptrk').style.transform=`translateX(${H.tx}px)`}
 function homeSel(i,force,mouse){const H=BP.home,L=H.list;if(!L.length){bq('#bpinfo').innerHTML='';bpBg(null);return}i=Math.max(0,Math.min(L.length-1,i));
  if(i===H.idx&&!force&&H.sel===L[i].id)return;H.idx=i;H.sel=L[i].id;
- const T=bq('#bptrk');T.querySelectorAll('.bt.on').forEach(x=>x.classList.remove('on'));const t=T.children[i];
- if(t){t.classList.add('on');homeTx(i,mouse)}
+ const T=bq('#bptrk'),K=T.children;for(let q=0;q<K.length;q++){const c=K[q];c.classList.toggle('on',q===i);c.classList.toggle('aft',q>i)}const t=K[i];
+ if(t)homeTx(i,mouse)
  const g=L[i];if(g.more){const IE=bq('#bpinfo');if(IE._id!=='__more'){IE._id='__more';IE._k='';IE.innerHTML=`<div class="bi-t"><h1>Biblioteca</h1></div>`}return}const lg=logoSrc(g)&&!g.logoHide?logoSrc(g):'';
  const IE=bq('#bpinfo'),IK=g.id+'|'+lg+'|'+lgStyle(g)+'|'+g.name;if(IE._k===IK)return;const nw=IE._id!==g.id;IE._k=IK;IE._id=g.id;if(nw){IE.classList.remove('fi');void IE.offsetWidth;IE.classList.add('fi')}IE.innerHTML=`<div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>`;bpBg(g)}
 
@@ -208,8 +212,10 @@ function cfgMove(d){const R=cfgRows();let i=BP.cfg.i;do{i+=d}while(R[i]&&R[i].t=
 // ---- liga / desliga ----
 function bpSet(on){on=!!on;if(on===BP.on)return;BP.on=on;bpEl.hidden=!on;document.body.classList.toggle('bpon',on);api('bp_full',{on});
  if(on){document.querySelectorAll('dialog[open]').forEach(d=>{try{d.close()}catch{}});BP.ov=null;BP.kb=null;BP.side.open=false;bq('#bpov').hidden=true;bq('#bpkb').hidden=true;BP.hist=[];bpClock();bpGo('home',false);sideRender()}
- else{Object.keys(REP).forEach(padUp)}}
-window.bpOnLoad=()=>{if(BP.on){bpPaint(false);if(BP.ov&&BP.ov.type==='logo')logoLive(BP.ov);if(BP.side.open)sideRender();if(BP.ov&&BP.ov.type==='menu')ovRender()}};
+ else{Object.keys(REP).forEach(padUp);if(render._dirty){render._dirty=0;render()}}}
+let LIN=0,LSIG='';window.bpBusy=()=>BP.on&&(HOLD||performance.now()-LIN<2500);
+function stSig(){let h=S.games.length+'|'+S.running.join()+'|'+(S.inst||[]).length+'|'+(S.lists||[]).map(l=>l.id+(l.ids||[]).length).join();const G=S.games;for(let i=0;i<G.length;i++){const g=G[i];h+=(g.cover||'')+(g.sq||'')+(g.fav?1:0)+(g.hidden?1:0)+(g.cat?1:0)+(g.status||'')[0]+(g.last_played||0)%9973+(g.score??'')+(g.logo||'')+(g.wall||'')+(g.name||'').length}return h}
+window.bpOnLoad=()=>{if(BP.on){const sg=stSig();if(sg===LSIG&&!BP.ov&&!BP.kb)return;LSIG=sg;bpPaint(false);if(BP.ov&&BP.ov.type==='logo')logoLive(BP.ov);if(BP.side.open)sideRender();if(BP.ov&&BP.ov.type==='menu')ovRender()}};
 
 // ---- acoes ----
 const curGame=()=>BP.scr==='home'?((x=>x&&!x.more?x:null)(BP.home.list[BP.home.idx])):BP.scr==='srch'?BP.srch.list[BP.srch.idx]:BP.scr==='edit'?detGame():BP.scr==='lib'?((x=>x&&!x.kind?x:null)((BP.lib.tabs[BP.lib.tab]||{g:[]}).g[BP.lib.idx])):BP.scr==='det'?detGame():null;
@@ -449,7 +455,7 @@ async function edPress(d){const r=edRows()[BP.ed.i];if(!r||r.t==='h'||r.t==='inf
 function edMove(d){const R=edRows();let i=BP.ed.i;do{i+=d}while(R[i]&&R[i].t==='h');if(i<0||i>=R.length)return;BP.ed.i=i;edRender()}
 
 // ---- entrada ----
-function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0]&&BP.ov.items[0].pv&&(k==='up'||k==='down')))snd(k==='a'?'select':k==='b'||k==='back'?'back':k==='lb'||k==='rb'?'tab':k==='start'||k==='y'||k==='x'||k==='guide'?'menu':'move');
+function bpIn(k){if(!BP.on)return;LIN=performance.now();if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0]&&BP.ov.items[0].pv&&(k==='up'||k==='down')))snd(k==='a'?'select':k==='b'||k==='back'?'back':k==='lb'||k==='rb'?'tab':k==='start'||k==='y'||k==='x'||k==='guide'?'menu':'move');
  if(k==='guide'){if(BP.kb)return;if(BP.ov)BP.ov=null,ovRender();sideToggle();return}
  if(BP.kb)return kbIn(k);if(BP.ov)return ovIn(k);if(BP.side.open)return sideIn(k);
  if(BP.topF){if(k==='a'){srchOpen();return}if(k==='down'||k==='b'){BP.topF=false;topUi();return}return}
@@ -476,8 +482,9 @@ function bpIn(k){if(!BP.on)return;if(!(BP.ov&&BP.ov.type==='menu'&&BP.ov.items[0
 const BPMAP={dpadUp:'up',dpadDown:'down',dpadLeft:'left',dpadRight:'right',lsUp:'up',lsDown:'down',lsLeft:'left',lsRight:'right',south:'a',east:'b',west:'x',north:'y',
  leftShoulder:'lb',rightShoulder:'rb',lt:'lt',rt:'rt',start:'start',back:'back',guide:'guide',rsUp:'sup',rsDown:'sdown'};
 const REP={},RPT=new Set(['up','down','left','right','sup','sdown','lt','rt']);
-function padDown(k){bpIn(k);if(RPT.has(k)){clearTimeout(REP[k]);const r=()=>{bpIn(k);REP[k]=setTimeout(r,k==='lt'||k==='rt'?220:85)};REP[k]=setTimeout(r,380)}}
-function padUp(k){clearTimeout(REP[k]);delete REP[k]}
+function padDown(k){bpIn(k);if(!RPT.has(k))return;clearTimeout(REP[k]);let n=0;const slow=k==='lt'||k==='rt';
+ const r=()=>{n++;HOLD=true;bpIn(k);REP[k]=setTimeout(r,slow?200:Math.max(55,110-n*6))};REP[k]=setTimeout(r,slow?340:300)}
+function padUp(k){clearTimeout(REP[k]);delete REP[k];if(!Object.keys(REP).length)HOLD=false}
 function bpPad(m){
  if(m.t==='conn'){BP.pads[m.id]={name:m.name,type:m.type,power:m.power};batRender();bpStyleFrom(m);if(BP.on)bpToast('Controle conectado: '+(m.name||''));return}
  if(m.t==='disc'){delete BP.pads[m.id];batRender();if(BP.on)bpToast('Controle desconectado');return}
@@ -495,7 +502,7 @@ document.addEventListener('keydown',e=>{
   if(e.key.length===1){e.preventDefault();BP.kb.v+=e.key;kbRender();BP.kb.live&&BP.kb.live(BP.kb.v);return}
   if(e.key==='Backspace'){e.preventDefault();kbKey('⌫');return}if(e.key==='Enter'){e.preventDefault();kbKey('OK');return}}
  if(BP.kb&&e.ctrlKey&&(e.key==='v'||e.key==='V')){e.preventDefault();kbKey('Colar');return}
- const k=BPK[e.key];if(!k)return;e.preventDefault();
+ const k=BPK[e.key];if(!k)return;e.preventDefault();HOLD=e.repeat;
  if(BP.style!=='kb'){BP.style='kb';bpClass();bpFoot()}bpIn(k)},true);
 // mouse
 bpEl.addEventListener('click',e=>{

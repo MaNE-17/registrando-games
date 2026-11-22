@@ -567,7 +567,7 @@ function hprog(on){const w=$('#hprog');if(!w)return;w.hidden=!on;if(!on){const b
  if(x){const n=+x[1],t=+x[2];w.classList.remove('ind');$('#hpf').style.width=Math.max(2,Math.round(n/t*100))+'%';$('#hpn').textContent=`${n}/${t}`}
  else if(S.pending){w.classList.add('ind');$('#hpn').textContent=`${S.pending} restantes`}else{w.classList.add('ind');$('#hpn').textContent=''}}
 let RFT=null;function rfUi(){const b=$('#rfb'),on=!!(S.refreshing||S.pending);if(b)b.classList.toggle('spin',on);hprog(on)}
-async function load(){S=await api('state');rfUi();render();if(window.bpOnLoad)bpOnLoad();updBanner();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=''}
+async function load(){S=await api('state');rfUi();if(!document.body.classList.contains('bpon'))render();else render._dirty=1;if(window.bpOnLoad)bpOnLoad();updBanner();if(LD.open&&!DRAGGING)listUi();$('#c_msg').textContent=(S.msg||'')+(S.pending?` Buscando dados na Steam: ${S.pending} restantes.`:'');$('#st_msg').textContent=''}
 function filt(g){
  if(F.smart==='hidden'?!g.hidden:g.hidden)return 0;
  if(g.cat&&!FAV&&!F.list&&(INST||F.sp||F.smart!=='all'||!(F.status||YR||$('#q').value.trim())))return 0;
@@ -1368,6 +1368,6 @@ D.addEventListener('paste',async e=>{const f=[...((e.clipboardData&&e.clipboardD
 const dcv=$('#d_cv');dcv.addEventListener('dragover',e=>{e.preventDefault();dcv.classList.add('over')});dcv.addEventListener('dragleave',()=>dcv.classList.remove('over'));
 dcv.addEventListener('drop',async e=>{e.preventDefault();dcv.classList.remove('over');const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('image/'));if(f)applyCover(await fileData(f))});
 $('#sort').onchange=render;
-load().then(()=>{if(S.config.autoRefresh!==false&&!(S.refreshing||S.pending))refreshAll()});setTimeout(load,2500);setInterval(()=>{if(!D.open&&!LD.open&&!AD.open&&!DRAGGING)load()},8000);
+load().then(()=>{if(S.config.autoRefresh!==false&&!(S.refreshing||S.pending))refreshAll()});setTimeout(load,2500);setInterval(()=>{if(!D.open&&!LD.open&&!AD.open&&!DRAGGING&&!(window.bpBusy&&bpBusy()))load()},8000);
 </script>
 <script src="bp.js"></script></html>
