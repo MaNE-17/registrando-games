@@ -104,7 +104,9 @@ function homeRender(full){const H=BP.home,A=bpRec(vis().filter(g=>g.last_played)
  homeSel(Math.max(0,L.findIndex(g=>g.id===H.sel)),true)}
 const TG={orig:{w:15,ws:18,g:1.4},ps:{w:11,ws:15.5,g:1.1},sq:{w:20,ws:24,g:1.4}};
 function homeGeo(){const t=(BP.sq&&BP.th==='orig'?TG.sq:TG[BP.th])||TG.orig,vh=innerHeight/100,vw=innerWidth/100,z=BP.cz/100;return{w:t.w*vh*z,ws:t.ws*vh*z,g:t.g*vw,pad:4*vw}}
-function homeTx(i,mouse){const H=BP.home,G=homeGeo(),st=G.w+G.g;if(!mouse){H.tx=-i*st}else{const x=G.pad+i*st+(H.tx||0),R=innerWidth-G.pad*0.5,Lm=G.pad*0.5;if(x+G.ws>R)H.tx=(H.tx||0)-(x+G.ws-R);else if(x<Lm)H.tx=(H.tx||0)+(Lm-x);H.tx=Math.min(0,H.tx||0)}bq('#bptrk').style.transform=`translateX(${H.tx}px)`}
+function homeTx(i){const H=BP.home,G=homeGeo(),st=G.w+G.g,n=H.list.length,Rr=innerWidth-G.pad,Ll=G.pad;let tx=H.tx||0;
+ const x=G.pad+i*st+tx;if(x+G.ws>Rr)tx-=x+G.ws-Rr;else if(x<Ll)tx+=Ll-x;
+ const minTx=Math.min(0,Rr-(G.pad+(n-1)*st+G.ws));H.tx=Math.round(Math.max(minTx,Math.min(0,tx)));bq('#bptrk').style.transform=`translateX(${H.tx}px)`}
 function homeSel(i,force,mouse){const H=BP.home,L=H.list;if(!L.length){bq('#bpinfo').innerHTML='';bpBg(null);return}i=Math.max(0,Math.min(L.length-1,i));
  if(i===H.idx&&!force&&H.sel===L[i].id)return;H.idx=i;H.sel=L[i].id;
  const T=bq('#bptrk'),K=T.children;for(let q=0;q<K.length;q++){const c=K[q];c.classList.toggle('on',q===i);c.classList.toggle('aft',q>i)}const t=K[i];
