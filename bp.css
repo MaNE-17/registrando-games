@@ -505,3 +505,6 @@ body.bpon>header,body.bpon>.shell{visibility:hidden}
 .bo-g .gc.on{content-visibility:visible}
 .bo-g{will-change:scroll-position;scroll-behavior:auto!important}
 .bo-g .gc{transition:outline-color .12s,transform .12s!important}
+#bp .sti{width:2.2vh;height:2.2vh;margin:0 .2vh 0 0;flex:none}
+.dt-g .dr b .sti{width:2.2vh;height:2.2vh}
+.bo-i .sti{width:2.4vh!important;height:2.4vh!important}
