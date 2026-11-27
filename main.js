@@ -936,7 +936,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'pad_pin': { data.padPin = b.id ? { id: b.id, corner: ['tl', 'tr', 'bl', 'br'].includes(b.corner) ? b.corner : 'tr' } : null; save(); pinPaint(); return { ok: true, pin: data.padPin }; }
     case 'shots_del': { let n = 0; for (const x of (b.fs || []).slice(0, 2000)) { const f = shotPath(x); if (!f) continue; try { await shell.trashItem(f); n++; } catch { try { fs.unlinkSync(f); n++; } catch {} } } return { ok: true, n }; }
     case 'shot_snd': { if ('v' in b) data.shotSnd = String(b.v || '').slice(0, 2000); if ('vol' in b) data.shotVol = Math.max(0, Math.min(100, +b.vol || 0)); save(); return { ok: true }; }
-    case 'ovl_close': if (ovlWin && !ovlWin.isDestroyed()) ovlWin.hide(); return { ok: true };
+    case 'ovl_close': await ovlHide(); return { ok: true };
     case 'bp_full': if (win) { if (b.on) { if (!BPF) BPPREV = win.isFullScreen(); BPF = true; win.setFullScreen(true); } else { BPF = false; win.setFullScreen(!!BPPREV); } } return { ok: true };
     case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
     case 'stop': {
@@ -1281,19 +1281,32 @@ public class RGFG { [DllImport("user32.dll")] public static extern IntPtr GetFor
 [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
 [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
 [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
-[DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }
+[DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+[DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+[DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+[DllImport("user32.dll")] public static extern bool AttachThreadInput(uint a, uint b, bool on);
+[DllImport("user32.dll")] public static extern void keybd_event(byte k, byte s, uint f, UIntPtr e);
+[DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }
 "@
 [void][RGFG]::SetProcessDPIAware()
 while ($true) { $l = [Console]::In.ReadLine(); if ($l -eq $null) { break }
+ if ($l.StartsWith('f ')) { $t = [IntPtr][long]$l.Substring(2); $ok = $false
+  if ([RGFG]::IsWindow($t)) { $fw = [RGFG]::GetForegroundWindow(); $x = 0; $ft = [RGFG]::GetWindowThreadProcessId($fw, [ref]$x); $ct = [RGFG]::GetCurrentThreadId()
+   [void][RGFG]::AttachThreadInput($ct, $ft, $true); [void][RGFG]::BringWindowToTop($t); $ok = [RGFG]::SetForegroundWindow($t); [void][RGFG]::AttachThreadInput($ct, $ft, $false)
+   if (-not $ok -or [RGFG]::GetForegroundWindow() -ne $t) { [RGFG]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [RGFG]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero); $ok = [RGFG]::SetForegroundWindow($t) } }
+  [Console]::Out.WriteLine("0|f$ok|0|0|0|0|0"); [Console]::Out.Flush(); continue }
  $h = [RGFG]::GetForegroundWindow(); $p = 0; [void][RGFG]::GetWindowThreadProcessId($h, [ref]$p); $r = New-Object RGFG+RECT; [void][RGFG]::GetWindowRect($h, [ref]$r)
  $n = ''; try { $n = (Get-Process -Id $p -ErrorAction Stop).ProcessName } catch {}
- [Console]::Out.WriteLine("$p|$n|$($r.L)|$($r.T)|$($r.R)|$($r.B)"); [Console]::Out.Flush() }`;
+ [Console]::Out.WriteLine("$p|$n|$($r.L)|$($r.T)|$($r.R)|$($r.B)|$($h.ToInt64())"); [Console]::Out.Flush() }`;
   try {
     FGP = cp.spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(ps, 'utf16le').toString('base64')], { windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
-    FGP.stdout.on('data', d => { FGBUF += d; let i; while ((i = FGBUF.indexOf('\n')) >= 0) { const l = FGBUF.slice(0, i).trim(); FGBUF = FGBUF.slice(i + 1); const q = FGQ.shift(); if (q) { clearTimeout(q.t); const [pid, name, L, T, Rr, B] = l.split('|'); q.r({ pid: +pid, name: name || '', L: +L, T: +T, R: +Rr, B: +B }); } } });
+    FGP.stdout.on('data', d => { FGBUF += d; let i; while ((i = FGBUF.indexOf('\n')) >= 0) { const l = FGBUF.slice(0, i).trim(); FGBUF = FGBUF.slice(i + 1); const q = FGQ.shift(); if (q) { clearTimeout(q.t); const [pid, name, L, T, Rr, B, H] = l.split('|'); q.r({ pid: +pid, name: name || '', L: +L, T: +T, R: +Rr, B: +B, hwnd: H || '' }); } } });
     FGP.on('exit', () => { FGP = null; while (FGQ.length) { const q = FGQ.shift(); clearTimeout(q.t); q.r(null); } });
   } catch { FGP = null; }
 }
+// Devolve o foco para a janela do jogo (como a Steam faz ao fechar a sobreposicao)
+function fgFocus(hwnd) { if (!FGP || !/^-?\d+$/.test(String(hwnd || ''))) return Promise.resolve(false); return new Promise(r => { const q = { r: x => r(!!(x && /True/i.test(x.name))), t: setTimeout(() => { const i = FGQ.indexOf(q); if (i >= 0) FGQ.splice(i, 1); r(false); }, 1500) }; FGQ.push(q); try { FGP.stdin.write('f ' + hwnd + '\n'); } catch { r(false); } }); }
 function fgInfo() { fgStart(); if (!FGP) return Promise.resolve(null); return new Promise(r => { const q = { r, t: setTimeout(() => { const i = FGQ.indexOf(q); if (i >= 0) FGQ.splice(i, 1); r(null); }, 4000) }; FGQ.push(q); try { FGP.stdin.write('q\n'); } catch { r(null); } }); }
 const NOGAME = new Set(['explorer', 'searchhost', 'searchapp', 'startmenuexperiencehost', 'shellexperiencehost', 'applicationframehost', 'textinputhost', 'lockapp', 'chrome', 'msedge', 'firefox', 'opera', 'brave', 'vivaldi', 'vlc', 'mpc-hc64', 'mpc-be64', 'potplayermini64', 'wmplayer', 'video.ui', 'microsoft.media.player', 'discord', 'steam', 'steamwebhelper', 'epicgameslauncher', 'code', 'obs64', 'taskmgr', 'powershell', 'cmd', 'windowsterminal']);
 const pnOf = g => (g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe) ? path.win32.basename(g.exe) : '')).toLowerCase();
@@ -1307,12 +1320,12 @@ async function fgGame(anyMon) {
   const games = data.games.filter(g => pnOf(g) === exe), g = games.find(x => running.has(x.id)) || games[0];
   const dip = (() => { try { return screen.screenToDipPoint({ x: Math.round((f.L + f.R) / 2), y: Math.round((f.T + f.B) / 2) }); } catch { return null; } })();
   const disp = dip ? screen.getDisplayNearestPoint(dip) : null;
-  if (g) return { g, pid: f.pid, disp };
+  if (g) return { g, pid: f.pid, disp, hwnd: f.hwnd };
   if (NOGAME.has(n)) return null;
   const D = disp ? disp.bounds : B, sd = disp ? disp.scaleFactor || 1 : sf;
   const full = [1, sd].some(k => f.L <= D.x * k + 2 && f.T <= D.y * k + 2 && f.R >= (D.x + D.width) * k - 2 && f.B >= (D.y + D.height) * k - 2);
   if (!full) return null;
-  return { g: shotGame(), pid: f.pid, disp };
+  return { g: shotGame(), pid: f.pid, disp, hwnd: f.hwnd };
 }
 // ---- Janelinhas por cima do jogo (aviso da captura e bloco de notas fixado) ----
 function hudWin(mode) {
@@ -1341,11 +1354,13 @@ async function pinPaint() {
   if (!pinWin.isVisible()) pinWin.showInactive();
 }
 const ovlVisible = () => !!(ovlWin && !ovlWin.isDestroyed() && ovlWin.isVisible());
-let OVLG = null, OVLPID = 0, OVLBUSY = false;
+let OVLG = null, OVLPID = 0, OVLBUSY = false, OVLHWND = '';
+// Fecha a sobreposicao e devolve o controle ao jogo sem precisar clicar
+async function ovlHide() { if (!ovlVisible()) return; ovlAt = Date.now(); await fgFocus(OVLHWND).catch(() => false); if (ovlVisible()) ovlWin.hide(); pinPaint(); }
 async function ovlToggle() {
-  if (ovlVisible()) { ovlWin.hide(); pinPaint(); return; }
+  if (ovlVisible()) { await ovlHide(); return; }
   if (OVLBUSY) return; OVLBUSY = true;
-  try { const r = await fgGame(); if (!r) return; OVLG = r.g ? r.g.id : null; OVLPID = r.pid; ovlShow(); } finally { OVLBUSY = false; }
+  try { const r = await fgGame(); if (!r) return; OVLG = r.g ? r.g.id : null; OVLPID = r.pid; OVLHWND = r.hwnd || ''; ovlShow(); } finally { OVLBUSY = false; }
 }
 function ovlShow() {
   const d = screen.getPrimaryDisplay();
