@@ -1247,17 +1247,17 @@ function shotsList(id) {
   out.sort((a, b) => b.st.mtimeMs - a.st.mtimeMs);
   return { dir: root, items: out.slice(0, 3000).map(x => ({ f: x.f, url: pathToFileURL(x.f).href + '?v=' + Math.round(x.st.mtimeMs), thumb: shotThumb(x.f, x.st) || pathToFileURL(x.f).href, t: Math.round(x.st.mtimeMs / 1000), gid: x.gid, game: x.game, name: path.basename(x.f) })) };
 }
-async function capture(fromUi) {
+async function capture(fromUi, fg) {
   if (SHOTBUSY) return { error: 'Aguarde a captura anterior.' }; SHOTBUSY = true;
   try {
     const pv = pinWin && !pinWin.isDestroyed() && pinWin.isVisible(); if (pv) { pinWin.hide(); await new Promise(r => setTimeout(r, 120)); }
-    const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const d = (fg && fg.disp) || (fromUi ? screen.getPrimaryDisplay() : screen.getDisplayNearestPoint(screen.getCursorScreenPoint()));
     const sz = { width: Math.round(d.size.width * d.scaleFactor), height: Math.round(d.size.height * d.scaleFactor) };
     const src = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: sz });
     if (pv) pinWin.showInactive();
     const s = src.find(x => String(x.display_id) === String(d.id)) || src[0];
     if (!s || s.thumbnail.isEmpty()) throw new Error('A captura veio vazia.');
-    const g = shotGame(), dir = shotDir(g); fs.mkdirSync(dir, { recursive: true });
+    const g = fg ? fg.g : fromUi ? (data.games.find(x => x.id === OVLG) || shotGame()) : shotGame(), dir = shotDir(g); fs.mkdirSync(dir, { recursive: true });
     const z = n => String(n).padStart(2, '0'), t = new Date(), stamp = `${t.getFullYear()}-${z(t.getMonth() + 1)}-${z(t.getDate())} ${z(t.getHours())}-${z(t.getMinutes())}-${z(t.getSeconds())}`;
     const base = (g ? fsafe(g.name) : 'Captura') + ' ' + stamp; let f = path.join(dir, base + '.png'), i = 2;
     while (fs.existsSync(f)) f = path.join(dir, `${base} (${i++}).png`);
@@ -1297,18 +1297,21 @@ function fgInfo() { fgStart(); if (!FGP) return Promise.resolve(null); return ne
 const NOGAME = new Set(['explorer', 'searchhost', 'searchapp', 'startmenuexperiencehost', 'shellexperiencehost', 'applicationframehost', 'textinputhost', 'lockapp', 'chrome', 'msedge', 'firefox', 'opera', 'brave', 'vivaldi', 'vlc', 'mpc-hc64', 'mpc-be64', 'potplayermini64', 'wmplayer', 'video.ui', 'microsoft.media.player', 'discord', 'steam', 'steamwebhelper', 'epicgameslauncher', 'code', 'obs64', 'taskmgr', 'powershell', 'cmd', 'windowsterminal']);
 const pnOf = g => (g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe) ? path.win32.basename(g.exe) : '')).toLowerCase();
 // Devolve { g, pid } se a janela da frente for um jogo no monitor principal; senao null
-async function fgGame() {
+async function fgGame(anyMon) {
   const f = await fgInfo(); if (!f || !f.pid || f.pid === process.pid || !f.name) return null;
   const pd = screen.getPrimaryDisplay(), sf = pd.scaleFactor || 1, B = pd.bounds;
   const onPrim = [1, sf].some(k => { const cx = (f.L + f.R) / 2, cy = (f.T + f.B) / 2; return cx >= B.x * k && cx < (B.x + B.width) * k && cy >= B.y * k && cy < (B.y + B.height) * k; });
-  if (!onPrim) return null;
+  if (!onPrim && !anyMon) return null;
   const n = f.name.toLowerCase(), exe = n + '.exe';
   const games = data.games.filter(g => pnOf(g) === exe), g = games.find(x => running.has(x.id)) || games[0];
-  if (g) return { g, pid: f.pid };
+  const dip = (() => { try { return screen.screenToDipPoint({ x: Math.round((f.L + f.R) / 2), y: Math.round((f.T + f.B) / 2) }); } catch { return null; } })();
+  const disp = dip ? screen.getDisplayNearestPoint(dip) : null;
+  if (g) return { g, pid: f.pid, disp };
   if (NOGAME.has(n)) return null;
-  const full = [1, sf].some(k => f.L <= B.x * k + 2 && f.T <= B.y * k + 2 && f.R >= (B.x + B.width) * k - 2 && f.B >= (B.y + B.height) * k - 2);
+  const D = disp ? disp.bounds : B, sd = disp ? disp.scaleFactor || 1 : sf;
+  const full = [1, sd].some(k => f.L <= D.x * k + 2 && f.T <= D.y * k + 2 && f.R >= (D.x + D.width) * k - 2 && f.B >= (D.y + D.height) * k - 2);
   if (!full) return null;
-  return { g: shotGame(), pid: f.pid };
+  return { g: shotGame(), pid: f.pid, disp };
 }
 // ---- Janelinhas por cima do jogo (aviso da captura e bloco de notas fixado) ----
 function hudWin(mode) {
@@ -1364,10 +1367,12 @@ function ovlShow() {
   const go = () => { ovlAt = Date.now(); ovlWin.show(); ovlWin.focus(); ovlWin.webContents.send('pad', { t: 'ovl_open' }); };
   if (ovlWin.webContents.isLoading()) ovlWin.webContents.once('did-finish-load', go); else go();
 }
+// Atalho de captura: so tira o print se um jogo estiver em primeiro plano
+async function shotKey() { const r = await fgGame(true).catch(() => null); if (r) capture(false, r); }
 function keysSync() {
   if (!app.isReady()) return;
   const k = keysAll(), on = running.size > 0 || !!data.keyAlways || ovlVisible() || !!(LASTPLAY && Date.now() - LASTPLAY.t < 12 * 3600e3);
-  const want = on ? [[k.shot, () => capture()], [k.ovl, ovlToggle]].filter(x => x[0]) : [];
+  const want = on ? [[k.shot, shotKey], [k.ovl, ovlToggle]].filter(x => x[0]) : [];
   const sig = want.map(x => x[0]).join('|'); if (sig === REG) return; REG = sig; REGFAIL = [];
   try { globalShortcut.unregisterAll(); } catch {}
   for (const [acc, fn] of want) { let ok = false; try { ok = globalShortcut.register(acc, fn); } catch {} if (!ok) REGFAIL.push(acc); }
