@@ -1,0 +1,22 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>RG</title>
+<style>
+html,body{margin:0;background:transparent;overflow:hidden;font:14px "Segoe UI",system-ui,sans-serif;color:#fff}
+.t{position:absolute;inset:8px;display:none;gap:12px;align-items:center;background:#11151dee;border:1px solid #ffffff22;border-radius:12px;padding:8px}
+.t.on{display:flex;animation:i .25s ease-out}@keyframes i{from{transform:translateX(30px);opacity:0}}
+.t img{width:112px;height:63px;object-fit:cover;border-radius:6px;background:#222}.t b{display:block}.t span{color:#aab;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.p{display:none;margin:0;background:#0e1219d9;border:1px solid #ffffff26;border-radius:12px;padding:10px 14px 12px;box-sizing:border-box}
+.p.on{display:block}.p h4{margin:0 0 6px;font-size:12px;color:#aab;font-weight:600;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p pre{margin:0;font:14px/1.45 "Segoe UI",system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;text-shadow:0 1px 2px #000}
+</style></head><body>
+<div class="t" id="t"><img id="ti" alt=""><div><b id="tb"></b><span id="ts"></span></div></div>
+<div class="p" id="p"><h4 id="ph"></h4><pre id="pt"></pre></div>
+<script>
+const $=s=>document.querySelector(s);let AC=null;
+function shutter(vol){try{AC=AC||new AudioContext();const t=AC.currentTime,o=AC.createGain();o.gain.value=vol;o.connect(AC.destination);
+ const burst=(t0,dur,f,v)=>{const n=Math.floor(AC.sampleRate*dur),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);
+  const s=AC.createBufferSource();s.buffer=b;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f;bp.Q.value=.8;const g=AC.createGain();g.gain.value=v;s.connect(bp);bp.connect(g);g.connect(o);s.start(t0)};
+ burst(t,.045,3200,1.2);burst(t+.07,.06,1800,1)}catch{}}
+window.toast=(thumb,txt,ok,snd,vol)=>{const t=$('#t');t.classList.remove('on');void t.offsetWidth;$('#ti').style.display=thumb?'':'none';if(thumb)$('#ti').src=thumb;$('#tb').textContent=ok?'Captura salva':'Falhou';$('#ts').textContent=txt;t.classList.add('on');
+ if(ok&&snd!=='none'){if(snd){try{const a=new Audio(snd);a.volume=Math.max(0,Math.min(1,vol));a.play().catch(()=>shutter(vol))}catch{shutter(vol)}}else shutter(vol)}return 1};
+window.pin=(title,text)=>{const p=$('#p');p.classList.add('on');$('#ph').textContent='Notas · '+title;$('#pt').textContent=text||'(bloco vazio)';return Math.ceil(p.getBoundingClientRect().height)+2};
+</script></body></html>

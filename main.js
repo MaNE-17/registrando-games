@@ -163,6 +163,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
   data.sideOff = data.sideOff || [];
   // v1.32: Backlog deixa de ser o padrao (vira em branco) e Catalogar sai do app. Roda uma vez so.
   if (!data.plMig1321) { data.plMig1321 = 1; data.plHidden = []; } // o X do editor escondia plataformas sem querer: volta todas
+  if (!data.keyMig135) { data.keyMig135 = 1; const k = data.keys || {}; if (!k.shot || k.shot === 'F12') k.shot = 'F1'; if (!k.ovl || k.ovl === 'Shift+Tab') k.ovl = 'Shift+F1'; data.keys = { ...k }; }
   if (!data.stMig132) { data.stMig132 = 1; for (const g of data.games || []) { if (g.status === 'Backlog') g.status = ''; if (g.cat) delete g.cat; } }
   if (!data.manMig1) { data.manMig1 = 1; for (const g of data.games || []) if (g.manual_s > 0) { g.tracked_s = (g.tracked_s || 0) + g.manual_s; g.manual_s = 0; } }
   if (!data.scoreMig1) { data.scoreMig1 = 1; for (const g of data.games || []) { if (g.rating > 0 && g.score == null) g.score = Math.min(10, g.rating * 2); delete g.rating; delete g.meta; delete g.meta_url; } }
@@ -791,7 +792,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), updNew: data.updNotify === false ? null : UPDNEW, top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
-      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, keys: keysAll(), keyAlways: !!data.keyAlways, shotsDir: SHOTS(), plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, keys: keysAll(), keyAlways: !!data.keyAlways, shotSnd: data.shotSnd || '', shotVol: data.shotVol ?? 80, shotsDir: SHOTS(), plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
@@ -917,9 +918,23 @@ ipcMain.handle('api', async (_e, p, b) => {
       data.keys = k; if ('always' in b) data.keyAlways = !!b.always; save(); REG = null; keysSync(); return { ok: true, fail: REGFAIL };
     }
     case 'ovl_info': {
-      const g = shotGame(), pick = x => x && { id: x.id, name: x.name, platform: x.platform, status: x.status || '', finished: x.finished || null, cover: x.cover || '', capsule: x.capsule || '', appid: x.appid, secs: (x.steam_min || 0) * 60 + (x.tracked_s || 0) + (x.manual_s || 0), session: RUNAT[x.id] ? Math.floor((Date.now() - RUNAT[x.id]) / 1000) : 0 };
-      return { game: pick(g), stNames: data.stNames || {}, coversDir: COVERS(), keys: keysAll(), shots: shotsList(g ? g.id : null).items.slice(0, 60) };
+      const g = data.games.find(x => x.id === OVLG) || null, pick = x => x && { id: x.id, name: x.name, platform: x.platform, cover: x.cover || '', capsule: x.capsule || '', appid: x.appid,
+        secs: (x.steam_min || 0) * 60 + (x.tracked_s || 0) + (x.manual_s || 0), session: RUNAT[x.id] ? Math.floor((Date.now() - RUNAT[x.id]) / 1000) : 0, pad: x.pad || '' };
+      return { game: pick(g), pin: data.padPin || null, coversDir: COVERS(), keys: keysAll(), shots: shotsList(g ? g.id : null).items.slice(0, 200) };
     }
+    case 'ovl_kill': {
+      const pid = OVLPID; if (!pid) return { error: 'Não encontrei o processo do jogo.' };
+      const alive = () => { try { process.kill(pid, 0); return true; } catch { return false; } };
+      const tk = f => new Promise(r => cp.execFile('taskkill', [...(f ? ['/F'] : []), '/T', '/PID', String(pid)], { windowsHide: true }, () => r()));
+      await tk(false); for (let i = 0; i < 8 && alive(); i++) await new Promise(r => setTimeout(r, 400));
+      if (alive()) { await tk(true); await new Promise(r => setTimeout(r, 1000)); }
+      if (alive()) return { error: 'Não consegui fechar o jogo (ele pode estar protegido por anticheat).' };
+      if (ovlVisible()) ovlWin.hide(); OVLPID = 0; setTimeout(track, 500); return { ok: true };
+    }
+    case 'pad_set': { const g2 = data.games.find(x => x.id === b.id); if (!g2) return {}; const t = String(b.text || '').slice(0, 20000); if (t) g2.pad = t; else delete g2.pad; clearTimeout(PADT); PADT = setTimeout(save, 800); pinPaint(); return { ok: true }; }
+    case 'pad_pin': { data.padPin = b.id ? { id: b.id, corner: ['tl', 'tr', 'bl', 'br'].includes(b.corner) ? b.corner : 'tr' } : null; save(); pinPaint(); return { ok: true, pin: data.padPin }; }
+    case 'shots_del': { let n = 0; for (const x of (b.fs || []).slice(0, 2000)) { const f = shotPath(x); if (!f) continue; try { await shell.trashItem(f); n++; } catch { try { fs.unlinkSync(f); n++; } catch {} } } return { ok: true, n }; }
+    case 'shot_snd': { if ('v' in b) data.shotSnd = String(b.v || '').slice(0, 2000); if ('vol' in b) data.shotVol = Math.max(0, Math.min(100, +b.vol || 0)); save(); return { ok: true }; }
     case 'ovl_close': if (ovlWin && !ovlWin.isDestroyed()) ovlWin.hide(); return { ok: true };
     case 'bp_full': if (win) { if (b.on) { if (!BPF) BPPREV = win.isFullScreen(); BPF = true; win.setFullScreen(true); } else { BPF = false; win.setFullScreen(!!BPPREV); } } return { ok: true };
     case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
@@ -1164,7 +1179,7 @@ function padStart() {
       // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela
       if ((m.t === 'down' || m.t === 'up') && wpWin && !wpWin.isDestroyed() && wpWin.isFocused()) { wpWin.webContents.send('pad', m); return; }
       // Big Picture com um jogo aberto: o botao Home do controle abre/fecha a sobreposicao (igual a Steam)
-      if (m.t === 'down' && m.b === 'guide' && BPF && !win.isFocused() && (ovlVisible() || running.size || (LASTPLAY && Date.now() - LASTPLAY.t < 12 * 3600e3))) { ovlToggle(); return; }
+      if (m.t === 'down' && m.b === 'guide' && BPF && !win.isFocused()) { ovlToggle(); return; }
       if (m.t === 'up' && m.b === 'guide' && ovlVisible()) return;
       if ((m.t === 'down' || m.t === 'up') && ovlVisible() && ovlWin.isFocused()) { ovlWin.webContents.send('pad', m); return; }
       // So repassa os botoes (inclusive o Home) quando o app esta em primeiro plano
@@ -1194,7 +1209,7 @@ function winStBounds() {
 // um jogo esta aberto (assim F12 / Shift+Tab continuam funcionando normalmente nos outros programas).
 const SHOTS = () => path.join(app.getPath('pictures'), 'RG Capturas');
 const THUMBS = () => path.join(app.getPath('userData'), 'capturas-mini');
-const KEYS_DEF = { bp: 'F11', shot: 'F12', ovl: 'Shift+Tab' };
+const KEYS_DEF = { bp: 'F11', shot: 'F1', ovl: 'Shift+F1' };
 const keysAll = () => ({ ...KEYS_DEF, ...(data.keys || {}) });
 const RUNAT = {}; let LASTPLAY = null, REG = null, REGFAIL = [], SHOTBUSY = false, ovlWin = null, toastWin = null, toastT = 0, ovlAt = 0;
 const fsafe = s => String(s || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/[. ]+$/, '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Sem nome';
@@ -1235,9 +1250,11 @@ function shotsList(id) {
 async function capture(fromUi) {
   if (SHOTBUSY) return { error: 'Aguarde a captura anterior.' }; SHOTBUSY = true;
   try {
+    const pv = pinWin && !pinWin.isDestroyed() && pinWin.isVisible(); if (pv) { pinWin.hide(); await new Promise(r => setTimeout(r, 120)); }
     const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
     const sz = { width: Math.round(d.size.width * d.scaleFactor), height: Math.round(d.size.height * d.scaleFactor) };
     const src = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: sz });
+    if (pv) pinWin.showInactive();
     const s = src.find(x => String(x.display_id) === String(d.id)) || src[0];
     if (!s || s.thumbnail.isEmpty()) throw new Error('A captura veio vazia.');
     const g = shotGame(), dir = shotDir(g); fs.mkdirSync(dir, { recursive: true });
@@ -1252,46 +1269,110 @@ async function capture(fromUi) {
   } catch (e) { if (!fromUi) shotToast('', 'Não consegui capturar a tela'); return { error: 'Não consegui capturar a tela: ' + ((e && e.message) || e) }; }
   finally { SHOTBUSY = false; }
 }
-// Aviso pequeno no canto da tela, sem roubar o foco do jogo
+// ---- Janela em primeiro plano (para saber se um jogo esta na frente e em qual monitor) ----
+// Um PowerShell fica aberto em segundo plano respondendo na hora (sem custo de abrir um processo a cada consulta).
+const FGQ = []; let FGP = null, FGBUF = '';
+function fgStart() {
+  if (FGP || process.platform !== 'win32') return;
+  const ps = `Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class RGFG { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+[StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+[DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+[DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }
+"@
+[void][RGFG]::SetProcessDPIAware()
+while ($true) { $l = [Console]::In.ReadLine(); if ($l -eq $null) { break }
+ $h = [RGFG]::GetForegroundWindow(); $p = 0; [void][RGFG]::GetWindowThreadProcessId($h, [ref]$p); $r = New-Object RGFG+RECT; [void][RGFG]::GetWindowRect($h, [ref]$r)
+ $n = ''; try { $n = (Get-Process -Id $p -ErrorAction Stop).ProcessName } catch {}
+ [Console]::Out.WriteLine("$p|$n|$($r.L)|$($r.T)|$($r.R)|$($r.B)"); [Console]::Out.Flush() }`;
+  try {
+    FGP = cp.spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(ps, 'utf16le').toString('base64')], { windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
+    FGP.stdout.on('data', d => { FGBUF += d; let i; while ((i = FGBUF.indexOf('\n')) >= 0) { const l = FGBUF.slice(0, i).trim(); FGBUF = FGBUF.slice(i + 1); const q = FGQ.shift(); if (q) { clearTimeout(q.t); const [pid, name, L, T, Rr, B] = l.split('|'); q.r({ pid: +pid, name: name || '', L: +L, T: +T, R: +Rr, B: +B }); } } });
+    FGP.on('exit', () => { FGP = null; while (FGQ.length) { const q = FGQ.shift(); clearTimeout(q.t); q.r(null); } });
+  } catch { FGP = null; }
+}
+function fgInfo() { fgStart(); if (!FGP) return Promise.resolve(null); return new Promise(r => { const q = { r, t: setTimeout(() => { const i = FGQ.indexOf(q); if (i >= 0) FGQ.splice(i, 1); r(null); }, 4000) }; FGQ.push(q); try { FGP.stdin.write('q\n'); } catch { r(null); } }); }
+const NOGAME = new Set(['explorer', 'searchhost', 'searchapp', 'startmenuexperiencehost', 'shellexperiencehost', 'applicationframehost', 'textinputhost', 'lockapp', 'chrome', 'msedge', 'firefox', 'opera', 'brave', 'vivaldi', 'vlc', 'mpc-hc64', 'mpc-be64', 'potplayermini64', 'wmplayer', 'video.ui', 'microsoft.media.player', 'discord', 'steam', 'steamwebhelper', 'epicgameslauncher', 'code', 'obs64', 'taskmgr', 'powershell', 'cmd', 'windowsterminal']);
+const pnOf = g => (g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe) ? path.win32.basename(g.exe) : '')).toLowerCase();
+// Devolve { g, pid } se a janela da frente for um jogo no monitor principal; senao null
+async function fgGame() {
+  const f = await fgInfo(); if (!f || !f.pid || f.pid === process.pid || !f.name) return null;
+  const pd = screen.getPrimaryDisplay(), sf = pd.scaleFactor || 1, B = pd.bounds;
+  const onPrim = [1, sf].some(k => { const cx = (f.L + f.R) / 2, cy = (f.T + f.B) / 2; return cx >= B.x * k && cx < (B.x + B.width) * k && cy >= B.y * k && cy < (B.y + B.height) * k; });
+  if (!onPrim) return null;
+  const n = f.name.toLowerCase(), exe = n + '.exe';
+  const games = data.games.filter(g => pnOf(g) === exe), g = games.find(x => running.has(x.id)) || games[0];
+  if (g) return { g, pid: f.pid };
+  if (NOGAME.has(n)) return null;
+  const full = [1, sf].some(k => f.L <= B.x * k + 2 && f.T <= B.y * k + 2 && f.R >= (B.x + B.width) * k - 2 && f.B >= (B.y + B.height) * k - 2);
+  if (!full) return null;
+  return { g: shotGame(), pid: f.pid };
+}
+// ---- Janelinhas por cima do jogo (aviso da captura e bloco de notas fixado) ----
+function hudWin(mode) {
+  const w = new BrowserWindow({ width: 340, height: 100, frame: false, transparent: true, resizable: false, movable: false, focusable: false, skipTaskbar: true, alwaysOnTop: true, show: false, hasShadow: false, backgroundColor: '#00000000', webPreferences: { contextIsolation: true } });
+  w.setAlwaysOnTop(true, 'screen-saver'); w.setIgnoreMouseEvents(true); w.loadFile(path.join(__dirname, 'hud.html'), { hash: mode }); return w;
+}
+const hudJs = (w, js) => { const run = () => w.webContents.executeJavaScript(js).catch(() => null); return w.webContents.isLoading() ? new Promise(r => w.webContents.once('did-finish-load', () => r(run()))) : run(); };
 function shotToast(thumb, txt) {
   try {
-    const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()), W = 340, H = 96, a = d.workArea;
-    if (!toastWin || toastWin.isDestroyed()) {
-      toastWin = new BrowserWindow({ width: W, height: H, frame: false, transparent: true, resizable: false, movable: false, focusable: false, skipTaskbar: true, alwaysOnTop: true, show: false, hasShadow: false, backgroundColor: '#00000000', webPreferences: { contextIsolation: true } });
-      toastWin.setAlwaysOnTop(true, 'screen-saver'); toastWin.setIgnoreMouseEvents(true);
-    }
+    const a = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea, W = 340, H = 96;
+    if (!toastWin || toastWin.isDestroyed()) toastWin = hudWin('toast');
     toastWin.setBounds({ x: a.x + a.width - W - 24, y: a.y + 24, width: W, height: H });
-    const e = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:transparent;overflow:hidden;font:14px "Segoe UI",system-ui,sans-serif}
-.t{position:absolute;inset:8px;display:flex;gap:12px;align-items:center;background:#11151dee;border:1px solid #ffffff22;border-radius:12px;padding:8px;color:#fff;animation:i .25s ease-out}
-img{width:112px;height:63px;object-fit:cover;border-radius:6px;background:#222}b{display:block;font-size:14px}span{color:#aab;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
-@keyframes i{from{transform:translateX(30px);opacity:0}}</style><div class="t">${thumb ? `<img src="${e(thumb)}">` : ''}<div><b>${thumb ? 'Captura salva' : 'Falhou'}</b><span>${e(txt)}</span></div></div>`;
-    toastWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).then(() => toastWin.showInactive()).catch(() => {});
+    hudJs(toastWin, `toast(${JSON.stringify(thumb || '')},${JSON.stringify(txt)},${thumb ? 1 : 0},${JSON.stringify(data.shotSnd || '')},${(data.shotVol ?? 80) / 100})`).then(() => { try { toastWin.showInactive(); } catch {} });
     clearTimeout(toastT); toastT = setTimeout(() => { try { toastWin.hide(); } catch {} }, 2600);
   } catch {}
 }
+let pinWin = null, PADT = 0, PINON = false;
+async function pinPaint() {
+  const P = data.padPin, g = P && data.games.find(x => x.id === P.id);
+  if (!g || !PINON || ovlVisible()) { if (pinWin && !pinWin.isDestroyed()) pinWin.hide(); return; }
+  if (!pinWin || pinWin.isDestroyed()) pinWin = hudWin('pin');
+  const a = screen.getPrimaryDisplay().workArea, W = 360;
+  const h = await hudJs(pinWin, `pin(${JSON.stringify(g.name)},${JSON.stringify(g.pad || '')})`) || 120;
+  const H = Math.min(Math.round(a.height * 0.6), Math.max(60, h)), c = P.corner || 'tr';
+  pinWin.setBounds({ x: c.endsWith('l') ? a.x + 20 : a.x + a.width - W - 20, y: c.startsWith('t') ? a.y + 20 : a.y + a.height - H - 20, width: W, height: H });
+  if (!pinWin.isVisible()) pinWin.showInactive();
+}
+// A cada 2 s: o bloco fixado so aparece com o jogo dele na frente
+setInterval(async () => {
+  if (!app.isReady()) return;
+  if (!data.padPin || process.platform !== 'win32') { if (PINON) { PINON = false; pinPaint(); } return; }
+  const r = await fgGame().catch(() => null), on = !!(r && r.g && r.g.id === data.padPin.id);
+  if (on !== PINON) { PINON = on; pinPaint(); }
+}, 2000);
 const ovlVisible = () => !!(ovlWin && !ovlWin.isDestroyed() && ovlWin.isVisible());
-function ovlToggle() { if (ovlVisible()) ovlWin.hide(); else ovlShow(); }
+let OVLG = null, OVLPID = 0, OVLBUSY = false;
+async function ovlToggle() {
+  if (ovlVisible()) { ovlWin.hide(); pinPaint(); return; }
+  if (OVLBUSY) return; OVLBUSY = true;
+  try { const r = await fgGame(); if (!r) return; OVLG = r.g ? r.g.id : null; OVLPID = r.pid; ovlShow(); } finally { OVLBUSY = false; }
+}
 function ovlShow() {
-  const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const d = screen.getPrimaryDisplay();
   if (!ovlWin || ovlWin.isDestroyed()) {
     ovlWin = new BrowserWindow({ ...d.bounds, frame: false, transparent: true, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true, alwaysOnTop: true, show: false, hasShadow: false, backgroundColor: '#00000000', title: 'Registrando Games - Sobreposição',
       webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
     ovlWin.setAlwaysOnTop(true, 'screen-saver'); ovlWin.setMenu(null);
     ovlWin.loadFile(path.join(__dirname, 'overlay.html'));
-    ovlWin.on('blur', () => { if (Date.now() - ovlAt > 600 && ovlVisible()) ovlWin.hide(); });
+    ovlWin.on('blur', () => { if (Date.now() - ovlAt > 600 && ovlVisible()) { ovlWin.hide(); pinPaint(); } });
+    ovlWin.on('hide', () => setTimeout(pinPaint, 50));
   } else ovlWin.setBounds(d.bounds);
+  if (pinWin && !pinWin.isDestroyed()) pinWin.hide();
   const go = () => { ovlAt = Date.now(); ovlWin.show(); ovlWin.focus(); ovlWin.webContents.send('pad', { t: 'ovl_open' }); };
   if (ovlWin.webContents.isLoading()) ovlWin.webContents.once('did-finish-load', go); else go();
 }
 function keysSync() {
   if (!app.isReady()) return;
-  const k = keysAll(), on = running.size > 0 || !!data.keyAlways || ovlVisible(), want = on ? [[k.shot, () => capture()], [k.ovl, ovlToggle]].filter(x => x[0]) : [];
+  const k = keysAll(), on = running.size > 0 || !!data.keyAlways || ovlVisible() || !!(LASTPLAY && Date.now() - LASTPLAY.t < 12 * 3600e3);
+  const want = on ? [[k.shot, () => capture()], [k.ovl, ovlToggle]].filter(x => x[0]) : [];
   const sig = want.map(x => x[0]).join('|'); if (sig === REG) return; REG = sig; REGFAIL = [];
   try { globalShortcut.unregisterAll(); } catch {}
   for (const [acc, fn] of want) { let ok = false; try { ok = globalShortcut.register(acc, fn); } catch {} if (!ok) REGFAIL.push(acc); }
 }
-app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
+app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} try { if (FGP) FGP.kill(); } catch {} });
 
 function show() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -1318,7 +1399,7 @@ app.whenReady().then(() => {
   tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Abrir', click: show }, { label: 'Sair', click: () => { quitting = true; save(); app.quit(); } }]));
   tray.on('click', show);
   setInterval(track, 5000);
-  padStart(); keysSync();
+  padStart(); keysSync(); setTimeout(fgStart, 4000);
   scanSteam(); setInterval(scanSteam, 60000); setInterval(launcherInstCheck, 90000);
 
   fillInfo();

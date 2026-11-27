@@ -27,11 +27,23 @@ button.pri{background:var(--ac);border-color:transparent;color:#fff;justify-cont
 #vw{position:fixed;inset:0;background:#000000f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:40px}
 #vw[hidden]{display:none}#vw img{max-width:100%;max-height:calc(100% - 80px);object-fit:contain;border-radius:8px;box-shadow:0 20px 60px #000}
 #vw .row{gap:10px}#vw .row button{flex:none}.dl{color:#ff8c8c}
+
+.gm .act{display:flex;flex-direction:column;gap:8px}
+button.dng{background:#c4553f26;border-color:#e5484d66;color:#ffb3ad;justify-content:center;font-weight:600}button.dng.ok{background:#e5484d;color:#fff}
+.nt{display:flex;flex-direction:column;gap:8px;flex:1;min-height:150px}.nth{display:flex;align-items:center;gap:8px}.nth b{flex:1;font-size:14px}
+textarea{flex:1;min-height:120px;resize:none;background:#0b0e14cc;color:var(--tx);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;font:14px/1.45 "Segoe UI",system-ui,sans-serif;outline:none}
+textarea:focus,textarea.f{border-color:var(--ac)}
+.pin{padding:7px 10px;font-size:13px}.pin.on{border-color:var(--ac);color:var(--ac)}
+.cz{display:flex;gap:4px}.cz button{padding:6px 8px;font-size:11px}
+.grid button{position:relative}.grid button.sel::after{content:'✓';position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-weight:700}
+.grid.sm button:not(.sel) img{opacity:.55}.grid button.sel{outline:3px solid var(--ac);outline-offset:-3px}
+.shh button{padding:7px 12px}
+#vw .vx{position:fixed;top:20px;right:24px;width:44px;height:44px;justify-content:center;padding:0}
 .ft{position:fixed;bottom:18px;left:64px;right:64px;display:flex;gap:18px;color:var(--mu);font-size:13px}
 </style></head><body><div id="bk"></div>
-<div class="top"><b>Registrando Games</b><span id="clk"></span><span class="sp"></span><span>Feche com <span class="k" id="kovl">Shift+Tab</span> ou <span class="k">Esc</span></span></div>
+<div class="top"><b>Registrando Games</b><span id="clk"></span><span class="sp"></span><span>Feche com <span class="k" id="kovl">Shift+F1</span> ou <span class="k">Esc</span></span></div>
 <div id="app"></div>
-<div id="vw" hidden><img id="vwi" alt=""><div class="mu" id="vwn"></div><div class="row"><button data-v="prev">‹ Anterior</button><button data-v="next">Próxima ›</button><button data-v="show">Mostrar na pasta</button><button data-v="del" class="dl">Excluir</button><button data-v="close">Voltar</button></div></div>
+<div id="vw" hidden><button class="vx" data-v="close" title="Fechar" aria-label="Fechar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img id="vwi" alt=""><div class="mu" id="vwn"></div><div class="row"><button data-v="prev">‹ Anterior</button><button data-v="next">Próxima ›</button><button data-v="show">Mostrar na pasta</button><button data-v="del" class="dl">Excluir</button></div></div>
 <div class="ft" id="ft"></div>
 <script>
 const $=s=>document.querySelector(s),api=(p,b)=>window.bridge.invoke(p,b||{});
@@ -43,52 +55,62 @@ const STI={Backlog:'<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"
 const COL={Backlog:'#8a93a6',Jogando:'#3b6cf0',Zerado:'#2f9e6b',Completado:'#d4a72c',Pausado:'#d9962b',Abandonado:'#c4553f'};
 const ico=(k,sz=18)=>STI[k]?`<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="${COL[k]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${STI[k]}</svg>`:'';
 const SV=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-const I={cam:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',fld:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',flag:'<path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>'};
+const I={pw:'<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>',pin:'<path d="M12 17v5"/><path d="M9 3h6l-1 6 4 4H6l4-4z"/>',cam:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',fld:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',flag:'<path d="M4 22V4"/><path d="M4 4h13l-2 4 2 4H4"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>'};
 const fmt=s=>s<60?'0 min':s<3600?Math.round(s/60)+' min':(s/3600).toFixed(1).replace('.0','')+' h';
 const dpt=t=>new Date(t*1000).toLocaleDateString('pt-BR');
 // cor do sistema (mesma escolhida no app)
 try{const PRE={azul:'#7f9bff',roxo:'#b794ff',verde:'#4fd69c',laranja:'#ffa05a',rosa:'#ff8fb3',vermelho:'#ff7d75'},th=JSON.parse(localStorage.getItem('th'))||{};document.documentElement.style.setProperty('--ac',th.acc==='custom'?th.custom:PRE[th.acc]||PRE.azul)}catch{}
-let D=null,VI=-1;
-const stN=k=>(D&&D.stNames&&D.stNames[k])||k;
+let D=null,VI=-1,SM=false,SEL=new Set(),PT=0;
 function cover(g){if(g.cover)return encodeURI('file:///'+D.coversDir.replace(/\\/g,'/')+'/'+g.cover);if(g.capsule)return g.capsule;if(g.appid)return `https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/library_600x900.jpg`;return ''}
-async function refresh(){D=await api('ovl_info');$('#kovl').textContent=(D.keys&&D.keys.ovl)||'Shift+Tab';paint()}
-function paint(){const g=D.game,sh=D.shots||[],fin=g&&(g.status==='Zerado'||g.status==='Completado');
+async function refresh(){const ta=$('#nt'),keep=ta&&document.activeElement===ta;D=await api('ovl_info');$('#kovl').textContent=(D.keys&&D.keys.ovl)||'Shift+F1';SEL=new Set([...SEL].filter(f=>D.shots.some(x=>x.f===f)));paint();if(keep&&$('#nt'))$('#nt').focus()}
+const pinOn=()=>D.game&&D.pin&&D.pin.id===D.game.id;
+function paint(){const g=D.game,sh=D.shots||[];
  const left=g?`<div class="pn gm"><div class="cvw">${cover(g)?`<img class="cv" src="${esc(cover(g))}" alt="" onerror="this.remove()">`:''}<div><h1>${esc(g.name)}</h1><div class="mu">${esc(g.platform||'')}</div>
  <div class="mu" style="margin-top:8px">${g.session?`Nesta sessão: <b style="color:var(--tx)">${fmt(g.session)}</b><br>`:''}Total: ${fmt(g.secs||0)}</div></div></div>
- <div><div class="mu" style="margin-bottom:8px">Status</div><div class="st">${ST.map(s=>`<button data-st="${s}" class="${g.status===s?'on':''}">${ico(s)}${esc(stN(s))}</button>`).join('')}</div></div>
- ${fin?`<div class="mu">Finalizado${g.finished?' em '+dpt(g.finished):''} ✓</div>`:`<button class="pri" data-a="fin">${SV(I.flag)}Finalizar jogo</button>`}
- <div class="row"><button data-a="shot">${SV(I.cam)}Tirar captura</button><button data-a="dir">${SV(I.fld)}Pasta</button></div></div>`
- :`<div class="pn gm"><h1>Nenhum jogo aberto</h1><div class="mu">Abra um jogo pelo Registrando Games (ou um que ele reconheça pelo .exe) para ver o status e finalizar daqui.</div><div class="row"><button data-a="shot">${SV(I.cam)}Tirar captura</button><button data-a="dir">${SV(I.fld)}Pasta</button></div></div>`;
- const right=`<div class="pn sh"><div class="shh"><h2>Capturas${g?'':' recentes'}</h2><span class="mu">${sh.length} ${sh.length===1?'imagem':'imagens'}</span><button data-a="close" title="Fechar">${SV(I.x)}</button></div>
- ${sh.length?`<div class="grid">${sh.map((x,i)=>`<button data-sh="${i}" title="${esc(x.name)}"><img src="${esc(x.thumb)}" loading="lazy" alt=""></button>`).join('')}</div>`:`<div class="empty">Nenhuma captura ainda.<br>Aperte <span class="k">${esc((D.keys&&D.keys.shot)||'F12')}</span> durante o jogo para tirar uma.</div>`}</div>`;
+ <div class="act"><button class="dng" data-a="kill">${SV(I.pw)}<span>Encerrar jogo</span></button><div class="row"><button data-a="shot">${SV(I.cam)}Tirar captura</button><button data-a="dir">${SV(I.fld)}Pasta</button></div></div>
+ <div class="nt"><div class="nth"><b>Bloco de notas</b><button class="pin${pinOn()?' on':''}" data-a="pin" title="Mostrar as notas por cima do jogo">${SV(I.pin)}${pinOn()?'Fixado':'Fixar no jogo'}</button></div>
+ <textarea id="nt" placeholder="Anote o que quiser sobre o jogo: senhas, dicas, onde parou…">${esc(g.pad||'')}</textarea>
+ ${pinOn()?`<div class="nth"><span class="mu" style="flex:1">Posição na tela</span><div class="cz">${[['tl','↖'],['tr','↗'],['bl','↙'],['br','↘']].map(([k,l])=>`<button data-cz="${k}" class="${(D.pin.corner||'tr')===k?'on':''}" title="Canto">${l}</button>`).join('')}</div></div>`:''}</div></div>`
+ :`<div class="pn gm"><h1>Jogo não identificado</h1><div class="mu">A tela da frente parece um jogo, mas ele não está na sua biblioteca. Dá para tirar captura mesmo assim.</div><div class="act"><button class="dng" data-a="kill">${SV(I.pw)}<span>Encerrar jogo</span></button><div class="row"><button data-a="shot">${SV(I.cam)}Tirar captura</button><button data-a="dir">${SV(I.fld)}Pasta</button></div></div></div>`;
+ const head=SM?`<h2>${SEL.size} ${SEL.size===1?'selecionada':'selecionadas'}</h2><button data-a="all">${SEL.size===sh.length?'Desmarcar todas':'Selecionar todas'}</button><button class="dng${SEL.size?'':' '}" data-a="delsel"${SEL.size?'':' disabled'}><span>Excluir</span></button><button data-a="sm">Cancelar</button>`
+  :`<h2>Capturas</h2><span class="mu">${sh.length} ${sh.length===1?'imagem':'imagens'}</span>${sh.length?`<button data-a="sm">Selecionar</button>`:''}<button data-a="close" title="Fechar">${SV(I.x)}</button>`;
+ const right=`<div class="pn sh"><div class="shh">${head}</div>
+ ${sh.length?`<div class="grid${SM?' sm':''}">${sh.map((x,i)=>`<button data-sh="${i}" class="${SEL.has(x.f)?'sel':''}" title="${esc(x.name)}"><img src="${esc(x.thumb)}" loading="lazy" alt=""></button>`).join('')}</div>`:`<div class="empty">Nenhuma captura ainda.<br>Aperte <span class="k">${esc((D.keys&&D.keys.shot)||'F1')}</span> durante o jogo para tirar uma.</div>`}</div>`;
+ const fe=FE&&(FE.dataset.a||FE.dataset.sh||FE.dataset.cz);
  $('#app').innerHTML=left+right;
- $('#ft').innerHTML=`<span><span class="k">${esc((D.keys&&D.keys.shot)||'F12')}</span> Capturar</span><span>Controle: <span class="k">A</span> Selecionar <span class="k">B</span> Voltar <span class="k">Home</span> Fechar</span>`;
- focusFirst()}
-function view(i){const sh=D.shots||[];if(!sh.length){VI=-1;$('#vw').hidden=true;return}VI=Math.max(0,Math.min(sh.length-1,i));const x=sh[VI];$('#vwi').src=x.url;$('#vwn').textContent=`${x.game||''} · ${new Date(x.t*1000).toLocaleString('pt-BR')} · ${VI+1}/${sh.length}`;$('#vw').hidden=false;setF($('#vw [data-v="next"]'))}
+ $('#ft').innerHTML=`<span><span class="k">${esc((D.keys&&D.keys.shot)||'F1')}</span> Capturar</span><span>Controle: <span class="k">A</span> Selecionar <span class="k">B</span> Voltar <span class="k">Home</span> Fechar</span>`;
+ const ta=$('#nt');if(ta)ta.oninput=()=>{clearTimeout(PT);PT=setTimeout(()=>api('pad_set',{id:D.game.id,text:ta.value}).then(()=>{D.game.pad=ta.value}),400)};
+ const back=fe&&($(`#app [data-a="${fe}"]`)||$(`#app [data-sh="${fe}"]`)||$(`#app [data-cz="${fe}"]`));if(back)setF(back);else focusFirst()}
+function view(i){const sh=D.shots||[];if(!sh.length){VI=-1;$('#vw').hidden=true;return}VI=Math.max(0,Math.min(sh.length-1,i));const x=sh[VI];$('#vwi').src=x.url;$('#vwn').textContent=`${x.game||''} · ${new Date(x.t*1000).toLocaleString('pt-BR')} · ${VI+1}/${sh.length}`;const d=$('#vw [data-v="del"]');d.dataset.ok='';d.textContent='Excluir';$('#vw').hidden=false;setF($('#vw [data-v="next"]'))}
 function vclose(){VI=-1;$('#vw').hidden=true;focusFirst()}
-async function close(){if(!$('#vw').hidden)return vclose();await api('ovl_close')}
+async function close(){if(!$('#vw').hidden)return vclose();if(SM){SM=false;SEL.clear();return paint()}const ta=$('#nt');if(ta&&D.game&&ta.value!==(D.game.pad||'')){clearTimeout(PT);await api('pad_set',{id:D.game.id,text:ta.value})}await api('ovl_close')}
+function confirmBtn(b,txt){if(b.dataset.ok==='1')return true;b.dataset.ok='1';b.classList.add('ok');const sp=b.querySelector('span')||b;sp.textContent=txt;return false}
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
- if(b.dataset.st){await api('save',{id:D.game.id,status:b.dataset.st});return refresh()}
- if(b.dataset.sh)return view(+b.dataset.sh);
+ if(b.dataset.sh){const x=D.shots[+b.dataset.sh];if(SM){SEL.has(x.f)?SEL.delete(x.f):SEL.add(x.f);return paint()}return view(+b.dataset.sh)}
+ if(b.dataset.cz){await api('pad_pin',{id:D.game.id,corner:b.dataset.cz});return refresh()}
  const a=b.dataset.a,v=b.dataset.v;
- if(a==='fin'){if(b.dataset.ok!=='1'){b.dataset.ok='1';b.lastChild.textContent='Confirmar: marcar como '+stN('Zerado');return}await api('save',{id:D.game.id,status:'Zerado'});return refresh()}
- if(a==='shot'){const r=await api('shot_now');return refresh()}
+ if(a==='kill'){if(!confirmBtn(b,'Confirmar: fechar o jogo'))return;b.disabled=true;const r=await api('ovl_kill');if(r&&r.error){b.disabled=false;b.querySelector('span').textContent=r.error}return}
+ if(a==='pin'){const ta=$('#nt');if(ta)await api('pad_set',{id:D.game.id,text:ta.value});await api('pad_pin',pinOn()?{}:{id:D.game.id,corner:(D.pin&&D.pin.corner)||'tr'});return refresh()}
+ if(a==='shot'){await api('shot_now');return refresh()}
  if(a==='dir'){await api('shots_open',{id:D.game&&D.game.id});return api('ovl_close')}
  if(a==='close')return close();
+ if(a==='sm'){SM=!SM;SEL.clear();return paint()}
+ if(a==='all'){SEL=SEL.size===D.shots.length?new Set():new Set(D.shots.map(x=>x.f));return paint()}
+ if(a==='delsel'){if(!SEL.size)return;if(!confirmBtn(b,`Confirmar: excluir ${SEL.size}`))return;await api('shots_del',{fs:[...SEL]});SEL.clear();SM=false;return refresh()}
  if(v==='prev')return view(VI-1);if(v==='next')return view(VI+1);if(v==='close')return vclose();
  if(v==='show'){await api('shot_show',{f:D.shots[VI].f});return api('ovl_close')}
  if(v==='del'){if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent='Confirmar exclusão';return}const i=VI;await api('shot_del',{f:D.shots[i].f});await refresh();if(D.shots.length)view(Math.min(i,D.shots.length-1));else vclose()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close()}else if(!$('#vw').hidden&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();view(VI+(e.key==='ArrowLeft'?-1:1))}});
 // navegacao pelo controle (setas = foco mais proximo naquela direcao)
-const focs=()=>[...document.querySelectorAll($('#vw').hidden?'#app button':'#vw button')];
+const focs=()=>[...document.querySelectorAll($('#vw').hidden?'#app button:not([disabled]),#app textarea':'#vw button')];
 let FE=null;function setF(el){if(FE)FE.classList.remove('f');FE=el;if(el){el.classList.add('f');el.focus({preventScroll:true});el.scrollIntoView({block:'nearest',behavior:'smooth'})}}
-function focusFirst(){setF($('#app button.on')||$('#app [data-sh]')||focs()[0])}
+function focusFirst(){setF($('#app [data-sh]')||$('#app [data-a="shot"]')||focs()[0])}
 function move(dir){const L=focs();if(!FE||!L.includes(FE))return setF(L[0]);const r=FE.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let best=null,bd=1e9;
  for(const el of L){if(el===FE)continue;const q=el.getBoundingClientRect(),x=q.left+q.width/2,y=q.top+q.height/2,dx=x-cx,dy=y-cy;
   const ok=dir==='left'?dx<-4:dir==='right'?dx>4:dir==='up'?dy<-4:dy>4;if(!ok)continue;const main=dir==='left'||dir==='right'?Math.abs(dx):Math.abs(dy),off=dir==='left'||dir==='right'?Math.abs(dy):Math.abs(dx),d=main+off*2.2;if(d<bd){bd=d;best=el}}
  if(best)setF(best)}
 const PM={dpadUp:'up',dpadDown:'down',dpadLeft:'left',dpadRight:'right',lsUp:'up',lsDown:'down',lsLeft:'left',lsRight:'right',a:'a',b:'b',south:'a',east:'b',start:'b',back:'b',guide:'b',leftShoulder:'lb',rightShoulder:'rb'};
-window.bridge.onPad(m=>{if(m.t==='ovl_open'){VI=-1;$('#vw').hidden=true;refresh();return}if(m.t==='ovl_refresh'){refresh();return}if(m.t!=='down')return;const k=PM[m.b];if(!k)return;
+window.bridge.onPad(m=>{if(m.t==='ovl_open'){VI=-1;SM=false;SEL.clear();$('#vw').hidden=true;refresh();return}if(m.t==='ovl_refresh'){refresh();return}if(m.t!=='down')return;const k=PM[m.b];if(!k)return;
  if(k==='b')return close();if(k==='a'){if(FE)FE.click();return}if(!$('#vw').hidden&&(k==='lb'||k==='rb'))return view(VI+(k==='lb'?-1:1));if(k==='up'||k==='down'||k==='left'||k==='right')move(k)});
 const clk=()=>$('#clk').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});clk();setInterval(clk,15000);
 refresh();
