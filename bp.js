@@ -504,6 +504,7 @@ function padDown(k){bpIn(k);if(!RPT.has(k))return;clearTimeout(REP[k]);let n=0;c
  const r=()=>{n++;HOLD=true;bpIn(k);REP[k]=setTimeout(r,slow?200:Math.max(55,110-n*6))};REP[k]=setTimeout(r,slow?340:300)}
 function padUp(k){clearTimeout(REP[k]);delete REP[k];if(!Object.keys(REP).length)HOLD=false}
 function bpPad(m){
+ if(window.PADREC&&(m.t==='down'||m.t==='up'))return;
  if(m.t==='conn'){BP.pads[m.id]={name:m.name,type:m.type,power:m.power};batRender();bpStyleFrom(m);if(BP.on)bpToast('Controle conectado: '+(m.name||''));return}
  if(m.t==='disc'){delete BP.pads[m.id];batRender();if(BP.on)bpToast('Controle desconectado');return}
  if(m.t==='pow'){if(BP.pads[m.id]){BP.pads[m.id].power=m.power;batRender()}return}

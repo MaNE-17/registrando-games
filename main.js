@@ -793,7 +793,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), updNew: data.updNotify === false ? null : UPDNEW, top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
-      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, keys: keysAll(), keyAlways: !!data.keyAlways, shotSnd: data.shotSnd || '', shotVol: data.shotVol ?? 80, shotsDir: SHOTS(), plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, keys: keysAll(), padKeys: padKeysAll(), keyAlways: !!data.keyAlways, shotSnd: data.shotSnd || '', shotVol: data.shotVol ?? 80, shotsDir: SHOTS(), plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
@@ -938,6 +938,8 @@ ipcMain.handle('api', async (_e, p, b) => {
     case 'shot_snd': { if ('v' in b) data.shotSnd = String(b.v || '').slice(0, 2000); if ('vol' in b) data.shotVol = Math.max(0, Math.min(100, +b.vol || 0)); save(); return { ok: true }; }
     case 'ovl_close': await ovlHide(); return { ok: true };
     case 'bp_full': if (win) { if (b.on) { if (!BPF) BPPREV = win.isFullScreen(); BPF = true; win.setFullScreen(true); } else { BPF = false; win.setFullScreen(!!BPPREV); } } return { ok: true };
+    case 'pad_keys': { const k = {}; for (const n of Object.keys(PADK_DEF)) { const v = (b.keys || {})[n]; k[n] = Array.isArray(v) ? v.map(String).filter(x => PADBTN.includes(x)).slice(0, 4) : PADK_DEF[n]; } data.padKeys = k; save(); return { ok: true }; }
+    case 'pad_rec': PADREC = !!b.on; return { ok: true };
     case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
     case 'stop': {
       if (!g || !g.exe) return { error: 'Esse jogo não tem .exe vinculado.' };
@@ -1176,6 +1178,7 @@ function padStart() {
       if (m.t === 'conn') { PAD.pads = PAD.pads.filter(x => x.id !== m.id).concat({ id: m.id, name: m.name, type: m.type, south: m.south, power: m.power || null }); }
       if (m.t === 'pow') { const x = PAD.pads.find(y => y.id === m.id); if (x) x.power = m.power; }
       if (m.t === 'disc') { PAD.pads = PAD.pads.filter(x => x.id !== m.id); }
+      if (padCombo(m)) return;
       if (!win || win.isDestroyed()) return;
       // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela
       if ((m.t === 'down' || m.t === 'up') && wpWin && !wpWin.isDestroyed() && wpWin.isFocused()) { wpWin.webContents.send('pad', m); return; }
@@ -1375,6 +1378,23 @@ function ovlShow() {
   if (pinWin && !pinWin.isDestroyed()) pinWin.hide();
   const go = () => { ovlAt = Date.now(); ovlWin.show(); ovlWin.focus(); ovlWin.webContents.send('pad', { t: 'ovl_open' }); };
   if (ovlWin.webContents.isLoading()) ovlWin.webContents.once('did-finish-load', go); else go();
+}
+// ---- Combinacoes no controle (padrao: L3+Start = sobreposicao, L3+R1 = captura) ----
+const PADBTN = ['south', 'east', 'west', 'north', 'leftShoulder', 'rightShoulder', 'lt', 'rt', 'back', 'start', 'leftStick', 'rightStick', 'dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight', 'misc1', 'touchpad'];
+const PADK_DEF = { ovl: ['leftStick', 'start'], shot: ['leftStick', 'rightShoulder'] };
+const padKeysAll = () => ({ ...PADK_DEF, ...(data.padKeys || {}) });
+const HELD = new Map(); let PADREC = false;
+function padCombo(m) {
+  if (m.t === 'disc') { HELD.delete(m.id); return false; }
+  if (m.t !== 'down' && m.t !== 'up') return false;
+  let h = HELD.get(m.id); if (!h) { h = new Set(); HELD.set(m.id, h); }
+  if (m.t === 'up') { h.delete(m.b); return false; }
+  h.add(m.b);
+  if (PADREC || (win && !win.isDestroyed() && win.isFocused() && !ovlVisible())) return false; // dentro do app o controle continua normal
+  for (const [k, c] of Object.entries(padKeysAll())) {
+    if (c && c.length >= 2 && c.includes(m.b) && c.every(x => h.has(x))) { if (k === 'ovl') ovlToggle(); else shotKey(); return true; }
+  }
+  return false;
 }
 // Atalho de captura: so tira o print se um jogo estiver em primeiro plano
 async function shotKey() { const r = await fgGame(true).catch(() => null); if (r) capture(false, r); }
