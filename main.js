@@ -163,6 +163,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
   data.sideOff = data.sideOff || [];
   // v1.32: Backlog deixa de ser o padrao (vira em branco) e Catalogar sai do app. Roda uma vez so.
   if (!data.plMig1321) { data.plMig1321 = 1; data.plHidden = []; } // o X do editor escondia plataformas sem querer: volta todas
+  if (!data.padMig1371) { data.padMig1371 = 1; const k = data.padKeys || {}, eq = (a, b) => JSON.stringify(a) === JSON.stringify(b); if (eq(k.ovl, ['leftStick', 'start'])) delete k.ovl; if (eq(k.shot, ['leftStick', 'rightShoulder'])) delete k.shot; data.padKeys = k; }
   delete data.padPin; // bloco de notas fixado foi removido
   if (!data.keyMig135) { data.keyMig135 = 1; const k = data.keys || {}; if (!k.shot || k.shot === 'F12') k.shot = 'F1'; if (!k.ovl || k.ovl === 'Shift+Tab') k.ovl = 'Shift+F1'; data.keys = { ...k }; }
   if (!data.stMig132) { data.stMig132 = 1; for (const g of data.games || []) { if (g.status === 'Backlog') g.status = ''; if (g.cat) delete g.cat; } }
@@ -1183,8 +1184,6 @@ function padStart() {
       // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela
       if ((m.t === 'down' || m.t === 'up') && wpWin && !wpWin.isDestroyed() && wpWin.isFocused()) { wpWin.webContents.send('pad', m); return; }
       // Big Picture com um jogo aberto: o botao Home do controle abre/fecha a sobreposicao (igual a Steam)
-      if (m.t === 'down' && m.b === 'guide' && BPF && !win.isFocused()) { ovlToggle(); return; }
-      if (m.t === 'up' && m.b === 'guide' && ovlVisible()) return;
       if ((m.t === 'down' || m.t === 'up') && ovlVisible() && ovlWin.isFocused()) { ovlWin.webContents.send('pad', m); return; }
       // So repassa os botoes (inclusive o Home) quando o app esta em primeiro plano
       if ((m.t === 'down' || m.t === 'up') && !win.isFocused()) return;
@@ -1379,9 +1378,9 @@ function ovlShow() {
   const go = () => { ovlAt = Date.now(); ovlWin.show(); ovlWin.focus(); ovlWin.webContents.send('pad', { t: 'ovl_open' }); };
   if (ovlWin.webContents.isLoading()) ovlWin.webContents.once('did-finish-load', go); else go();
 }
-// ---- Combinacoes no controle (padrao: L3+Start = sobreposicao, L3+R1 = captura) ----
+// ---- Combinacoes no controle (padrao: R3+Select = sobreposicao, R3+R2 = captura) ----
 const PADBTN = ['south', 'east', 'west', 'north', 'leftShoulder', 'rightShoulder', 'lt', 'rt', 'back', 'start', 'leftStick', 'rightStick', 'dpadUp', 'dpadDown', 'dpadLeft', 'dpadRight', 'misc1', 'touchpad'];
-const PADK_DEF = { ovl: ['leftStick', 'start'], shot: ['leftStick', 'rightShoulder'] };
+const PADK_DEF = { ovl: ['rightStick', 'back'], shot: ['rightStick', 'rt'] };
 const padKeysAll = () => ({ ...PADK_DEF, ...(data.padKeys || {}) });
 const HELD = new Map(); let PADREC = false;
 function padCombo(m) {

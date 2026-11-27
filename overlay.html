@@ -76,7 +76,7 @@ function paint(){const g=D.game,sh=D.shots||[];
  ${sh.length?`<div class="grid${SM?' sm':''}">${sh.map((x,i)=>`<button data-sh="${i}" class="${SEL.has(x.f)?'sel':''}" title="${esc(x.name)}"><img src="${esc(x.thumb)}" loading="lazy" alt=""></button>`).join('')}</div>`:`<div class="empty">Nenhuma captura ainda.<br>Aperte <span class="k">${esc((D.keys&&D.keys.shot)||'F1')}</span> durante o jogo para tirar uma.</div>`}</div>`;
  const fe=FE&&(FE.dataset.a||FE.dataset.sh||FE.dataset.cz);
  $('#app').innerHTML=left+right;
- $('#ft').innerHTML=`<span><span class="k">${esc((D.keys&&D.keys.shot)||'F1')}</span> Capturar</span><span>Controle: <span class="k">A</span> Selecionar <span class="k">B</span> Voltar <span class="k">Home</span> Fechar</span>`;
+ $('#ft').innerHTML=`<span><span class="k">${esc((D.keys&&D.keys.shot)||'F1')}</span> Capturar</span><span>Controle: <span class="k">A</span> Selecionar <span class="k">B</span> Voltar</span>`;
  const back=fe&&($(`#app [data-a="${fe}"]`)||$(`#app [data-sh="${fe}"]`)||$(`#app [data-cz="${fe}"]`));if(back)setF(back);else focusFirst()}
 function view(i){const sh=D.shots||[];if(!sh.length){VI=-1;$('#vw').hidden=true;return}VI=Math.max(0,Math.min(sh.length-1,i));const x=sh[VI];$('#vwi').src=x.url;$('#vwn').textContent=`${x.game||''} · ${new Date(x.t*1000).toLocaleString('pt-BR')} · ${VI+1}/${sh.length}`;const d=$('#vw [data-v="del"]');d.dataset.ok='';d.textContent='Excluir';$('#vw').hidden=false;setF($('#vw [data-v="next"]'))}
 function vclose(){VI=-1;$('#vw').hidden=true;focusFirst()}
