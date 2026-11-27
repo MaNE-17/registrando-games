@@ -163,6 +163,7 @@ function load() { try { data = { ...data, ...JSON.parse(fs.readFileSync(U('backl
   data.sideOff = data.sideOff || [];
   // v1.32: Backlog deixa de ser o padrao (vira em branco) e Catalogar sai do app. Roda uma vez so.
   if (!data.plMig1321) { data.plMig1321 = 1; data.plHidden = []; } // o X do editor escondia plataformas sem querer: volta todas
+  delete data.padPin; // bloco de notas fixado foi removido
   if (!data.keyMig135) { data.keyMig135 = 1; const k = data.keys || {}; if (!k.shot || k.shot === 'F12') k.shot = 'F1'; if (!k.ovl || k.ovl === 'Shift+Tab') k.ovl = 'Shift+F1'; data.keys = { ...k }; }
   if (!data.stMig132) { data.stMig132 = 1; for (const g of data.games || []) { if (g.status === 'Backlog') g.status = ''; if (g.cat) delete g.cat; } }
   if (!data.manMig1) { data.manMig1 = 1; for (const g of data.games || []) if (g.manual_s > 0) { g.tracked_s = (g.tracked_s || 0) + g.manual_s; g.manual_s = 0; } }
@@ -1339,13 +1340,6 @@ async function pinPaint() {
   pinWin.setBounds({ x: c.endsWith('l') ? a.x + 20 : a.x + a.width - W - 20, y: c.startsWith('t') ? a.y + 20 : a.y + a.height - H - 20, width: W, height: H });
   if (!pinWin.isVisible()) pinWin.showInactive();
 }
-// A cada 2 s: o bloco fixado so aparece com o jogo dele na frente
-setInterval(async () => {
-  if (!app.isReady()) return;
-  if (!data.padPin || process.platform !== 'win32') { if (PINON) { PINON = false; pinPaint(); } return; }
-  const r = await fgGame().catch(() => null), on = !!(r && r.g && r.g.id === data.padPin.id);
-  if (on !== PINON) { PINON = on; pinPaint(); }
-}, 2000);
 const ovlVisible = () => !!(ovlWin && !ovlWin.isDestroyed() && ovlWin.isVisible());
 let OVLG = null, OVLPID = 0, OVLBUSY = false;
 async function ovlToggle() {
