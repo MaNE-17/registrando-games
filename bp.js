@@ -117,7 +117,7 @@ function homeSel(i,force,mouse){const H=BP.home,L=H.list;if(!L.length){bq('#bpin
 // Biblioteca: abas como na Steam (Todos, Instalados, Favoritos, launchers/plataformas, listas)
 const libSave=()=>{try{localStorage.setItem('bplib',JSON.stringify({sort:BP.lib.sort,f:BP.lib.f}))}catch{}};
 const yr=g=>g.released?new Date(g.released*1000).getFullYear():0;
-function libPass(g){const f=BP.lib.f;if(f.status&&g.status!==f.status)return false;if(f.platform&&canonP(g.platform)!==f.platform)return false;if(f.genre&&!(g.genres||[]).includes(f.genre))return false;if(f.year&&yr(g)!==f.year)return false;return true}
+function libPass(g){const f=BP.lib.f;if(f.status&&!STM(g,f.status))return false;if(f.platform&&canonP(g.platform)!==f.platform)return false;if(f.genre&&!(g.genres||[]).includes(f.genre))return false;if(f.year&&yr(g)!==f.year)return false;return true}
 const libSort=l=>{const fn=SORT[BP.lib.sort]||NC;return [...l].sort((a,b)=>fn(a,b)||NC(a,b))};
 const LTABS=[['all','Todos'],['inst','Instalados'],['col','Coleções'],['lists','Listas'],['fav','Favoritos'],['rec','Recentes']];
 BP.ltab={all:1,inst:1,col:1,fav:0,rec:0,lists:0};try{Object.assign(BP.ltab,JSON.parse(localStorage.getItem('bptabs')||'{}'))}catch{}
@@ -180,7 +180,7 @@ function detRender(){const g=detGame(),el=bq('#bps-det');if(!g){bpBack();return}
  const row=(k,v)=>v?`<div class="dr"><span>${k}</span><b>${v}</b></div>`:'';
  const h=`<div class="dt-c"><div class="bi-t${lg?' lg':''}">${lg?`<img class="bi-lg" style="${lgStyle(g)}" src="${esc(lg)}" alt="" onerror="this.parentElement.classList.remove('lg');this.remove()">`:''}<h1>${esc(g.name)}</h1></div>
  <div class="dt-p">${g.score!=null?`<span class="pi">Nota: <b style="color:${scC(g.score)}">${scF(g.score)}</b></span>`:''}${g.platform?`<span class="pi">${esc(dispP(canonP(g.platform)))}</span>`:''}${g.released?`<span class="pi">${dpt(g.released)}</span>`:''}${(g.genres||[]).map(x=>`<span class="pi">${esc(x)}</span>`).join('')}</div>
- <div class="dt-g">${row('Status',g.status?`${stIco(g.status,20)}${esc(stN(g.status))}`:'')}${row('Finalizado em',FINS(g.status)&&g.finished?dpt(g.finished):'')}${row('Replays',rp?rp+'×':'')}${row('Tempo de jogo',t?fmt(t):'')}${row('Último jogo',g.last_played?dpt(g.last_played):'')}</div>
+ <div class="dt-g">${row('Status',g.status?`${stIco(g.status,20)}${esc(stN(g.status))}`:'')}${row('Finalizado em',g.finished?dpt(g.finished):'')}${row('Replays',rp?rp+'×':'')}${row('Tempo de jogo',t?fmt(t):'')}${row('Último jogo',g.last_played?dpt(g.last_played):'')}</div>
  ${(g.review||'').trim()?`<p class="dt-r">${esc(g.review)}</p>`:''}
  <div class="dt-b">${btn.map((b,i)=>`<button class="db ${b.cls}${i===BP.det.f?' f':''}" data-db="${i}">${b.ic}${esc(b.n)}</button>`).join('')}</div></div>`;if(el._h!==h){el._h=h;el.innerHTML=h}
  bpBg(g)}
@@ -345,7 +345,7 @@ function filtMenu(){const f=BP.lib.f,all=vis(),cnt=fn=>all.filter(fn).length;
  const years=[...new Set(all.map(yr).filter(Boolean))].sort((a,b)=>b-a);
  const lab=(k,fmt)=>f[k]!=null&&f[k]!==''?fmt(f[k]):'Todos';
  ovOpen({type:'menu',title:'Filtrar',items:[
-  {n:'Status: '+lab('status',stN),ar:1,fn:sub('Status','status',ST.map(s=>[s,stN(s),cnt(g=>g.status===s)]).filter(x=>x[2]))},
+  {n:'Status: '+lab('status',stN),ar:1,fn:sub('Status','status',ST.map(s=>[s,stN(s),cnt(g=>STM(g,s))]).filter(x=>x[2]))},
   {n:'Plataforma: '+lab('platform',dispP),ar:1,fn:sub('Plataforma','platform',[...new Set(all.map(g=>canonP(g.platform)).filter(Boolean))].sort((a,b)=>dispP(a).localeCompare(dispP(b))).map(p=>[p,dispP(p),cnt(g=>canonP(g.platform)===p)]))},
   {n:'Gênero: '+lab('genre',x=>x),ar:1,fn:sub('Gênero','genre',genList().map(x=>[x,x,cnt(g=>(g.genres||[]).includes(x))]).filter(x=>x[2]))},
   {n:'Ano de lançamento: '+lab('year',x=>x),ar:1,fn:sub('Ano de lançamento','year',years.map(y=>[y,String(y),cnt(g=>yr(g)===y)]))},
@@ -436,7 +436,7 @@ function edRows(){const g=detGame();if(!g)return[];const hm=s=>`${Math.floor(s/3
   {t:'ch',n:'Status',show:g.status?stN(g.status):'Sem status',fn:()=>ovOpen({type:'menu',title:'Status',items:['',...ST].map(s=>({n:s?stN(s):'Sem status',ic:stIco(s,20),ck:(g.status||'')===s,fn:()=>{ovClose(true);const b={status:s};if(FINS(s)&&!g.finished)b.finished=Math.floor(Date.now()/1000);edSave(b,'Status: '+(s?stN(s):'sem status'))}}))})},
   {t:'num',n:'Nota',show:g.score!=null?scF(g.score):'Sem nota',col:g.score!=null?scC(g.score):'',fn:d=>{let v=g.score==null?(d>0?0:null):Math.round((g.score+d*0.5)*10)/10;if(v!=null&&v<0)v=null;if(v!=null)v=Math.min(10,v);g.score=v;clearTimeout(edSave.t);edSave.t=setTimeout(()=>edSave({score:v}),500);edRender()}},
   {t:'date',n:'Data de lançamento',show:g.released?dpt(g.released):'—',fn:()=>dateOpen('Data de lançamento',dIso(g.released),v=>edSave({released:isoTs(v)},'Salvo'))}];
- if(FINS(g.status))rows.push({t:'date',n:'Finalizado em',show:g.finished?dpt(g.finished):'—',fn:()=>dateOpen('Finalizado em',dIso(g.finished),v=>edSave({finished:isoTs(v)},'Salvo'))});
+ rows.push({t:'date',n:'Finalizado em',show:g.finished?dpt(g.finished):'—',fn:()=>dateOpen('Finalizado em',dIso(g.finished),v=>edSave({finished:isoTs(v)},'Salvo'))});
  rows.push({t:'ch',n:'Replays',show:rp.length?rp.length+'×':'Nenhum',fn:repMenu},
   {t:'hm',n:'Tempo trackeado',show:hm((g.tracked_s||0)+(g.manual_s||0)),fn:()=>hmOpen((g.tracked_s||0)+(g.manual_s||0),v=>edSave({tracked_s:v,manual_s:0},'Tempo salvo'))});
  if(g.steam_min)rows.push({t:'info',n:'Tempo na Steam',show:hm(g.steam_min*60)});

@@ -798,7 +798,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       if ('released' in b) x.rel_manual = b.released != null;
       if (data.gHidden && b.genres) data.gHidden = data.gHidden.filter(n => !b.genres.includes(n));
       if (x.score == null) delete x.score; if (!Array.isArray(x.replays) || !x.replays.length) delete x.replays;
-      const fin = x.status === 'Zerado' || x.status === 'Completado'; if (fin && !x.finished) x.finished = now(); else if (!fin) x.finished = null;
+      const fin = x.status === 'Zerado' || x.status === 'Completado'; if (fin && !x.finished && b.finished === undefined) x.finished = now();
       save(); return { ok: true, id: x.id };
     }
     case 'games_del': {
@@ -904,7 +904,7 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (!(g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe)))) { if (!g.status || g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando'; g.last_played = now(); }
       save(); setTimeout(track, 4000); return { ok: true };
     }
-    case 'bp_full': if (win) { win.setFullScreen(!!b.on); } return { ok: true };
+    case 'bp_full': if (win) { if (b.on) { if (!BPF) BPPREV = win.isFullScreen(); BPF = true; win.setFullScreen(true); } else { BPF = false; win.setFullScreen(!!BPPREV); } } return { ok: true };
     case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
     case 'stop': {
       if (!g || !g.exe) return { error: 'Esse jogo não tem .exe vinculado.' };
@@ -1154,12 +1154,26 @@ function padStart() {
   } catch (e) { PAD.err = String((e && e.message) || e); }
 }
 
+// Lembra se a janela estava maximizada / em tela cheia (e o tamanho), para abrir igual na proxima vez.
+// A tela cheia do Big Picture nao conta: ela e do modo, nao da janela.
+let BPF = false, BPPREV = false, wsT = null;
+function winStSave() {
+  if (!win || win.isDestroyed() || win.isMinimized() || BPF) return;
+  clearTimeout(wsT);
+  wsT = setTimeout(() => { try { if (!win || win.isDestroyed() || win.isMinimized() || BPF) return; data.winSt = { max: win.isMaximized(), fs: win.isFullScreen(), b: win.getNormalBounds() }; save(); } catch {} }, 600);
+}
+function winStBounds() {
+  const w = data.winSt && data.winSt.b; if (!w || !(w.width > 300 && w.height > 200)) return {};
+  try { const { screen } = require('electron'); const a = screen.getDisplayMatching(w).workArea;
+    if (w.x + 80 > a.x + a.width || w.y + 40 > a.y + a.height || w.x + w.width < a.x + 80 || w.y < a.y - 10) return { width: w.width, height: w.height };
+    return { x: w.x, y: w.y, width: w.width, height: w.height }; } catch { return {}; }
+}
 function show() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', show);
 app.whenReady().then(() => {
   load();
-  win = new BrowserWindow({ width: 1240, height: 800, minWidth: 760, minHeight: 520, title: 'Registrando Games',
+  win = new BrowserWindow({ width: 1240, height: 800, ...winStBounds(), minWidth: 760, minHeight: 520, title: 'Registrando Games',
     icon: path.join(__dirname, 'icon.png'), autoHideMenuBar: true, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
   win.setMenu(null);
@@ -1167,7 +1181,12 @@ app.whenReady().then(() => {
   win.loadFile(path.join(__dirname, 'index.html'));
   setTimeout(updWatch, 8000); setInterval(updWatch, 30 * 60 * 1000);
   const fromStartup = process.argv.includes('--startup');
-  win.once('ready-to-show', () => { if (fromStartup && data.startMin !== false) { win.showInactive(); win.minimize(); } else win.show(); });
+  const ws = data.winSt || {};
+  win.once('ready-to-show', () => {
+    if (fromStartup && data.startMin !== false) { if (ws.max || ws.fs) win.maximize(); win.showInactive(); win.minimize(); return; }
+    if (ws.max) win.maximize(); win.show(); if (ws.fs) win.setFullScreen(true);
+  });
+  for (const ev of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen', 'resized', 'moved']) win.on(ev, winStSave);
   win.on('close', e => { if (!quitting) { e.preventDefault(); win.minimize(); } });
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 16, height: 16 }));
   tray.setToolTip('Registrando Games');
