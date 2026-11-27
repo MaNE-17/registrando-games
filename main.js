@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell, utilityProcess } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, shell, utilityProcess, globalShortcut, desktopCapturer, screen } = require('electron');
+const { pathToFileURL } = require('url');
 const path = require('path'), fs = require('fs'), cp = require('child_process'), crypto = require('crypto');
 const LCH = require('./launchers'), STL = require('./steamlib');
 process.env.RG_DIAG = ''; app.whenReady().then(() => { process.env.RG_DIAG = path.join(app.getPath('userData'), 'epic-diagnostico.txt'); });
@@ -190,10 +191,11 @@ function track() {
       const prev = new Set(running); running.clear();
       for (const g of [...hit, ...extra]) {
         if (!g.appid) g.tracked_s = (g.tracked_s || 0) + 5; // Steam ja conta as horas dela
-        g.last_played = now(); running.add(g.id);
+        g.last_played = now(); running.add(g.id); if (!prev.has(g.id)) RUNAT[g.id] = Date.now();
         if (!g.status || g.status === 'Backlog' || (g.status === 'Pausado' && !prev.has(g.id))) g.status = 'Jogando';
       }
       if (running.size && ++tick % 6 === 0) save();
+      keysSync();
       const fechou = [...prev].filter(id => !running.has(id) && (data.games.find(x => x.id === id) || {}).appid);
       if (fechou.length) { setTimeout(() => steamPlayRefresh(fechou), 15000); setTimeout(() => steamPlayRefresh(fechou), 60000); }
     };
@@ -789,7 +791,7 @@ ipcMain.handle('api', async (_e, p, b) => {
   const g = find(b.id);
   switch (p) {
     case 'state': return { version: app.getVersion(), games: data.games, lists: data.lists, running: [...running], inst: data.games.filter(g => (g.appid && steamApps.has(g.appid)) || (g.lkey && launcherInst.has(g.lkey))).map(g => g.id), coversDir: COVERS(), updNew: data.updNotify === false ? null : UPDNEW, top5: (data.top5 || []).filter(id => data.games.some(g => g.id === id)).slice(0, 5),
-      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
+      config: { stNames: data.stNames || {}, updNotify: data.updNotify !== false, autoRefresh: data.autoRefresh !== false, key: data.config.key || '', steamid: data.config.steamid || '', sgdb: data.config.sgdb || '', fam: data.config.fam || '', famOn: !!data.config.famOn, gh: data.config.gh || '', emus: data.emus || [], emuBusy, startup: (() => { try { return !!app.getLoginItemSettings({ args: ['--startup'] }).openAtLogin; } catch { return false; } })(), startMin: data.startMin !== false, ghRepo: data.config.ghRepo || '' }, dataDir: app.getPath('userData'), platforms: data.platforms || [], plHidden: data.plHidden || [], gHidden: data.gHidden || [], sidePlats: data.sidePlats || LCH.SIDE_DEF, sideCons: data.sideCons || [], plNames: data.plNames || {}, keys: keysAll(), keyAlways: !!data.keyAlways, shotsDir: SHOTS(), plIcons: data.plIcons || {}, exclP: data.exclP || [], gExtra: data.gExtra || [], pending: busy ? data.games.filter(needInfo).length : 0, refreshing, msg };
     case 'save': {
       let x = g;
       if (x && 'exe' in b && b.exe !== x.exe) delete x.exeAuto; // .exe escolhido a mao: o app nao mexe mais
@@ -870,6 +872,7 @@ ipcMain.handle('api', async (_e, p, b) => {
     }
     case 'play': {
       if (!g) return {};
+      LASTPLAY = { id: g.id, t: Date.now() };
       if (b.install && g.appid && !steamApps.has(g.appid)) { await shell.openExternal('steam://install/' + g.appid); return { ok: true }; }
       if (b.install && g.lkey && !launcherInst.has(g.lkey)) { const id = g.lkey.split(':')[1] || ''; if (g.platform === 'GOG' && /^\d+$/.test(id)) { await shell.openExternal('goggalaxy://openGameView/' + id); return { ok: true }; } if (g.uri) { if (/^shell:/i.test(g.uri)) cp.spawn('explorer.exe', [g.uri], { detached: true, stdio: 'ignore' }).unref(); else await shell.openExternal(g.uri); return { ok: true }; } return { error: 'Abra o launcher dele para instalar.' }; }
       if (g.lkey && !g.appid && !launcherInst.has(g.lkey) && !(g.exe && fs.existsSync(g.exe)) && !g.uri) {
@@ -904,6 +907,20 @@ ipcMain.handle('api', async (_e, p, b) => {
       if (!(g.proc || (g.exe && !/\.(bat|cmd)$/i.test(g.exe)))) { if (!g.status || g.status === 'Backlog' || g.status === 'Pausado') g.status = 'Jogando'; g.last_played = now(); }
       save(); setTimeout(track, 4000); return { ok: true };
     }
+    case 'shots': return shotsList(b.id);
+    case 'shot_del': { const f = shotPath(b.f); if (!f) return { error: 'Arquivo inválido.' }; try { await shell.trashItem(f); } catch { try { fs.unlinkSync(f); } catch (e) { return { error: 'Não consegui apagar a captura.' }; } } return { ok: true }; }
+    case 'shot_show': { const f = shotPath(b.f); if (f) shell.showItemInFolder(f); return { ok: true }; }
+    case 'shots_open': { const d = b.id ? shotDir(data.games.find(x => x.id === b.id)) : SHOTS(); try { fs.mkdirSync(d, { recursive: true }); } catch {} shell.openPath(d); return { ok: true }; }
+    case 'shot_now': { const ov = ovlVisible(); if (ov) ovlWin.hide(); await new Promise(r => setTimeout(r, ov ? 350 : 120)); const r = await capture(true); if (ov) ovlShow(); return r; }
+    case 'keys_set': {
+      const k = {}; for (const n of Object.keys(KEYS_DEF)) { const v = String((b.keys || {})[n] ?? KEYS_DEF[n]).slice(0, 40); k[n] = v; }
+      data.keys = k; if ('always' in b) data.keyAlways = !!b.always; save(); REG = null; keysSync(); return { ok: true, fail: REGFAIL };
+    }
+    case 'ovl_info': {
+      const g = shotGame(), pick = x => x && { id: x.id, name: x.name, platform: x.platform, status: x.status || '', finished: x.finished || null, cover: x.cover || '', capsule: x.capsule || '', appid: x.appid, secs: (x.steam_min || 0) * 60 + (x.tracked_s || 0) + (x.manual_s || 0), session: RUNAT[x.id] ? Math.floor((Date.now() - RUNAT[x.id]) / 1000) : 0 };
+      return { game: pick(g), stNames: data.stNames || {}, coversDir: COVERS(), keys: keysAll(), shots: shotsList(g ? g.id : null).items.slice(0, 60) };
+    }
+    case 'ovl_close': if (ovlWin && !ovlWin.isDestroyed()) ovlWin.hide(); return { ok: true };
     case 'bp_full': if (win) { if (b.on) { if (!BPF) BPPREV = win.isFullScreen(); BPF = true; win.setFullScreen(true); } else { BPF = false; win.setFullScreen(!!BPPREV); } } return { ok: true };
     case 'pad_info': return { ok: PAD.ok, err: PAD.err, sdl: PAD.sdl, pads: PAD.pads };
     case 'stop': {
@@ -1146,6 +1163,7 @@ function padStart() {
       if (!win || win.isDestroyed()) return;
       // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela
       if ((m.t === 'down' || m.t === 'up') && wpWin && !wpWin.isDestroyed() && wpWin.isFocused()) { wpWin.webContents.send('pad', m); return; }
+      if ((m.t === 'down' || m.t === 'up') && ovlVisible() && ovlWin.isFocused()) { ovlWin.webContents.send('pad', m); return; }
       // So repassa os botoes (inclusive o Home) quando o app esta em primeiro plano
       if ((m.t === 'down' || m.t === 'up') && !win.isFocused()) return;
       win.webContents.send('pad', m);
@@ -1168,6 +1186,110 @@ function winStBounds() {
     if (w.x + 80 > a.x + a.width || w.y + 40 > a.y + a.height || w.x + w.width < a.x + 80 || w.y < a.y - 10) return { width: w.width, height: w.height };
     return { x: w.x, y: w.y, width: w.width, height: w.height }; } catch { return {}; }
 }
+// ---------- Capturas de tela, atalhos globais e sobreposicao (Shift+Tab) ----------
+// As capturas ficam em Imagens\RG Capturas\<nome do jogo>. Os atalhos so ficam "presos" no Windows enquanto
+// um jogo esta aberto (assim F12 / Shift+Tab continuam funcionando normalmente nos outros programas).
+const SHOTS = () => path.join(app.getPath('pictures'), 'RG Capturas');
+const THUMBS = () => path.join(app.getPath('userData'), 'capturas-mini');
+const KEYS_DEF = { bp: 'F11', shot: 'F12', ovl: 'Shift+Tab' };
+const keysAll = () => ({ ...KEYS_DEF, ...(data.keys || {}) });
+const RUNAT = {}; let LASTPLAY = null, REG = null, REGFAIL = [], SHOTBUSY = false, ovlWin = null, toastWin = null, toastT = 0, ovlAt = 0;
+const fsafe = s => String(s || '').replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/[. ]+$/, '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Sem nome';
+function shotGame() {
+  const ids = [...running].filter(id => data.games.some(g => g.id === id));
+  if (ids.length) return data.games.find(g => g.id === ids.sort((a, b) => (RUNAT[b] || 0) - (RUNAT[a] || 0))[0]);
+  if (LASTPLAY && Date.now() - LASTPLAY.t < 12 * 3600e3) return data.games.find(g => g.id === LASTPLAY.id) || null;
+  return null;
+}
+function shotDir(g) {
+  if (!g) return path.join(SHOTS(), 'Outros');
+  data.shotDirs = data.shotDirs || {};
+  let n = Object.keys(data.shotDirs).find(k => data.shotDirs[k] === g.id);
+  if (!n) { n = fsafe(g.name); if (data.shotDirs[n] && data.shotDirs[n] !== g.id) n = fsafe(g.name + ' (' + String(g.id).slice(0, 4) + ')'); data.shotDirs[n] = g.id; }
+  return path.join(SHOTS(), n);
+}
+function shotPath(f) { try { const r = path.resolve(String(f || '')); return r.toLowerCase().startsWith(path.resolve(SHOTS()).toLowerCase() + path.sep) && fs.existsSync(r) ? r : null; } catch { return null; } }
+function shotThumb(f, st, img) {
+  try {
+    const t = path.join(THUMBS(), crypto.createHash('sha1').update(f + '|' + st.mtimeMs + '|' + st.size).digest('hex').slice(0, 20) + '.jpg');
+    if (!fs.existsSync(t)) { const im = img || nativeImage.createFromPath(f); if (im.isEmpty()) return ''; fs.mkdirSync(THUMBS(), { recursive: true }); fs.writeFileSync(t, im.resize({ width: 480, quality: 'good' }).toJPEG(82)); }
+    return pathToFileURL(t).href;
+  } catch { return ''; }
+}
+function shotsList(id) {
+  const root = SHOTS(), out = [], map = data.shotDirs || {};
+  let dirs = []; try { dirs = fs.readdirSync(root, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name); } catch {}
+  for (const d of dirs) {
+    const gid = map[d] || (data.games.find(g => fsafe(g.name) === d) || {}).id || null;
+    if (id && gid !== id) continue;
+    const gn = gid ? (data.games.find(g => g.id === gid) || {}).name || d : d;
+    let fl = []; try { fl = fs.readdirSync(path.join(root, d)).filter(n => /\.(png|jpe?g|webp|bmp)$/i.test(n)); } catch {}
+    for (const n of fl) { const f = path.join(root, d, n); let st; try { st = fs.statSync(f); } catch { continue; } out.push({ f, st, gid, game: gn }); }
+  }
+  out.sort((a, b) => b.st.mtimeMs - a.st.mtimeMs);
+  return { dir: root, items: out.slice(0, 3000).map(x => ({ f: x.f, url: pathToFileURL(x.f).href + '?v=' + Math.round(x.st.mtimeMs), thumb: shotThumb(x.f, x.st) || pathToFileURL(x.f).href, t: Math.round(x.st.mtimeMs / 1000), gid: x.gid, game: x.game, name: path.basename(x.f) })) };
+}
+async function capture(fromUi) {
+  if (SHOTBUSY) return { error: 'Aguarde a captura anterior.' }; SHOTBUSY = true;
+  try {
+    const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+    const sz = { width: Math.round(d.size.width * d.scaleFactor), height: Math.round(d.size.height * d.scaleFactor) };
+    const src = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: sz });
+    const s = src.find(x => String(x.display_id) === String(d.id)) || src[0];
+    if (!s || s.thumbnail.isEmpty()) throw new Error('A captura veio vazia.');
+    const g = shotGame(), dir = shotDir(g); fs.mkdirSync(dir, { recursive: true });
+    const z = n => String(n).padStart(2, '0'), t = new Date(), stamp = `${t.getFullYear()}-${z(t.getMonth() + 1)}-${z(t.getDate())} ${z(t.getHours())}-${z(t.getMinutes())}-${z(t.getSeconds())}`;
+    const base = (g ? fsafe(g.name) : 'Captura') + ' ' + stamp; let f = path.join(dir, base + '.png'), i = 2;
+    while (fs.existsSync(f)) f = path.join(dir, `${base} (${i++}).png`);
+    fs.writeFileSync(f, s.thumbnail.toPNG()); save();
+    const th = shotThumb(f, fs.statSync(f), s.thumbnail);
+    shotToast(th, g ? g.name : 'Sem jogo');
+    if (ovlVisible()) ovlWin.webContents.send('pad', { t: 'ovl_refresh' });
+    return { ok: true, f };
+  } catch (e) { if (!fromUi) shotToast('', 'Não consegui capturar a tela'); return { error: 'Não consegui capturar a tela: ' + ((e && e.message) || e) }; }
+  finally { SHOTBUSY = false; }
+}
+// Aviso pequeno no canto da tela, sem roubar o foco do jogo
+function shotToast(thumb, txt) {
+  try {
+    const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()), W = 340, H = 96, a = d.workArea;
+    if (!toastWin || toastWin.isDestroyed()) {
+      toastWin = new BrowserWindow({ width: W, height: H, frame: false, transparent: true, resizable: false, movable: false, focusable: false, skipTaskbar: true, alwaysOnTop: true, show: false, hasShadow: false, backgroundColor: '#00000000', webPreferences: { contextIsolation: true } });
+      toastWin.setAlwaysOnTop(true, 'screen-saver'); toastWin.setIgnoreMouseEvents(true);
+    }
+    toastWin.setBounds({ x: a.x + a.width - W - 24, y: a.y + 24, width: W, height: H });
+    const e = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:transparent;overflow:hidden;font:14px "Segoe UI",system-ui,sans-serif}
+.t{position:absolute;inset:8px;display:flex;gap:12px;align-items:center;background:#11151dee;border:1px solid #ffffff22;border-radius:12px;padding:8px;color:#fff;animation:i .25s ease-out}
+img{width:112px;height:63px;object-fit:cover;border-radius:6px;background:#222}b{display:block;font-size:14px}span{color:#aab;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+@keyframes i{from{transform:translateX(30px);opacity:0}}</style><div class="t">${thumb ? `<img src="${e(thumb)}">` : ''}<div><b>${thumb ? 'Captura salva' : 'Falhou'}</b><span>${e(txt)}</span></div></div>`;
+    toastWin.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).then(() => toastWin.showInactive()).catch(() => {});
+    clearTimeout(toastT); toastT = setTimeout(() => { try { toastWin.hide(); } catch {} }, 2600);
+  } catch {}
+}
+const ovlVisible = () => !!(ovlWin && !ovlWin.isDestroyed() && ovlWin.isVisible());
+function ovlToggle() { if (ovlVisible()) ovlWin.hide(); else ovlShow(); }
+function ovlShow() {
+  const d = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  if (!ovlWin || ovlWin.isDestroyed()) {
+    ovlWin = new BrowserWindow({ ...d.bounds, frame: false, transparent: true, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true, alwaysOnTop: true, show: false, hasShadow: false, backgroundColor: '#00000000', title: 'Registrando Games - Sobreposição',
+      webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true } });
+    ovlWin.setAlwaysOnTop(true, 'screen-saver'); ovlWin.setMenu(null);
+    ovlWin.loadFile(path.join(__dirname, 'overlay.html'));
+    ovlWin.on('blur', () => { if (Date.now() - ovlAt > 600 && ovlVisible()) ovlWin.hide(); });
+  } else ovlWin.setBounds(d.bounds);
+  const go = () => { ovlAt = Date.now(); ovlWin.show(); ovlWin.focus(); ovlWin.webContents.send('pad', { t: 'ovl_open' }); };
+  if (ovlWin.webContents.isLoading()) ovlWin.webContents.once('did-finish-load', go); else go();
+}
+function keysSync() {
+  if (!app.isReady()) return;
+  const k = keysAll(), on = running.size > 0 || !!data.keyAlways || ovlVisible(), want = on ? [[k.shot, () => capture()], [k.ovl, ovlToggle]].filter(x => x[0]) : [];
+  const sig = want.map(x => x[0]).join('|'); if (sig === REG) return; REG = sig; REGFAIL = [];
+  try { globalShortcut.unregisterAll(); } catch {}
+  for (const [acc, fn] of want) { let ok = false; try { ok = globalShortcut.register(acc, fn); } catch {} if (!ok) REGFAIL.push(acc); }
+}
+app.on('will-quit', () => { try { globalShortcut.unregisterAll(); } catch {} });
+
 function show() { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } }
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', show);
@@ -1193,7 +1315,7 @@ app.whenReady().then(() => {
   tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Abrir', click: show }, { label: 'Sair', click: () => { quitting = true; save(); app.quit(); } }]));
   tray.on('click', show);
   setInterval(track, 5000);
-  padStart();
+  padStart(); keysSync();
   scanSteam(); setInterval(scanSteam, 60000); setInterval(launcherInstCheck, 90000);
 
   fillInfo();

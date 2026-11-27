@@ -20,6 +20,8 @@ const BPI={
  lib:SV('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'),
  cfg:SV('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
  theme:SV('<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c.9 0 1.7-.8 1.7-1.7 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.8-1.7 1.7-1.7h2A5.6 5.6 0 0 0 22 11c0-5-4.5-9-10-9z"/>'),
+ cam:SV('<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>'),
+ media:SV('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>'),
  sync:SV('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'),
  exit:SV('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>'),
  pad:SV('<path d="M6 11h4M8 9v4"/><path d="M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15.6A3 3 0 0 0 5 19c1 0 1.9-.5 2.4-1.3L9 15h6l1.6 2.7A2.8 2.8 0 0 0 19 19a3 3 0 0 0 3-3.4l-.7-7A4 4 0 0 0 17.3 5z"/>')};
@@ -173,7 +175,7 @@ function libCols(){const G=bq('#blg'),c=G.children;if(c.length<2)return 1;const 
 // Detalhes do jogo (parecido com o modo tela cheia do launcher)
 function detOpen(g){BP.det.g=g.id;BP.det.f=0;bpGo('det')}
 function detGame(){return S.games.find(x=>x.id===BP.det.g)}
-function detBtns(g){const a=bpAct(g),b=[{k:'a',n:a[1],ic:a[2],cls:'pri a-'+a[0]},{k:'fav',n:g.fav?'Favorito':'Favoritar',ic:g.fav?BPI.favOn:BPI.fav,cls:g.fav?'on':''}];
+function detBtns(g){const a=bpAct(g),b=[{k:'a',n:a[1],ic:a[2],cls:'pri a-'+a[0]},{k:'fav',n:g.fav?'Favorito':'Favoritar',ic:g.fav?BPI.favOn:BPI.fav,cls:g.fav?'on':''},{k:'shots',n:'Capturas',ic:BPI.cam,cls:''}];
  if((g.review||'').trim())b.push({k:'rev',n:'Ler review',ic:BPI.book,cls:''});b.push({k:'edit',n:'Editar',ic:BPI.edit,cls:''});return b}
 function detRender(){const g=detGame(),el=bq('#bps-det');if(!g){bpBack();return}
  const t=secs(g),lg=logoSrc(g)&&!g.logoHide?logoSrc(g):'',rp=(g.replays||[]).length,btn=detBtns(g);BP.det.f=Math.min(BP.det.f,btn.length-1);
@@ -185,7 +187,7 @@ function detRender(){const g=detGame(),el=bq('#bps-det');if(!g){bpBack();return}
  <div class="dt-b">${btn.map((b,i)=>`<button class="db ${b.cls}${i===BP.det.f?' f':''}" data-db="${i}">${b.ic}${esc(b.n)}</button>`).join('')}</div></div>`;if(el._h!==h){el._h=h;el.innerHTML=h}
  bpBg(g)}
 function detPress(){const g=detGame();if(!g)return;const b=detBtns(g)[BP.det.f];if(!b)return;
- if(b.k==='a')return bpPlay(g);if(b.k==='fav')return bpFav(g);if(b.k==='rev')ovOpen({type:'text',title:g.name,text:g.review});if(b.k==='edit')edOpen(g)}
+ if(b.k==='a')return bpPlay(g);if(b.k==='fav')return bpFav(g);if(b.k==='shots')return bpShots(g);if(b.k==='rev')ovOpen({type:'text',title:g.name,text:g.review});if(b.k==='edit')edOpen(g)}
 
 // Configuracoes
 function cfgRows(){const c=S.config,mask=v=>v?(v.length>8?v.slice(0,4)+'••••'+v.slice(-4):'••••'):'Não preenchido';
@@ -269,13 +271,20 @@ async function bpCovApply(ov){const it=ov.items[ov.i];if(!it)return;bpToast('Apl
  try{if(ov.kind==='logo'||ov.kind==='hero'||ov.kind==='square'||ov.kind==='abyss'){const r=await api(ov.kind==='logo'?'logo_set':ov.kind==='square'?'sq_sgdb':'wall_url',{id:ov.g.id,url:it.url});if(!r||r.error)throw 0}else{const f=await api('fetch_img',{url:it.url});if(!f.data)throw 0;await api('cover_data',{id:ov.g.id,data:await toCover(f.data)})}ovClose(true);BGL='';await load();bpPaint(true);bpToast(ov.kind==='abyss'?'Papel de parede trocado!':ov.kind==='square'?'Capa quadrada trocada!':ov.kind==='logo'?'Logo trocada!':ov.kind==='hero'?'Papel de parede trocado!':'Capa trocada!')}catch{bpToast('Não consegui usar essa imagem. Tente outra.')}}
 
 // ---- barra lateral (botao Home) ----
-const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];BP.home.sel=null;BP.home.idx=-1;bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];BP.lib.lastK=null;BP.lib.open=null;BP.lib.sel={};bpGo('lib',false)}},
+const SIDE=()=>[{k:'home',n:'Início',ic:BPI.home,fn:()=>{BP.hist=[];BP.home.sel=null;BP.home.idx=-1;bpGo('home',false)}},{k:'lib',n:'Biblioteca',ic:BPI.lib,fn:()=>{BP.hist=['home'];BP.lib.lastK=null;BP.lib.open=null;BP.lib.sel={};bpGo('lib',false)}},{k:'media',n:'Mídias',ic:BPI.media,fn:()=>bpShots(null)},
  {k:'theme',n:'Tema',ic:BPI.theme,fn:themeMenu},{k:'sync',n:'Atualizar e sincronizar',ic:BPI.sync,fn:()=>{refreshAll();bpToast('Atualizando a biblioteca…')}},
  {k:'cfg',n:'Configurações',ic:BPI.cfg,fn:()=>{BP.hist=['home'];BP.cfg.i=1;bpGo('cfg',false)}},{k:'exit',n:'Sair do Big Picture',ic:BPI.exit,fn:()=>bpSet(false)}];
 function sideRender(){const L=SIDE();bq('#bpside').innerHTML=`<div class="sd-h">${BPI.pad}<b>Registrando Games</b></div>`+L.map((x,i)=>`<div class="sd-i${i===BP.side.i?' f':''}${x.k===BP.scr?' cur':''}" data-si="${i}">${x.ic}<span>${x.n}</span></div>`).join('')}
 function sideToggle(on){BP.side.open=on===undefined?!BP.side.open:on;if(BP.side.open){const L=SIDE();BP.side.i=Math.max(0,L.findIndex(x=>x.k===BP.scr))}sideRender();bpClass()}
 function sideIn(k){const L=SIDE(),n=L.length;if(k==='up')BP.side.i=(BP.side.i-1+n)%n;else if(k==='down')BP.side.i=(BP.side.i+1)%n;
  else if(k==='a'){const x=L[BP.side.i];sideToggle(false);x.fn();return}else if(k==='b'||k==='right'){sideToggle(false);return}else return;sideRender()}
+
+// ---- Capturas / Mídias ----
+async function bpShots(g){const o={type:'shots',title:g?'Capturas':'Mídias',sub:g?g.name:'Todas as capturas',g,items:[],loading:true};ovOpen(o);
+ const r=await api('shots',{id:g&&g.id});o.items=(r&&r.items)||[];o.loading=false;o.i=Math.min(o.i,Math.max(0,o.items.length-1));if(BP.ov===o)ovRender()}
+function shotView(o){const x=o.list.items[o.i];return x?`<div class="bo-sv"><img src="${esc(x.url)}" alt=""><div class="sv-i"><b>${esc(x.game||'')}</b><span>${new Date(x.t*1000).toLocaleString('pt-BR')} · ${o.i+1}/${o.list.items.length}</span></div></div>`:''}
+async function shotDel(o){const x=o.list.items[o.i];if(!x)return;ovOpen({type:'menu',title:'Excluir esta captura?',sub:'Ela vai para a Lixeira do Windows.',items:[{n:'Excluir',dl:1,fn:async()=>{ovClose();const r=await api('shot_del',{f:x.f});if(r&&r.error){bpToast(r.error);return}
+ o.list.items.splice(o.i,1);bpToast('Captura excluída');if(!o.list.items.length){ovClose();ovRender();return}o.i=Math.min(o.i,o.list.items.length-1);o.list.i=o.i;ovRender()}},{n:'Cancelar',fn:()=>ovClose()}]},true)}
 
 // ---- painel por cima (menus, capas, review) ----
 function ovOpen(o,stack){o.i=o.i||0;o.prev=stack?BP.ov:null;BP.ov=o;o.anim=1;ovRender()}
@@ -290,10 +299,14 @@ function ovRender(){const el=bq('#bpov'),o=BP.ov;bpFoot();el.classList.toggle('a
  else if(o.type==='size')el.innerHTML=`<div class="bo-p bo-sz"><div class="bo-h">${esc(o.title)}<small>${o.v}%</small></div><div class="szb"><span>${glyph('lb')}</span><div class="szt"><i style="width:${(o.v-40)/220*100}%"></i></div><span>${glyph('rb')}</span></div><div class="bo-f"><span>←/→ Ajustar</span><span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`;
  else if(o.type==='date'||o.type==='hm'){const lab=o.type==='date'?['Dia','Mês','Ano']:['Horas','Minutos'],val=o.type==='date'?[String(o.v[0]).padStart(2,'0'),String(o.v[1]).padStart(2,'0'),o.v[2]]:[o.v[0],String(o.v[1]).padStart(2,'0')];
   el.innerHTML=`<div class="bo-p bo-dt"><div class="bo-h">${esc(o.title)}</div><div class="dtf">${val.map((v,i)=>`<div class="dc${i===o.f?' f':''}" data-df="${i}"><span>${lab[i]}</span><b>▲</b><strong>${v}</strong><b>▼</b></div>`).join('')}</div><div class="bo-f">${o.type==='date'?`<span>${glyph('x')}Limpar</span>`:`<span>${glyph('lb')}${glyph('rb')}±10 h</span>`}<span>${glyph('a')}Salvar</span><span>${glyph('b')}Cancelar</span></div></div>`}
+ else if(o.type==='shot')el.innerHTML=`<div class="bo-p bo-shot">${shotView(o)}<div class="bo-f"><span data-fk="lb">${glyph('lb')}${glyph('rb')}Anterior / próxima</span><span data-fk="y">${glyph('y')}Mostrar na pasta</span><span data-fk="x">${glyph('x')}Excluir</span><span data-fk="b">${glyph('b')}Voltar</span></div></div>`;
+ else if(o.type==='shots'){el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}${o.items.length?` · ${o.items.length} ${o.items.length===1?'imagem':'imagens'}`:''}</small></div>${o.items.length?`<div class="bo-g k-shot">${o.items.map((it,j)=>`<div class="gc${j===o.i?' on':''}" data-oi="${j}"><img src="${esc(it.thumb)}" loading="lazy" decoding="async" alt="">${o.g?'':`<em>${esc(it.game||'')}</em>`}</div>`).join('')}</div>`:`<div class="bo-m">${o.loading?'Carregando capturas…':`Nenhuma captura ainda. Durante o jogo, aperte ${esc(((S.keys||{}).shot)||'F12')} para tirar uma.`}</div>`}<div class="bo-f"><span data-fk="x">${glyph('x')}Abrir pasta</span>${o.items.length?`<span data-fk="a">${glyph('a')}Ver</span>`:''}<span data-fk="b">${glyph('b')}Voltar</span></div></div>`;scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}
  else if(o.type==='text')el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}</div><div class="bo-tx" id="botx">${esc(o.text)}</div>${ft}</div>`;
  else{el.innerHTML=`<div class="bo-p"><div class="bo-h">${esc(o.title)}<small>${esc(o.sub||'')}</small></div><div class="bo-g k-${o.kind||'cover'}">${o.items.map((it,j)=>gcH(it,j,j===o.i)).join('')}</div>${o.loading?'<div class="bo-m">Carregando capas…</div>':!o.items.length?'<div class="bo-m">Nenhuma capa encontrada.</div>':''}${ft}</div>`;
   scrV(el.querySelector('.bo-g'),el.querySelector('.gc.on'))}}
 function ovIn(k){const o=BP.ov;
+ if(o.type==='shot'){const n=o.list.items.length;if(k==='b'||k==='back'){o.list.i=o.i;ovClose();return}if(k==='left'||k==='lb'||k==='lt')o.i=(o.i-1+n)%n;else if(k==='right'||k==='rb'||k==='rt')o.i=(o.i+1)%n;else if(k==='x')return shotDel(o);else if(k==='y'){api('shot_show',{f:o.list.items[o.i].f});return}else return;o.list.i=o.i;ovRender();return}
+ if(o.type==='shots'){if(k==='a'){if(o.items[o.i])ovOpen({type:'shot',list:o,i:o.i},true);return}if(k==='x'){api('shots_open',{id:o.g&&o.g.id});bpToast('Pasta aberta na área de trabalho');return}if(k==='y')return;}
  if(o.type==='cz'){if(k==='b'||k==='back'){BP.cz=o.v0;BP.sq=o.q0;bpSq();bpZoom();ovClose();BP.hist=['home'];bpGo('cfg',false);return}
   if(k==='left'||k==='lb')o.v=Math.max(70,o.v-5);else if(k==='right'||k==='rb')o.v=Math.min(160,o.v+5);else if(k==='y')o.v=100;else if(k==='x'){BP.sq=!BP.sq;bpSq();ovRender();return}
   else if(k==='a'){try{localStorage.setItem('bpcz',BP.cz);localStorage.setItem('bpsq',BP.sq?'1':'0')}catch{}ovClose();bpToast('Tamanho salvo: '+BP.cz+'%');BP.hist=['home'];bpGo('cfg',false);return}else return;BP.cz=o.v;bpZoom();ovRender();return}
@@ -501,7 +514,7 @@ if(window.bridge&&bridge.onPad)bridge.onPad(bpPad);
 bpEl.addEventListener('mousemove',()=>bpEl.classList.remove('nocur'));
 const BPK={f:'x',F:'x',r:'y',R:'y',ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',Enter:'a',Escape:'b',Backspace:'b',q:'lb',Q:'lb',e:'rb',E:'rb',o:'start',O:'start',PageUp:'lt',PageDown:'rt',Home:'guide',Tab:'guide'};
 document.addEventListener('keydown',e=>{
- if(e.key==='F11'){e.preventDefault();e.stopPropagation();bpSet(!BP.on);return}
+ if(window.accMatch?accMatch(e,(S.keys&&S.keys.bp)||'F11'):e.key==='F11'){e.preventDefault();e.stopPropagation();bpSet(!BP.on);return}
  if(!BP.on)return;e.stopPropagation();
  if(BP.kb&&!e.ctrlKey&&!e.altKey){ // teclado fisico tambem digita
   if(e.key.length===1){e.preventDefault();BP.kb.v+=e.key;kbRender();BP.kb.live&&BP.kb.live(BP.kb.v);return}
