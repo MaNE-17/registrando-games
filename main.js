@@ -1163,6 +1163,9 @@ function padStart() {
       if (!win || win.isDestroyed()) return;
       // Janela do Google Imagens (wallpaper) aberta pelo Big Picture: o controle navega nela
       if ((m.t === 'down' || m.t === 'up') && wpWin && !wpWin.isDestroyed() && wpWin.isFocused()) { wpWin.webContents.send('pad', m); return; }
+      // Big Picture com um jogo aberto: o botao Home do controle abre/fecha a sobreposicao (igual a Steam)
+      if (m.t === 'down' && m.b === 'guide' && BPF && !win.isFocused() && (ovlVisible() || running.size || (LASTPLAY && Date.now() - LASTPLAY.t < 12 * 3600e3))) { ovlToggle(); return; }
+      if (m.t === 'up' && m.b === 'guide' && ovlVisible()) return;
       if ((m.t === 'down' || m.t === 'up') && ovlVisible() && ovlWin.isFocused()) { ovlWin.webContents.send('pad', m); return; }
       // So repassa os botoes (inclusive o Home) quando o app esta em primeiro plano
       if ((m.t === 'down' || m.t === 'up') && !win.isFocused()) return;

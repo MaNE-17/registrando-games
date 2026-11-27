@@ -62,7 +62,7 @@ function paint(){const g=D.game,sh=D.shots||[],fin=g&&(g.status==='Zerado'||g.st
  const right=`<div class="pn sh"><div class="shh"><h2>Capturas${g?'':' recentes'}</h2><span class="mu">${sh.length} ${sh.length===1?'imagem':'imagens'}</span><button data-a="close" title="Fechar">${SV(I.x)}</button></div>
  ${sh.length?`<div class="grid">${sh.map((x,i)=>`<button data-sh="${i}" title="${esc(x.name)}"><img src="${esc(x.thumb)}" loading="lazy" alt=""></button>`).join('')}</div>`:`<div class="empty">Nenhuma captura ainda.<br>Aperte <span class="k">${esc((D.keys&&D.keys.shot)||'F12')}</span> durante o jogo para tirar uma.</div>`}</div>`;
  $('#app').innerHTML=left+right;
- $('#ft').innerHTML=`<span><span class="k">${esc((D.keys&&D.keys.shot)||'F12')}</span> Capturar</span><span>Controle: <span class="k">A</span> Selecionar <span class="k">B</span> Voltar</span>`;
+ $('#ft').innerHTML=`<span><span class="k">${esc((D.keys&&D.keys.shot)||'F12')}</span> Capturar</span><span>Controle: <span class="k">A</span> Selecionar <span class="k">B</span> Voltar <span class="k">Home</span> Fechar</span>`;
  focusFirst()}
 function view(i){const sh=D.shots||[];if(!sh.length){VI=-1;$('#vw').hidden=true;return}VI=Math.max(0,Math.min(sh.length-1,i));const x=sh[VI];$('#vwi').src=x.url;$('#vwn').textContent=`${x.game||''} · ${new Date(x.t*1000).toLocaleString('pt-BR')} · ${VI+1}/${sh.length}`;$('#vw').hidden=false;setF($('#vw [data-v="next"]'))}
 function vclose(){VI=-1;$('#vw').hidden=true;focusFirst()}
